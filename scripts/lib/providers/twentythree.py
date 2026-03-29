@@ -1,6 +1,7 @@
 """23andMe v4/v5 raw data parser."""
 from __future__ import annotations
 
+import gzip
 from pathlib import Path
 from typing import Iterator
 
@@ -68,9 +69,16 @@ class TwentyThreeAndMe(GenomeProvider):
         records = list(self._parse_iter(filepath, stats))
         return iter(records), stats
 
+    @staticmethod
+    def _open_file(filepath: Path):
+        """Open file, handling gzip transparently."""
+        if str(filepath).endswith(".gz"):
+            return gzip.open(filepath, "rt")
+        return open(filepath, "r")
+
     def _parse_iter(self, filepath: Path, stats: QcStats) -> Iterator[SnpRecord]:
         """Internal parser yielding SnpRecord objects."""
-        with open(filepath, "r") as f:
+        with self._open_file(filepath) as f:
             for line in f:
                 line = line.strip()
                 if not line or line.startswith("#"):

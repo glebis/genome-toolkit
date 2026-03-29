@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import csv
+import gzip
 from pathlib import Path
 from typing import Iterator
 
@@ -55,9 +56,15 @@ class MyHeritage(GenomeProvider):
         records = list(self._parse_iter(filepath, stats))
         return iter(records), stats
 
+    @staticmethod
+    def _open_file(filepath: Path):
+        if str(filepath).endswith(".gz"):
+            return gzip.open(filepath, "rt")
+        return open(filepath, "r")
+
     def _parse_iter(self, filepath: Path, stats: QcStats) -> Iterator[SnpRecord]:
         # Detect delimiter
-        with open(filepath, "r") as f:
+        with self._open_file(filepath) as f:
             first_data_line = ""
             for line in f:
                 if not line.startswith("#") and line.strip():
@@ -65,7 +72,7 @@ class MyHeritage(GenomeProvider):
                     break
         delimiter = "," if "," in first_data_line else "\t"
 
-        with open(filepath, "r") as f:
+        with self._open_file(filepath) as f:
             # Skip comment lines
             lines = (line for line in f if not line.startswith("#"))
             reader = csv.DictReader(lines, delimiter=delimiter)
