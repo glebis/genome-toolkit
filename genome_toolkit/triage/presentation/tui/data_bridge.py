@@ -9,38 +9,24 @@ from genome_toolkit.triage.presentation.tui.stub_data import ScoredItemStub
 
 
 def _build_description(scored: ScoredItem) -> str:
-    """Build a human-readable description from scoring context."""
-    item = scored.item
-    score = scored.score
-    bd = score.breakdown
+    """Build a concise description — only non-obvious context."""
+    bd = scored.score.breakdown
     parts = []
 
-    # Why this score?
-    top_factors = sorted(
-        [
-            ("Priority", bd.priority_score, 25.0),
-            ("Overdue", bd.overdue_score, 20.0),
-            ("Evidence", bd.evidence_score, 15.0),
-            ("Lab signal", bd.lab_signal_score, 15.0),
-            ("Context", bd.context_score, 10.0),
-            ("Severity", bd.severity_score, 10.0),
-        ],
-        key=lambda x: x[1],
-        reverse=True,
-    )
-    top = [f"{name} ({val:.0f}/{mx:.0f})" for name, val, mx in top_factors[:3] if val > 0]
-    if top:
-        parts.append(f"Score drivers: {', '.join(top)}")
-
-    # Systems context
-    if item.linked_systems:
-        parts.append(f"Systems: {', '.join(item.linked_systems[:3])}")
-
-    # Stuck warning
+    # Stuck warning (most actionable signal)
     if bd.stuck_score > 0:
-        parts.append(f"Deferred {int(bd.stuck_score / 33 * 3 + 0.5)}x previously")
+        defer_count = max(1, int(bd.stuck_score / 33 * 3 + 0.5))
+        parts.append(f"Deferred {defer_count}x")
 
-    return " | ".join(parts)
+    # Lab signal (if active)
+    if bd.lab_signal_score > 0:
+        parts.append(f"Lab signal active ({bd.lab_signal_score:.0f}/{15:.0f})")
+
+    # Low overdue = not urgent yet
+    if bd.overdue_score == 0 and scored.item.due:
+        parts.append(f"Due {scored.item.due.isoformat()}")
+
+    return " \u00b7 ".join(parts) if parts else ""
 
 
 def _classify_automation(text: str, context: str) -> str:
@@ -93,7 +79,7 @@ def scored_item_to_stub(scored: ScoredItem) -> ScoredItemStub:
         },
         clinically_validated=item.clinically_validated,
         blocked_by=[bid.value for bid in item.blocked_by],
-        source_file=str(item.source.file_path),
+        source_file=str(item.source.file_path) if str(item.source.file_path) != "." else "",
         description=_build_description(scored),
         automation_level=_classify_automation(item.text, ctx),
     )
