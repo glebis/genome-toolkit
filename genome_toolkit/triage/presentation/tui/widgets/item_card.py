@@ -257,12 +257,32 @@ class ItemCard(Widget, can_focus=True):
 
     def key_a(self) -> None:
         """Approve/confirm item."""
+        self.styles.opacity = 0.5
+        try:
+            self.query_one(".card-title", Static).update(
+                Text(self.item.text, style="dim strike")
+            )
+        except Exception:
+            pass
         self.post_message(self.ActionPerformed(self, "approve"))
 
     def key_d(self) -> None:
         """Defer item."""
+        try:
+            self.query_one(".card-meta", Static).update(
+                Text("DEFERRED +7 days", style="yellow bold")
+            )
+        except Exception:
+            pass
         self.post_message(self.ActionPerformed(self, "defer"))
 
     def key_x(self) -> None:
         """Drop item."""
+        self.styles.opacity = 0.3
+        try:
+            self.query_one(".card-title", Static).update(
+                Text(f"DROPPED: {self.item.text}", style="dim strike red")
+            )
+        except Exception:
+            pass
         self.post_message(self.ActionPerformed(self, "drop"))
