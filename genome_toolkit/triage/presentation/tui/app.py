@@ -136,6 +136,12 @@ class TriageApp(App):
             self.notify(f"Applied {count} changes to vault", severity="information")
             self._pending_actions.clear()
             self.query_one(BatchBar).reset()
+            # Refresh history tab
+            try:
+                history = self.query_one(HistoryScreen)
+                history.refresh_data()
+            except Exception:
+                pass
         except Exception as e:
             self.notify(f"Error: {e}", severity="error")
 

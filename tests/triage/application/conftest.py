@@ -80,7 +80,7 @@ class InMemorySessionRepository(SessionRepository):
         self._sessions: list[TriageSession] = []
         self._defer_counts: dict[str, int] = {}
 
-    def save_session(self, session: TriageSession) -> None:
+    def save_session(self, session: TriageSession, item_texts: dict[str, str] | None = None) -> None:
         self._sessions.append(session)
 
     def get_recent(self, limit: int = 10) -> list[TriageSession]:

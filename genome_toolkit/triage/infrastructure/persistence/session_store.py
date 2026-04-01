@@ -31,8 +31,18 @@ class MarkdownSessionRepository(SessionRepository):
     def _history_file(self) -> Path:
         return self._vault_path / "Meta" / "Triage History.md"
 
-    def save_session(self, session: TriageSession) -> None:
-        """Append a triage session as a markdown table."""
+    def save_session(
+        self,
+        session: TriageSession,
+        item_texts: dict[str, str] | None = None,
+    ) -> None:
+        """Append a triage session as a markdown table.
+
+        Args:
+            session: The triage session to save.
+            item_texts: Optional mapping of item_id.value -> display text.
+        """
+        item_texts = item_texts or {}
         lines: list[str] = []
         timestamp_str = session.timestamp.strftime("%Y-%m-%d %H:%M")
         lines.append(f"\n## {timestamp_str}\n")
@@ -48,8 +58,9 @@ class MarkdownSessionRepository(SessionRepository):
             from_str = self._snapshot_str(d.previous)
             to_str = self._snapshot_str(d.new)
             note = d.note or ""
+            display_text = item_texts.get(d.item_id.value, d.item_id.value)[:60]
             lines.append(
-                f"| {action_name} | {d.item_id.value} | {from_str} | {to_str} | {note} |"
+                f"| {action_name} | {display_text} | {from_str} | {to_str} | {note} |"
             )
 
         # Session summary

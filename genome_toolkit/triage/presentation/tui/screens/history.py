@@ -163,6 +163,21 @@ class HistoryScreen(Widget):
             parts.append("completed")
         return "/".join(parts) if parts else "\u2014"
 
+    def refresh_data(self) -> None:
+        """Reload sessions from vault and recompose."""
+        if self._vault_path:
+            self._load_real_sessions()
+        self.remove_children()
+        self.mount(self._build_content())
+
+    def _build_content(self) -> VerticalScroll:
+        """Build the history content widget."""
+        sessions = self._sessions if self._sessions is not None else make_sample_history()
+        container = VerticalScroll()
+        # Content will be composed when mounted
+        self._current_sessions = sessions
+        return container
+
     def compose(self) -> ComposeResult:
         sessions = self._sessions if self._sessions is not None else make_sample_history()
         with VerticalScroll():
@@ -171,5 +186,7 @@ class HistoryScreen(Widget):
                 style="bold",
             )
             yield Static(header_text, classes="history-header")
+            if not sessions:
+                yield Static(Text("No triage sessions yet. Approve items and click Apply.", style="dim"))
             for session in sessions:
                 yield SessionPanel(session)

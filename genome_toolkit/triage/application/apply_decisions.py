@@ -40,7 +40,8 @@ class ApplyDecisions:
             session.add_decision(decision)
             self._apply_command(command)
 
-        self._session_repo.save_session(session)
+        item_texts = {item.item_id.value: item.text for item, _ in decisions}
+        self._session_repo.save_session(session, item_texts=item_texts)
         return session
 
     def _build_decision(self, item: TriageItem, command: Command) -> TriageDecision:
