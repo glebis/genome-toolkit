@@ -4,8 +4,10 @@ description: |
   Multi-agent validation pipeline for fact-checking claims, verifying evidence tiers,
   and ensuring prescriber document accuracy. Uses Codex CLI, NotebookLM, PubMed
   subagents, and Tavily search.
+  Supports: audit (full vault), gene SYMBOL (single gene fact-check),
+  protocol NAME (protocol/report fact-check).
   Triggers on: /genome-validate, "validate this note", "fact-check", "cross-check claims",
-  "verify evidence", "audit this report".
+  "verify evidence", "audit this report", "fact-check gene X", "check protocol X".
 ---
 
 # Genome Validate
@@ -82,6 +84,62 @@ From `config/agents.yaml`:
 - `evidence_tier_tolerance`: 1 tier — flag if agents disagree by more
 - `drug_interaction_strict`: true — zero tolerance on safety claims
 - `require_human_for_blocks`: true — human must override blocks
+
+## Mode 4: Single Gene Fact-Check
+
+Fact-check a single gene note against primary data and literature.
+
+```
+/genome-validate gene COMT
+```
+
+### Steps
+1. **Verify genotypes vs SQLite**
+   - Query `data/genome.db` for all variants in the gene note
+   - Compare stated genotypes, rsIDs, and allele calls against database
+   - Flag mismatches, missing variants, or stale r2_quality values
+2. **Check clinical claims via web search**
+   - Use Tavily to verify effect sizes, drug interaction claims, phenotype associations
+   - Cross-reference CPIC/DPWG guidelines for pharmacogenes
+   - Flag retracted or superseded studies
+3. **Validate evidence tiers**
+   - Compare assigned tiers (E1-E5) against current literature strength
+   - Flag tier inflation (e.g., E2 claim supported by single study)
+   - Check gene-gene interaction claims for formal testing evidence
+4. **Identify gaps**
+   - Missing "What Changes This" section
+   - Missing drug interactions for known pharmacogenes
+   - Absent cross-references to existing vault genes/systems
+
+**Output**: Per-claim validation with pass/warn/flag status and suggested corrections.
+
+## Mode 5: Protocol/Report Fact-Check
+
+Fact-check a protocol, report, or phenotype note.
+
+```
+/genome-validate protocol "Sertraline Optimization"
+/genome-validate report "Prescriber Summary"
+```
+
+### Steps
+1. **Verify gene-recommendation links**
+   - For each recommendation, confirm the referenced gene note exists and genotype supports the claim
+   - Check that cited evidence tiers match the source gene notes
+   - Flag recommendations that reference genes not in the vault
+2. **Supplement safety check**
+   - Cross-reference supplements against current medications (from vault context)
+   - Use Tavily to check for recent safety alerts or contraindication updates
+   - Flag drug-supplement and supplement-supplement interactions
+3. **Evidence tier validation**
+   - Verify protocol-level evidence tier is not higher than its weakest supporting gene claim
+   - Flag speculative recommendations (E4-E5) presented without caveats
+4. **Completeness check**
+   - Monitoring schedule present and realistic
+   - Dosage ranges match published guidelines
+   - Missing contraindications or precautions
+
+**Gate**: `prescriber_report` gate applies if the note is in Reports/. Protocol notes use advisory mode (no blocking).
 
 ## Output
 - Validation report (markdown) with per-agent results

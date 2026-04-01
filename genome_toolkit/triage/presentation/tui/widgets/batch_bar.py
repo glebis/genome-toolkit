@@ -18,27 +18,22 @@ class BatchBar(Widget):
     BatchBar {
         width: 1fr;
         height: 3;
-        dock: bottom;
-        padding: 0 2;
+        padding: 0 1;
         background: $surface;
         border-top: solid $secondary;
+        layout: horizontal;
     }
 
     BatchBar .batch-status {
         width: 1fr;
-        height: 1;
+        height: 3;
         content-align: left middle;
-        padding: 1 0;
-    }
-
-    BatchBar .batch-actions {
-        width: auto;
-        height: auto;
-        padding: 0 1;
     }
 
     BatchBar Button {
-        margin: 0 1;
+        min-width: 10;
+        height: 3;
+        margin: 0 0 0 1;
     }
     """
 
@@ -51,10 +46,9 @@ class BatchBar(Widget):
         """Posted when the discard button is clicked."""
 
     def compose(self) -> ComposeResult:
-        with Horizontal():
-            yield Static(self._render_status(), id="batch-status", classes="batch-status")
-            yield Button("Apply", variant="success", id="apply-btn", classes="batch-actions")
-            yield Button("Discard", variant="error", id="discard-btn", classes="batch-actions")
+        yield Static(self._render_status(), id="batch-status", classes="batch-status")
+        yield Button("Apply", variant="success", id="apply-btn")
+        yield Button("Discard", variant="error", id="discard-btn")
 
     def _render_status(self) -> Text:
         if self.pending_count == 0:

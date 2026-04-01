@@ -1,0 +1,249 @@
+# Onboarding Interview Questions
+# Used by genome-onboard skill for structured health assessment
+# Validated instruments: GAD-7, PHQ-2, PSS-4
+
+phases:
+  quick_profile:
+    duration: "2 min"
+    questions:
+      - id: demographics
+        prompt: "Age, biological sex, country of residence?"
+        type: structured
+        fields: [age, sex, location]
+
+      - id: medications
+        prompt: "What medications are you currently taking? (Include dose if known)"
+        type: free_text
+        parse_as: medication_list
+        example: "sertraline 50mg, omeprazole 20mg"
+
+      - id: diagnoses
+        prompt: "Any active medical diagnoses?"
+        type: multi_select_plus_free
+        options:
+          - Anxiety (GAD)
+          - Depression
+          - IBS / IBD
+          - Autoimmune condition
+          - Chronic pain
+          - Sleep disorder
+          - ADHD
+          - Cardiovascular
+          - Metabolic / diabetes
+          - None of the above
+        allow_free_text: true
+
+      - id: goals
+        prompt: "What do you most want to understand about your genetics?"
+        type: multi_select
+        source: config/goal_map.yaml
+        max_selections: 3
+
+  physiological:
+    duration: "5 min"
+    questions:
+      - id: sleep_duration
+        prompt: "How many hours of sleep do you typically get?"
+        type: numeric
+        range: [3, 12]
+        unit: hours
+        gene_context: [CYP1A2, FKBP5, PER3]
+        scoring:
+          red: "<6"
+          yellow: "6-7"
+          green: "7-9"
+
+      - id: sleep_quality
+        prompt: "Rate your sleep quality (1=terrible, 5=excellent)"
+        type: likert
+        scale: [1, 5]
+        gene_context: [PER3, CLOCK, ADORA2A]
+
+      - id: wake_variance
+        prompt: "How consistent is your wake time?"
+        type: categorical
+        options:
+          - "Within 30 minutes daily"
+          - "Within 1 hour"
+          - "Varies by 2+ hours"
+        gene_context: [PER3, CLOCK]
+
+      - id: exercise
+        prompt: "Describe your exercise: type, how often, what time of day?"
+        type: structured
+        fields: [type, frequency, time_of_day]
+        gene_context: [BDNF, DRD2, OPRM1]
+
+      - id: caffeine
+        prompt: "Caffeine intake: cups per day and when is your last one?"
+        type: structured
+        fields: [cups_per_day, last_intake_time]
+        gene_context: [CYP1A2, ADORA2A]
+
+      - id: alcohol
+        prompt: "Alcohol: drinks per week?"
+        type: numeric
+        range: [0, 50]
+        unit: drinks/week
+        gene_context: [PNPLA3, OPRM1, ADH1B, ALDH2]
+        sensitivity: substance
+
+      - id: cannabis
+        prompt: "Do you currently use cannabis? (If yes: frequency, method)"
+        type: structured
+        fields: [current_use, frequency, method]
+        gene_context: [CNR1, FAAH, CYP1A2]
+        sensitivity: cannabis
+
+      - id: gi_symptoms
+        prompt: "Any digestive issues? Rate frequency (never/sometimes/often/daily) and typical stool consistency (1-7 Bristol scale)"
+        type: structured
+        fields: [frequency, bristol_scale]
+        gene_context: [ATG16L1, FUT2, IL1B]
+
+      - id: pain
+        prompt: "Do you experience regular pain? Where, how often, and does ibuprofen or paracetamol help better?"
+        type: structured
+        fields: [locations, frequency, nsaid_response]
+        gene_context: [CYP2C9, OPRM1, SCN9A]
+
+      - id: morning_stiffness
+        prompt: "Do you experience morning stiffness? If yes, how long does it last?"
+        type: structured
+        fields: [present, duration_minutes]
+        gene_context: [HLA-B27, IL1B]
+
+  psychological:
+    duration: "3 min"
+    questions:
+      - id: gad7
+        prompt: "Over the last 2 weeks, how often have you been bothered by:"
+        type: validated_instrument
+        instrument: GAD-7
+        items:
+          - "Feeling nervous, anxious, or on edge"
+          - "Not being able to stop or control worrying"
+          - "Worrying too much about different things"
+          - "Trouble relaxing"
+          - "Being so restless that it's hard to sit still"
+          - "Becoming easily annoyed or irritable"
+          - "Feeling afraid as if something awful might happen"
+        scale: [0, 1, 2, 3]
+        labels: ["Not at all", "Several days", "More than half the days", "Nearly every day"]
+        scoring:
+          minimal: "0-4"
+          mild: "5-9"
+          moderate: "10-14"
+          severe: "15-21"
+        gene_context: [FKBP5, SLC6A4, COMT, CRHR1]
+
+      - id: phq2
+        prompt: "Over the last 2 weeks, how often have you been bothered by:"
+        type: validated_instrument
+        instrument: PHQ-2
+        items:
+          - "Little interest or pleasure in doing things"
+          - "Feeling down, depressed, or hopeless"
+        scale: [0, 1, 2, 3]
+        labels: ["Not at all", "Several days", "More than half the days", "Nearly every day"]
+        flag_threshold: 3
+        gene_context: [BDNF, SLC6A4, DRD2]
+
+      - id: pss4
+        prompt: "In the last month, how often have you:"
+        type: validated_instrument
+        instrument: PSS-4
+        items:
+          - "Felt unable to control the important things in your life"
+          - "Felt confident about your ability to handle personal problems (reverse)"
+          - "Felt things were going your way (reverse)"
+          - "Felt difficulties piling up so high you could not overcome them"
+        scale: [0, 1, 2, 3, 4]
+        labels: ["Never", "Almost never", "Sometimes", "Fairly often", "Very often"]
+        gene_context: [CRHR1, NR3C1, FKBP5]
+
+      - id: med_satisfaction
+        prompt: "How well do you feel your current medications are working? (1=not at all, 5=very well)"
+        type: likert
+        scale: [1, 5]
+        gene_context: [CYP2D6, CYP2C19, ABCB1]
+
+  context:
+    duration: "2 min"
+    questions:
+      - id: family_history
+        prompt: "Any family history of: heart disease, cancer, autoimmune conditions, psychiatric conditions, addiction?"
+        type: multi_select
+        options:
+          - Heart disease
+          - Cancer
+          - Autoimmune
+          - Psychiatric (anxiety/depression/bipolar)
+          - Addiction
+          - Neurodegenerative (Alzheimer's/Parkinson's)
+          - None known
+
+      - id: ancestry
+        prompt: "What is your ethnic/ancestral background? (Important for PRS calibration)"
+        type: free_text
+        note: "PRS models are calibrated for specific populations; accuracy varies"
+
+      - id: prior_testing
+        prompt: "What genetic testing have you done?"
+        type: multi_select
+        options:
+          - 23andMe
+          - AncestryDNA
+          - MyHeritage
+          - Clinical PGx panel
+          - Whole Genome Sequencing
+          - Other DTC test
+
+      - id: concerns
+        prompt: "What surprised you or worried you most in your genetic results? What question do you most want answered?"
+        type: free_text
+        note: "This shapes the narrative framing of the action plan"
+
+# Scoring: how assessment data modifies gene priority
+assessment_modifiers:
+  # If GAD-7 >= 10, boost anxiety-related genes
+  gad7_high:
+    condition: "gad7_score >= 10"
+    boost_genes: [FKBP5, SLC6A4, CRHR1, HTR1A, COMT]
+    boost_weight: 3
+    action: "Add GAD Protocol to first_protocols"
+
+  # If sleep < 6h, boost circadian genes
+  sleep_deficit:
+    condition: "sleep_duration < 6"
+    boost_genes: [CYP1A2, PER3, CLOCK, MTNR1B]
+    boost_weight: 2
+    action: "Add Sleep Protocol to first_protocols"
+
+  # If Bristol > 5 (loose/watery), boost gut genes
+  ibs_active:
+    condition: "bristol_scale >= 5"
+    boost_genes: [ATG16L1, FUT2, IL1B, NOD2]
+    boost_weight: 2
+    action: "Add Gut Restoration Protocol to first_protocols"
+
+  # If morning stiffness > 30min, boost autoimmune
+  inflammatory:
+    condition: "morning_stiffness_minutes > 30"
+    boost_genes: [HLA-B27, IL1B, PTPN22, CD226]
+    boost_weight: 3
+    action: "Add HLA-B27 serology to first_tests"
+
+  # If med_satisfaction <= 2, boost PGx
+  med_dissatisfied:
+    condition: "med_satisfaction <= 2"
+    boost_genes: [CYP2D6, CYP2C19, CYP2C9, ABCB1]
+    boost_weight: 4
+    action: "Prioritize Clinical PGx panel in first_tests"
+
+  # If alcohol > 7, boost liver + reward
+  alcohol_regular:
+    condition: "alcohol_units > 7"
+    boost_genes: [PNPLA3, ADH1B, ALDH2, OPRM1]
+    boost_weight: 3
+    sensitivity: substance

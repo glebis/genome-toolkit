@@ -176,16 +176,18 @@ class ItemCard(Widget, can_focus=True):
         return text
 
     def _render_meta(self) -> Text:
-        parts = []
-        parts.append(self.item.priority)
-        parts.append(self.item.context)
+        text = Text()
+        parts = [self.item.priority, self.item.context]
         if self.item.due:
             parts.append(f"due {self.item.due.isoformat()}")
         if self.item.evidence_tier:
             parts.append(self.item.evidence_tier)
         if self.item.clinically_validated:
             parts.append("validated")
-        return Text(" \u00b7 ".join(parts), style="dim")
+        text.append(" \u00b7 ".join(parts), style="dim")
+        if self.item.source_file:
+            text.append(f"  \u2190 {self.item.source_file}", style="dim italic")
+        return text
 
     def _render_breakdown(self) -> ComposeResult:
         """Render score breakdown bars."""

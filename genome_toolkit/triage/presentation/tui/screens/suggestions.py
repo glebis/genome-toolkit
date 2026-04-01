@@ -23,28 +23,35 @@ class SuggestionCard(Widget):
     SuggestionCard {
         width: 1fr;
         height: auto;
-        margin: 0 0 1 0;
-        padding: 1 2;
-        border: dashed $secondary;
-        background: $surface;
+        margin: 0 0 0 0;
+        padding: 0 2;
+        border-bottom: solid $secondary;
         border-left: thick #3182CE;
     }
 
-    SuggestionCard .suggestion-title {
+    SuggestionCard .suggestion-row {
         width: 1fr;
-        height: auto;
+        height: 3;
+        layout: horizontal;
+    }
+
+    SuggestionCard .suggestion-text {
+        width: 1fr;
+        height: 3;
+        content-align: left middle;
     }
 
     SuggestionCard .suggestion-meta {
-        width: 1fr;
-        height: 1;
+        width: auto;
+        height: 3;
+        content-align: left middle;
         color: $text-muted;
+        margin: 0 2 0 0;
     }
 
-    SuggestionCard .suggestion-actions {
-        width: auto;
-        height: auto;
-        margin: 1 0 0 0;
+    SuggestionCard Button {
+        min-width: 10;
+        height: 3;
     }
     """
 
@@ -60,27 +67,23 @@ class SuggestionCard(Widget):
         self.item = item
 
     def compose(self) -> ComposeResult:
-        with Vertical():
+        with Horizontal(classes="suggestion-row"):
             title_text = Text()
             title_text.append("SUGGESTED ", style="bold #3182CE")
             title_text.append(self.item.text, style="bold")
-            yield Static(title_text, classes="suggestion-title")
+            yield Static(title_text, classes="suggestion-text")
 
-            meta_parts = [self.item.priority, self.item.context]
+            meta_parts = []
             if self.item.evidence_tier:
                 meta_parts.append(self.item.evidence_tier)
             if self.item.linked_genes:
-                meta_parts.append("genes: " + ", ".join(self.item.linked_genes))
-            yield Static(
-                Text(" \u00b7 ".join(meta_parts), style="dim"),
-                classes="suggestion-meta",
-            )
-            yield Button(
-                "Approve",
-                variant="success",
-                id=f"approve-{id(self.item)}",
-                classes="suggestion-actions",
-            )
+                meta_parts.append(", ".join(self.item.linked_genes))
+            if meta_parts:
+                yield Static(
+                    Text(" \u00b7 ".join(meta_parts), style="dim"),
+                    classes="suggestion-meta",
+                )
+            yield Button("Approve", variant="success", id=f"approve-{id(self.item)}")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         self.post_message(self.Approved(self.item))

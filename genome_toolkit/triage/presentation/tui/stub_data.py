@@ -21,6 +21,7 @@ class ScoredItemStub:
     breakdown: dict[str, float] = field(default_factory=dict)
     clinically_validated: bool = False
     blocked_by: list[str] = field(default_factory=list)
+    source_file: str = ""
 
 
 PRIORITY_ORDER = ["critical", "high", "medium", "low"]

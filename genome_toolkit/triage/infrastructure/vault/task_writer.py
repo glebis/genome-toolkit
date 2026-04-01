@@ -1,12 +1,15 @@
-"""TaskWriter: writes priority/due/completed changes back to .md files.
-
-Stub implementation — full implementation is outside current scope.
-"""
+"""TaskWriter: update checklist items stored inside the vault."""
 from __future__ import annotations
 
+import fcntl
+import hashlib
+import os
+import re
+import tempfile
+from contextlib import contextmanager
 from datetime import date, timedelta
 from pathlib import Path
-from typing import Union
+from typing import Iterator, Union
 
 from genome_toolkit.triage.domain.commands import (
     ApproveCommand,
@@ -15,78 +18,68 @@ from genome_toolkit.triage.domain.commands import (
     DeferCommand,
     DropCommand,
 )
-from genome_toolkit.triage.domain.item import ItemId
-
-import re
+from genome_toolkit.triage.domain.item import Context, ItemId, Priority
+from genome_toolkit.triage.infrastructure.vault._task_utils import (
+    normalize_task_text,
+    replace_inline_field,
+)
 
 _TASK_RE = re.compile(r"^(- \[)([ xX])(\] .+)$")
 _BLOCK_ID_RE = re.compile(r"\^([\w-]+)")
-_INLINE_FIELD_RE = re.compile(r"\[([a-zA-Z_][\w]*?)::\s*(.+?)\]")
 
 
 class TaskWriter:
     def __init__(self, vault_root: Path) -> None:
         self._vault_root = vault_root
+        self._lock_path = vault_root / ".triage.lock"
 
     def apply_command(
         self,
         command: Union[DeferCommand, ApproveCommand, DropCommand, ChangePriorityCommand],
     ) -> None:
-        file_path, line_idx = self._find_item(command.item_id)
-        if file_path is None:
-            raise ValueError(f"Item {command.item_id.value} not found")
+        with self._lock():
+            file_path, line_idx = self._find_item(command.item_id)
+            if file_path is None:
+                raise ValueError(f"Item {command.item_id.value} not found")
 
-        lines = file_path.read_text(encoding="utf-8").splitlines(keepends=True)
-        line = lines[line_idx]
+            lines = file_path.read_text(encoding="utf-8").splitlines(keepends=True)
+            line = lines[line_idx]
 
-        if isinstance(command, ApproveCommand):
-            line = line.replace("- [ ]", "- [x]", 1)
-        elif isinstance(command, DropCommand):
-            line = line.replace("- [ ]", "- [x]", 1)
-        elif isinstance(command, ChangePriorityCommand):
-            new_p = command.new_priority.name.lower()
-            line = _INLINE_FIELD_RE.sub(
-                lambda m: f"[priority:: {new_p}]" if m.group(1) == "priority" else m.group(0),
-                line,
-            )
-        elif isinstance(command, DeferCommand):
-            today = date.today()
-            new_due = today + timedelta(days=command.days)
-            due_str = new_due.isoformat()
-            if "[due::" in line:
-                line = _INLINE_FIELD_RE.sub(
-                    lambda m: f"[due:: {due_str}]" if m.group(1) == "due" else m.group(0),
-                    line,
-                )
-            else:
-                # Add due field before any trailing block id or newline
-                line = line.rstrip("\n").rstrip()
-                line += f" [due:: {due_str}]\n"
+            if isinstance(command, (ApproveCommand, DropCommand)):
+                line = line.replace("- [ ]", "- [x]", 1)
+            elif isinstance(command, ChangePriorityCommand):
+                value = command.new_priority.name.lower()
+                line = self._set_inline_field(line, "priority", value)
+            elif isinstance(command, DeferCommand):
+                due = (date.today() + timedelta(days=command.days)).isoformat()
+                line = self._set_inline_field(line, "due", due)
 
-        lines[line_idx] = line
-        file_path.write_text("".join(lines), encoding="utf-8")
+            lines[line_idx] = line
+            self._write_atomic(file_path, "".join(lines))
 
     def create_item(self, command: CreateCommand) -> None:
         file_path = command.file_path
-        content = file_path.read_text(encoding="utf-8")
-
+        file_path.parent.mkdir(parents=True, exist_ok=True)
         parts = [f"- [ ] {command.text}"]
         parts.append(f"[priority:: {command.priority.name.lower()}]")
-        parts.append(f"[context:: {command.context.name.lower().replace('_', '-')}]")
+        parts.append(f"[context:: {self._context_value(command.context)}]")
         if command.due:
             parts.append(f"[due:: {command.due.isoformat()}]")
-
         new_line = " ".join(parts) + "\n"
-        content = content.rstrip("\n") + "\n" + new_line
-        file_path.write_text(content, encoding="utf-8")
+
+        with self._lock():
+            existing = file_path.read_text(encoding="utf-8") if file_path.exists() else ""
+            if existing:
+                content = existing.rstrip("\n") + "\n" + new_line
+            else:
+                content = new_line
+            self._write_atomic(file_path, content)
 
     def _find_item(self, item_id: ItemId) -> tuple[Path | None, int]:
         """Find the file and line index for an item by its ItemId.
 
         Searches first by ^block-id, then by content hash match.
         """
-        import hashlib
-
         for md_file in self._vault_root.rglob("*.md"):
             lines = md_file.read_text(encoding="utf-8").splitlines()
             for i, line in enumerate(lines):
@@ -94,17 +87,15 @@ class TaskWriter:
                 if not task_m:
                     continue
 
-                raw_text = task_m.group(3)[2:]  # strip leading "] "
+                raw_text = task_m.group(3)
+                if raw_text.startswith("] "):
+                    raw_text = raw_text[2:]
 
-                # Check block id match
-                m = _BLOCK_ID_RE.search(raw_text)
-                if m and m.group(1) == item_id.value:
+                block_match = _BLOCK_ID_RE.search(raw_text)
+                if block_match and block_match.group(1) == item_id.value:
                     return md_file, i
 
-                # Check content hash match
-                task_text = _INLINE_FIELD_RE.sub("", raw_text)
-                task_text = _BLOCK_ID_RE.sub("", task_text)
-                task_text = task_text.strip().rstrip("—").rstrip("-").strip()
+                task_text = normalize_task_text(raw_text)
                 content_hash = hashlib.sha256(
                     f"{md_file.stem}|{task_text}".encode()
                 ).hexdigest()
@@ -112,3 +103,45 @@ class TaskWriter:
                     return md_file, i
 
         return None, -1
+
+    def _set_inline_field(self, line: str, key: str, value: str) -> str:
+        updated, replaced = replace_inline_field(line, key, value)
+        if replaced:
+            return updated
+
+        newline = "\n" if line.endswith("\n") else ""
+        body = line.rstrip("\n").rstrip()
+        if body:
+            body += " "
+        body += f"[{key}:: {value}]"
+        return body + newline
+
+    @staticmethod
+    def _context_value(ctx: Context) -> str:
+        return ctx.name.lower().replace("_", "-")
+
+    def _write_atomic(self, file_path: Path, content: str) -> None:
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        fd, tmp_path = tempfile.mkstemp(prefix=file_path.name, dir=str(file_path.parent))
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as tmp:
+                tmp.write(content)
+                tmp.flush()
+                os.fsync(tmp.fileno())
+            os.replace(tmp_path, file_path)
+        finally:
+            if os.path.exists(tmp_path):
+                try:
+                    os.remove(tmp_path)
+                except FileNotFoundError:
+                    pass
+
+    @contextmanager
+    def _lock(self) -> Iterator[None]:
+        self._lock_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(self._lock_path, "a+", encoding="utf-8") as lock_file:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+            try:
+                yield
+            finally:
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)

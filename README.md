@@ -67,6 +67,7 @@ cp ~/Downloads/23andme_raw.txt $GENOME_VAULT_ROOT/data/raw/
 | **genome-create** | `/new-gene X` | Create gene/system/phenotype notes from SQLite data |
 | **genome-analytics** | `/genome-analytics` | PRS, enrichment, vault audit, PubMed monitoring |
 | **genome-report** | `/biomarker`, `/wallet-card` | Lab import, Wallet Card, PGx Card, Prescriber Summary |
+| **genome-query** | `/genome-query` | SQL-like vault queries (filter, sort, group, stats, schema) |
 | **genome-validate** | `/genome-validate` | Multi-agent fact-checking (Codex + NotebookLM + PubMed) |
 
 ## Supported Providers
@@ -100,6 +101,24 @@ Genome Toolkit uses multiple AI agents to validate claims:
 - **Tavily/Firecrawl** — web search for recent publications and safety alerts
 
 Prescriber-facing reports require **2 agents to agree** before publishing (configurable in `config/agents.yaml`).
+
+### Validation Modes
+
+- **Full audit** (`/genome-validate`) — multi-agent sweep of the entire vault
+- **Gene fact-check** (`/genome-validate gene COMT`) — verify genotypes vs SQLite, check claims via web, validate evidence tiers
+- **Protocol/report fact-check** (`/genome-validate protocol "Sertraline Optimization"`) — verify gene-recommendation links, supplement safety, evidence tiers
+
+## Vault Query
+
+Query any frontmatter field with SQL-like syntax from the CLI:
+
+```bash
+python3 scripts/vault_query.py "type=gene AND evidence_tier=E1" --fields gene_symbol,full_name
+python3 scripts/vault_query.py "type=system" --fields system_name,coverage --sort coverage --desc
+python3 scripts/vault_query.py --stats
+```
+
+Supports: `=`, `!=`, `~` (contains), `>`, `<`, `>=`, `<=`, `AND`/`OR`/`NOT` logic, `--sort`, `--group`, `--json`, `--count`, `--stats`, `--schema`. See `skills/genome-query/SKILL.md` for full reference.
 
 ## Vault Structure
 
@@ -180,10 +199,11 @@ genome-toolkit/
   config/            # YAML configuration (goals, evidence tiers, providers, agents)
   scripts/           # Python pipeline
     genome_init.py   # Universal import orchestrator
+    vault_query.py   # SQL-like vault frontmatter queries
     lib/             # Core library (config, db, vault_parser, providers, multi_agent)
     analytics/       # Analysis scripts [WIP: migrating from prototype]
     data/migrations/ # Versioned SQL migrations
-  skills/            # Claude Code skill definitions (6 skills)
+  skills/            # Claude Code skill definitions (7 skills)
   vault-template/    # Obsidian vault starter (Dashboard, templates, guides)
   tests/             # pytest test suite (98 tests)
 ```

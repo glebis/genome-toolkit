@@ -1,13 +1,19 @@
 Screen {
     background: $background;
+    layout: vertical;
 }
 
 TabbedContent {
     height: 1fr;
+    margin-bottom: 0;
 }
 
 TabPane {
     padding: 1 2;
+}
+
+Footer {
+    dock: bottom;
 }
 
 ItemCard {
@@ -46,10 +52,22 @@ ItemCard.-vault-maintenance {
 BatchBar {
     width: 1fr;
     height: 3;
-    dock: bottom;
-    padding: 0 2;
+    padding: 0 1;
     background: $surface;
     border-top: solid $secondary;
+    layout: horizontal;
+}
+
+BatchBar #batch-status {
+    width: 1fr;
+    height: 3;
+    content-align: left middle;
+}
+
+BatchBar Button {
+    min-width: 12;
+    height: 3;
+    margin: 0 0 0 1;
 }
 
 ScoreBadge {
