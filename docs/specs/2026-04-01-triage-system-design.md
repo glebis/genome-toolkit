@@ -278,6 +278,8 @@ class SessionRepository(ABC):
 
 **Final score:** `sum(factor * weight)`, clamped to 0-100.
 
+**Weight calibration status: v0 heuristic.** These weights are initial estimates, not empirically calibrated. They will be adjusted based on user behavior data once sufficient triage sessions (N>20) accumulate. Until then, treat as reasonable defaults, not validated parameters.
+
 **Design rationale (Codex/NotebookLM audit findings addressed):**
 - Overdue uses monotonic piecewise function (not the original inconsistent formula where due_today=50 but 1_day_overdue=3)
 - Lab signal scaled by z-score (not binary 0/100)
