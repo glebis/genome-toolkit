@@ -200,8 +200,9 @@ class ItemCard(Widget, can_focus=True):
 
     def on_mount(self) -> None:
         """Build initial content after mount."""
-        self._mounted = True
-        self._rebuild()
+        if not hasattr(self, "_built"):
+            self._built = True
+            self._rebuild()
 
     def _render_title(self) -> Text:
         text = Text()
@@ -251,7 +252,7 @@ class ItemCard(Widget, can_focus=True):
 
     def watch_expanded(self, expanded: bool) -> None:
         """Recompose when expand state changes."""
-        if hasattr(self, "_mounted"):
+        if hasattr(self, "_built"):
             self._rebuild()
 
     def watch_actioned(self, actioned: bool) -> None:
@@ -260,7 +261,7 @@ class ItemCard(Widget, can_focus=True):
             self.add_class("-actioned")
         else:
             self.remove_class("-actioned")
-        if hasattr(self, "_mounted"):
+        if hasattr(self, "_built"):
             self._rebuild()
 
     def _rebuild(self) -> None:
