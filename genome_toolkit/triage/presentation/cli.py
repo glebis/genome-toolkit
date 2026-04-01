@@ -32,6 +32,10 @@ from genome_toolkit.triage.presentation.svg.renderer import (
     Suggestion as SvgSuggestion,
     TriageReport as SvgTriageReport,
 )
+from genome_toolkit.triage.execution.executor import (
+    AutomationLevel,
+    classify_all,
+)
 
 console = Console()
 
@@ -192,6 +196,52 @@ def _save_markdown_report(report: TriageReport, vault_path: Path) -> Path:
     return out
 
 
+LEVEL_LABELS = {
+    AutomationLevel.AUTO: ("Auto-executable", "green bold"),
+    AutomationLevel.SEMI: ("Needs Review", "yellow"),
+    AutomationLevel.MANUAL: ("Manual", "dim"),
+}
+
+
+def _print_classified_report(report: TriageReport) -> None:
+    """Print items grouped by automation level."""
+    items_for_classify = [
+        {
+            "text": si.item.text,
+            "score": si.score.value,
+            "context": si.item.context.name if si.item.context else "",
+        }
+        for si in report.scored_items
+    ]
+    grouped = classify_all(items_for_classify)
+
+    console.print(f"\n[bold]Triage Report ({report.total_items} items)[/bold]\n")
+
+    for level in [AutomationLevel.AUTO, AutomationLevel.SEMI, AutomationLevel.MANUAL]:
+        plans = grouped[level]
+        label, style = LEVEL_LABELS[level]
+        console.print(f"[{style}]### {label} ({len(plans)} items)[/{style}]")
+
+        if not plans:
+            console.print("  (none)\n")
+            continue
+
+        for i, plan in enumerate(plans, 1):
+            score_item = next(
+                (si for si in report.scored_items if si.item.text == plan.item_text),
+                None,
+            )
+            score_str = f"{score_item.score.value:.0f}" if score_item else "?"
+
+            if level == AutomationLevel.MANUAL:
+                console.print(f"  - [ ] {plan.item_text} [{plan.context}]")
+            else:
+                cmd_str = f" -> {plan.command}" if plan.command else ""
+                console.print(f"  {i}. [{score_str}] {plan.action}{cmd_str}")
+
+        console.print()
+
+
 @click.command()
 @click.option("--vault", type=click.Path(exists=True, path_type=Path), required=True, help="Vault root path")
 @click.option("--context", "ctx_filter", type=str, default=None, help="Filter by context (prescriber, testing, etc.)")
@@ -203,6 +253,7 @@ def _save_markdown_report(report: TriageReport, vault_path: Path) -> Path:
 @click.option("--svg-visit", "svg_visit_path", type=click.Path(path_type=Path), default=None, help="Generate doctor visit SVG")
 @click.option("--svg-dashboard", "svg_dash_path", type=click.Path(path_type=Path), default=None, help="Generate dashboard SVG")
 @click.option("--interactive", is_flag=True, help="Launch TUI dashboard")
+@click.option("--classify", is_flag=True, help="Show items classified by automation level")
 @click.option("-o", "output_path", type=click.Path(path_type=Path), default=None, help="Output file path")
 def main(
     vault: Path,
@@ -215,6 +266,7 @@ def main(
     svg_visit_path: Path | None,
     svg_dash_path: Path | None,
     interactive: bool,
+    classify: bool,
     output_path: Path | None,
 ) -> None:
     """Genome Triage — score, sort, and triage vault action items."""
@@ -261,6 +313,9 @@ def main(
         out = _save_markdown_report(report, vault)
         console.print(f"Report saved to {out}")
 
+    if classify:
+        _print_classified_report(report)
+
     if json_out:
         data = {
             "total": report.total_items,
@@ -284,7 +339,7 @@ def main(
         click.echo(json.dumps(data, indent=2))
 
     # Default: console table
-    if not any([svg_path, svg_dash_path, svg_visit_path, svg_card_id, save, json_out]):
+    if not any([svg_path, svg_dash_path, svg_visit_path, svg_card_id, save, json_out, classify]):
         _print_console_report(report)
 
 

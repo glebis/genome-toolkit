@@ -200,6 +200,7 @@ class ItemCard(Widget, can_focus=True):
 
     def on_mount(self) -> None:
         """Build initial content after mount."""
+        self._mounted = True
         self._rebuild()
 
     def _render_title(self) -> Text:
@@ -250,7 +251,8 @@ class ItemCard(Widget, can_focus=True):
 
     def watch_expanded(self, expanded: bool) -> None:
         """Recompose when expand state changes."""
-        self._rebuild()
+        if hasattr(self, "_mounted"):
+            self._rebuild()
 
     def watch_actioned(self, actioned: bool) -> None:
         """Update visual state."""
@@ -258,7 +260,8 @@ class ItemCard(Widget, can_focus=True):
             self.add_class("-actioned")
         else:
             self.remove_class("-actioned")
-        self._rebuild()
+        if hasattr(self, "_mounted"):
+            self._rebuild()
 
     def _rebuild(self) -> None:
         """Rebuild widget content using mount (not compose context managers)."""
@@ -270,28 +273,27 @@ class ItemCard(Widget, can_focus=True):
         header_row.mount(ScoreBadge(score=self.item.score, bucket=self.item.bucket))
         header_row.mount(Static(self._render_title(), classes="card-title"))
 
-        # Source file
-        if self.item.source_file:
-            self.mount(Static(
-                Text(f"\u2190 {self.item.source_file}", style="dim italic"),
-                classes="card-source",
-            ))
-
-        # Meta line: priority · context · due · evidence · automation level
+        # Collapsed: compact meta only
         self.mount(Static(self._render_meta(), classes="card-meta"))
 
-        # Description / context (always show if available)
-        if self.item.description:
-            self.mount(Static(
-                Text(self.item.description, style=""),
-                classes="card-desc",
-            ))
-
-        # Action feedback
+        # Action feedback (if actioned)
         if self._action_label:
             self.mount(Static(Text(self._action_label, style="bold yellow")))
 
+        # Expanded: full details
         if self.expanded:
+            # Source file
+            if self.item.source_file:
+                self.mount(Static(
+                    Text(f"\u2190 {self.item.source_file}", style="dim italic"),
+                    classes="card-source",
+                ))
+
+            # Description with wikilinks stripped
+            if self.item.description:
+                desc_clean = strip_wikilinks(self.item.description)
+                self.mount(Static(Text(desc_clean), classes="card-desc"))
+
             # Action buttons
             actions = Horizontal(classes="card-actions")
             self.mount(actions)
