@@ -69,7 +69,11 @@ def render_bar(value: float, max_value: float, width: int = BAR_WIDTH) -> Text:
 
 
 class ItemCard(Widget, can_focus=True):
-    """A card widget displaying a scored triage item."""
+    """A card widget displaying a scored triage item.
+
+    Press Enter to expand/collapse. When expanded shows score breakdown
+    and action buttons (Approve, Defer, Drop).
+    """
 
     DEFAULT_CSS = """
     ItemCard {
@@ -83,11 +87,6 @@ class ItemCard(Widget, can_focus=True):
 
     ItemCard:focus {
         border: double $accent;
-    }
-
-    ItemCard .card-header {
-        width: 1fr;
-        height: auto;
     }
 
     ItemCard .card-title {
@@ -110,7 +109,6 @@ class ItemCard(Widget, can_focus=True):
     ItemCard .card-links {
         width: 1fr;
         height: auto;
-        margin: 1 0 0 0;
         color: $text-muted;
     }
 
@@ -121,14 +119,13 @@ class ItemCard(Widget, can_focus=True):
 
     ItemCard .card-actions {
         width: 1fr;
-        height: 3;
+        height: auto;
         layout: horizontal;
-        margin: 1 0 0 0;
+        margin: 1 0 2 0;
     }
 
     ItemCard .card-actions Button {
         min-width: 12;
-        height: 3;
         margin: 0 1 0 0;
     }
 
@@ -147,9 +144,14 @@ class ItemCard(Widget, can_focus=True):
     ItemCard.-vault-maintenance {
         border-left: thick #718096;
     }
+
+    ItemCard.-actioned {
+        opacity: 0.5;
+    }
     """
 
     expanded: reactive[bool] = reactive(False)
+    actioned: reactive[bool] = reactive(False)
 
     class PriorityChanged(Message):
         """Posted when priority is cycled."""
@@ -170,19 +172,24 @@ class ItemCard(Widget, can_focus=True):
         super().__init__(**kwargs)
         self.item = item
         self.add_class(f"-{item.context}")
+        self._action_label: str | None = None
 
     def compose(self) -> ComposeResult:
-        with Vertical(classes="card-header"):
-            yield Horizontal(
-                ScoreBadge(score=self.item.score, bucket=self.item.bucket),
-                Static(self._render_title(), classes="card-title"),
-            )
-            yield Static(self._render_meta(), classes="card-meta")
+        """Initial compose — empty, _rebuild fills content on mount."""
+        return
+        yield  # make it a generator
+
+    def on_mount(self) -> None:
+        """Build initial content after mount."""
+        self._rebuild()
 
     def _render_title(self) -> Text:
         text = Text()
         clean_text = strip_wikilinks(self.item.text)
-        text.append(clean_text, style="bold")
+        if self.actioned:
+            text.append(clean_text, style="dim strike")
+        else:
+            text.append(clean_text, style="bold")
         bucket_label = BUCKET_LABELS.get(self.item.bucket, self.item.bucket)
         color = BUCKET_COLORS.get(self.item.bucket, "#718096")
         text.append(f"  [{bucket_label}]", style=f"{color}")
@@ -201,15 +208,6 @@ class ItemCard(Widget, can_focus=True):
         if self.item.source_file:
             text.append(f"  \u2190 {self.item.source_file}", style="dim italic")
         return text
-
-    def _render_breakdown(self) -> ComposeResult:
-        """Render score breakdown bars."""
-        for key, (label, max_val) in FACTOR_LABELS.items():
-            value = self.item.breakdown.get(key, 0.0)
-            row_text = Text()
-            row_text.append(f"{label:<9}", style="bold")
-            row_text.append_text(render_bar(value, max_val))
-            yield Static(row_text, classes="breakdown-row")
 
     def _render_links(self) -> Text:
         text = Text()
@@ -230,88 +228,95 @@ class ItemCard(Widget, can_focus=True):
 
     def watch_expanded(self, expanded: bool) -> None:
         """Recompose when expand state changes."""
-        self.recompose()
+        self._rebuild()
 
-    def recompose(self) -> None:
-        """Rebuild the widget content."""
+    def watch_actioned(self, actioned: bool) -> None:
+        """Update visual state."""
+        if actioned:
+            self.add_class("-actioned")
+        else:
+            self.remove_class("-actioned")
+        self._rebuild()
+
+    def _rebuild(self) -> None:
+        """Rebuild widget content using mount (not compose context managers)."""
         self.remove_children()
-        self.mount(
-            Vertical(
-                Horizontal(
-                    ScoreBadge(score=self.item.score, bucket=self.item.bucket),
-                    Static(self._render_title(), classes="card-title"),
-                    classes="card-header-row",
-                ),
-                Static(self._render_meta(), classes="card-meta"),
-                classes="card-header",
-            )
-        )
+
+        # Header row
+        header_row = Horizontal()
+        self.mount(header_row)
+        header_row.mount(ScoreBadge(score=self.item.score, bucket=self.item.bucket))
+        header_row.mount(Static(self._render_title(), classes="card-title"))
+
+        # Meta
+        self.mount(Static(self._render_meta(), classes="card-meta"))
+
+        # Action feedback
+        if self._action_label:
+            self.mount(Static(Text(self._action_label, style="bold yellow")))
+
         if self.expanded:
-            breakdown_container = Vertical(classes="card-breakdown")
-            self.mount(breakdown_container)
-            for widget in self._render_breakdown():
-                breakdown_container.mount(widget)
-            links_text = self._render_links()
-            if links_text.plain:
-                self.mount(Static(links_text, classes="card-links"))
             # Action buttons
             actions = Horizontal(classes="card-actions")
             self.mount(actions)
-            actions.mount(Button("Approve", variant="success", id=f"btn-approve-{id(self)}"))
-            actions.mount(Button("Defer +7d", variant="warning", id=f"btn-defer-{id(self)}"))
-            actions.mount(Button("Drop", variant="error", id=f"btn-drop-{id(self)}"))
+            actions.mount(Button("Approve", variant="success", id="btn-approve"))
+            actions.mount(Button("Defer +7d", variant="warning", id="btn-defer"))
+            actions.mount(Button("Drop", variant="error", id="btn-drop"))
+
+            # Breakdown
+            for key, (label, max_val) in FACTOR_LABELS.items():
+                value = self.item.breakdown.get(key, 0.0)
+                row_text = Text()
+                row_text.append(f"{label:<9}", style="bold")
+                row_text.append_text(render_bar(value, max_val))
+                self.mount(Static(row_text, classes="breakdown-row"))
+
+            # Links
+            links = self._render_links()
+            if links.plain:
+                self.mount(Static(links, classes="card-links"))
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle action button clicks."""
         btn_id = event.button.id or ""
         if "approve" in btn_id:
-            self.key_a()
+            self._do_action("approve", "APPROVED")
         elif "defer" in btn_id:
-            self.key_d()
+            self._do_action("defer", "DEFERRED +7 days")
         elif "drop" in btn_id:
-            self.key_x()
+            self._do_action("drop", "DROPPED")
+
+    def _do_action(self, action: str, label: str) -> None:
+        """Perform an action with visual feedback."""
+        self._action_label = label
+        self.actioned = True
+        self.expanded = False
+        self.post_message(self.ActionPerformed(self, action))
 
     def key_enter(self) -> None:
         """Toggle expand/collapse."""
-        self.expanded = not self.expanded
+        if not self.actioned:
+            self.expanded = not self.expanded
 
     def key_p(self) -> None:
         """Cycle priority."""
+        if self.actioned:
+            return
         current_idx = PRIORITY_ORDER.index(self.item.priority)
         next_idx = (current_idx + 1) % len(PRIORITY_ORDER)
         self.item.priority = PRIORITY_ORDER[next_idx]
-        self.recompose()
+        self._rebuild()
         self.post_message(self.PriorityChanged(self))
         self.post_message(self.ActionPerformed(self, "priority_change"))
 
     def key_a(self) -> None:
         """Approve/confirm item."""
-        self.styles.opacity = 0.5
-        try:
-            self.query_one(".card-title", Static).update(
-                Text(self.item.text, style="dim strike")
-            )
-        except Exception:
-            pass
-        self.post_message(self.ActionPerformed(self, "approve"))
+        self._do_action("approve", "APPROVED")
 
     def key_d(self) -> None:
         """Defer item."""
-        try:
-            self.query_one(".card-meta", Static).update(
-                Text("DEFERRED +7 days", style="yellow bold")
-            )
-        except Exception:
-            pass
-        self.post_message(self.ActionPerformed(self, "defer"))
+        self._do_action("defer", "DEFERRED +7 days")
 
     def key_x(self) -> None:
         """Drop item."""
-        self.styles.opacity = 0.3
-        try:
-            self.query_one(".card-title", Static).update(
-                Text(f"DROPPED: {self.item.text}", style="dim strike red")
-            )
-        except Exception:
-            pass
-        self.post_message(self.ActionPerformed(self, "drop"))
+        self._do_action("drop", "DROPPED")

@@ -1,6 +1,10 @@
-"""Action handlers for TUI -- maps TUI actions to domain commands."""
+"""Action handlers for TUI -- maps TUI actions to domain commands.
+
+Handles deduplication, stage transitions, and vault writes.
+"""
 from __future__ import annotations
 
+from difflib import SequenceMatcher
 from pathlib import Path
 from typing import Optional
 
@@ -21,6 +25,9 @@ from genome_toolkit.triage.domain.commands import (
 from genome_toolkit.triage.application.report import TriageReport
 
 
+# --- Item lookup ---
+
+
 def find_domain_item(
     report: Optional[TriageReport], stub_text: str
 ) -> Optional[TriageItem]:
@@ -31,6 +38,44 @@ def find_domain_item(
         if si.item.text == stub_text:
             return si.item
     return None
+
+
+# --- Deduplication ---
+
+
+def find_duplicate(
+    report: Optional[TriageReport],
+    text: str,
+    threshold: float = 0.85,
+) -> Optional[TriageItem]:
+    """Check if a similar task already exists in the vault.
+
+    Returns the matching item if similarity >= threshold, else None.
+    """
+    if not report:
+        return None
+    text_lower = text.lower().strip()
+    for si in report.scored_items:
+        existing = si.item.text.lower().strip()
+        # Exact match
+        if existing == text_lower:
+            return si.item
+        # Fuzzy match
+        ratio = SequenceMatcher(None, text_lower, existing).ratio()
+        if ratio >= threshold:
+            return si.item
+    return None
+
+
+def is_already_pending(pending_actions: list[tuple], text: str) -> bool:
+    """Check if this text is already in pending actions."""
+    for item, _ in pending_actions:
+        if item.text.lower().strip() == text.lower().strip():
+            return True
+    return False
+
+
+# --- Command builders ---
 
 
 def build_command_for_action(
@@ -56,8 +101,12 @@ def build_command_for_action(
 def build_create_command(
     vault_path: Path, text: str, priority: str, context: str
 ) -> tuple[CreateCommand, TriageItem]:
-    """Build a CreateCommand for an approved suggestion."""
+    """Build a CreateCommand for an approved suggestion.
+
+    Target file: Meta/Triage Report.md (creates if needed with frontmatter).
+    """
     target_file = vault_path / "Meta" / "Triage Report.md"
+    _ensure_triage_report_exists(target_file)
     parsed_priority = Priority[priority.upper()]
     parsed_context = Context[context.upper().replace("-", "_")]
     return CreateCommand(
@@ -76,6 +125,39 @@ def build_create_command(
         evidence_tier=None,
         severity=None,
     )
+
+
+def _ensure_triage_report_exists(path: Path) -> None:
+    """Create Triage Report.md with frontmatter if it doesn't exist or is empty."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.exists():
+        content = path.read_text(encoding="utf-8").strip()
+        if content and "---" in content:
+            return  # already has frontmatter
+
+    # Write with proper frontmatter
+    from datetime import date
+    header = f"""---
+type: meta
+created_date: '{date.today().isoformat()}'
+tags:
+  - meta
+  - triage
+---
+
+# Triage Report
+
+Action items created via triage system.
+
+"""
+    if path.exists():
+        existing = path.read_text(encoding="utf-8")
+        path.write_text(header + existing, encoding="utf-8")
+    else:
+        path.write_text(header, encoding="utf-8")
+
+
+# --- Apply ---
 
 
 def apply_pending_actions(

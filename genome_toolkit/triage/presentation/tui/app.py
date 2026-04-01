@@ -114,16 +114,33 @@ class TriageApp(App):
         batch_bar.increment()
 
     def on_suggestion_card_approved(self, event) -> None:
-        """Create a vault task from an approved suggestion."""
+        """Create a vault task from an approved suggestion, with dedup check."""
         if not self._vault_path:
             return
-        from genome_toolkit.triage.presentation.tui.action_handlers import build_create_command
+        from genome_toolkit.triage.presentation.tui.action_handlers import (
+            build_create_command, find_duplicate, is_already_pending,
+        )
+
+        # Dedup: check if already exists in vault
+        dup = find_duplicate(self._report, event.item.text)
+        if dup:
+            self.notify(
+                f"Duplicate: similar task exists — '{dup.text[:40]}'",
+                severity="warning",
+            )
+            return
+
+        # Dedup: check if already in pending
+        if is_already_pending(self._pending_actions, event.item.text):
+            self.notify("Already pending", severity="warning")
+            return
+
         cmd, dummy_item = build_create_command(
             self._vault_path, event.item.text, event.item.priority, event.item.context,
         )
         self._pending_actions.append((dummy_item, cmd))
         self.query_one(BatchBar).increment()
-        self.notify(f"Suggestion approved: {event.item.text[:40]}")
+        self.notify(f"Approved: {event.item.text[:40]}")
 
     def on_batch_bar_apply_requested(self, event: BatchBar.ApplyRequested) -> None:
         """Apply all pending changes to vault."""
