@@ -110,6 +110,48 @@ Quick Reference section). Key patterns:
 | No exercise + anxiety | BDNF Val/Val, DRD2 A1/A2 | "Exercise is your dopamine prescription" |
 | Steps < 2000 | PNPLA3 G;G | Sedentary day = liver risk. Standing desk? |
 
+## Analysis Mode (`/genome-log analyze` or `/log patterns`)
+
+Scans daily notes for patterns, correlations, and actionable insights.
+
+### CLI
+```bash
+python3 scripts/daily_analyze.py              # Last 14 days
+python3 scripts/daily_analyze.py --days 30    # Last 30 days
+python3 scripts/daily_analyze.py --json       # Machine-readable
+python3 scripts/daily_analyze.py --save       # Save report to vault
+```
+
+### What It Finds
+
+**1. Supplement adherence** — % taken over period, flags <80%
+
+**2. Symptom trends** — average, range, trend direction (improving/worsening/stable) by comparing first half vs second half of the period
+
+**3. Supplement → symptom correlations** — "Days after taking P5P, anxiety averages 3.2; days without P5P, anxiety averages 5.8 (diff: 2.6 pts)" Requires ≥2 data points each way. Only surfaces differences ≥1.0 point.
+
+**4. Exercise effect** — same correlation logic: "Next-day GI after exercise: 2.1; without: 4.8"
+
+**5. Pattern detection:**
+- GI ≥5 + nasal ≥5 same day → histamine pattern (ABP1)
+- Anxiety ≥6 + no exercise → DRD2 dopamine unaddressed
+- Morning stiffness ≥5 → HLA-B27 inflammatory flare
+- Sleep quality <4 + caffeine >150mg → CYP1A2 overshoot
+
+### Conversational Analysis
+
+When triggered via Claude Code, provide genetic-informed interpretation:
+
+"Over the last 14 days, your GI discomfort averaged 5.2 and correlated with days you skipped P5P (avg 6.8 without vs 3.4 with). P5P is a DAO cofactor — your ABP1 3x het means DAO needs all the cofactor support it can get. Also noticed GI + nasal congestion co-occurred 4 times — classic histamine pattern. The elimination diet trial would give clearer data."
+
+### When to Suggest Analysis
+
+- After 7+ daily notes exist
+- When user asks "is X helping?"
+- When symptoms are trending worse
+- Weekly (Sunday evening via weekly-learn daemon)
+- Before prescriber visits (to bring data)
+
 ## Definitions & Dashboard
 
 - **Tracking Registry**: `Protocols/Tracking Registry.md` — all item IDs, doses, gene links
