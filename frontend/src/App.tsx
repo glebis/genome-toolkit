@@ -20,6 +20,16 @@ function App() {
   useEffect(() => {
     fetch('/api/genes').then(r => r.json()).then(setGenes).catch(() => {})
     fetch('/api/insights').then(r => r.json()).then(setInsights).catch(() => {})
+
+    // Restore variant drawer from URL
+    const params = new URLSearchParams(window.location.search)
+    const variantId = params.get('variant')
+    if (variantId) {
+      fetch(`/api/snps/${variantId}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(snp => { if (snp) setSelectedSNP(snp as SNP) })
+        .catch(() => {})
+    }
   }, [])
 
   const activeFilterCount = [filters.search, filters.chromosome, filters.source,
@@ -49,11 +59,23 @@ function App() {
     return () => window.removeEventListener('keydown', handler)
   }, [])
 
+  const selectVariant = useCallback((snp: SNP | null) => {
+    setSelectedSNP(snp)
+    const params = new URLSearchParams(window.location.search)
+    if (snp) {
+      params.set('variant', snp.rsid)
+    } else {
+      params.delete('variant')
+    }
+    const qs = params.toString()
+    window.history.replaceState(null, '', qs ? `?${qs}` : window.location.pathname)
+  }, [])
+
   const handleAskAI = useCallback((query: string) => {
-    setSelectedSNP(null)
+    selectVariant(null)
     setCmdkOpen(true)
     setTimeout(() => send(query), 100)
-  }, [send])
+  }, [send, selectVariant])
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -119,7 +141,7 @@ function App() {
           data={result}
           loading={loading}
           onPageChange={setPage}
-          onRowClick={setSelectedSNP}
+          onRowClick={selectVariant}
         />
       </main>
 
@@ -139,7 +161,7 @@ function App() {
       {/* Variant Drawer */}
       <VariantDrawer
         snp={selectedSNP}
-        onClose={() => setSelectedSNP(null)}
+        onClose={() => selectVariant(null)}
         onAskAI={handleAskAI}
       />
 
