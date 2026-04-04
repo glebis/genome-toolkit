@@ -1,0 +1,69 @@
+import { useState, useEffect, useCallback } from 'react'
+
+export interface SNP {
+  rsid: string
+  chromosome: string
+  position: number
+  genotype: string
+  is_rsid: boolean
+  source: string
+  r2_quality: number | null
+}
+
+export interface SNPFilters {
+  search: string
+  chromosome: string
+  source: string
+  page: number
+  limit: number
+}
+
+export interface SNPResult {
+  items: SNP[]
+  total: number
+  page: number
+  limit: number
+}
+
+const DEFAULT_FILTERS: SNPFilters = {
+  search: '',
+  chromosome: '',
+  source: '',
+  page: 1,
+  limit: 100,
+}
+
+export function useSNPs() {
+  const [filters, setFilters] = useState<SNPFilters>(DEFAULT_FILTERS)
+  const [result, setResult] = useState<SNPResult>({ items: [], total: 0, page: 1, limit: 100 })
+  const [loading, setLoading] = useState(false)
+
+  const fetchSNPs = useCallback(async (f: SNPFilters) => {
+    setLoading(true)
+    const params = new URLSearchParams()
+    params.set('page', String(f.page))
+    params.set('limit', String(f.limit))
+    if (f.search) params.set('search', f.search)
+    if (f.chromosome) params.set('chr', f.chromosome)
+    if (f.source) params.set('source', f.source)
+
+    try {
+      const resp = await fetch(`/api/snps?${params}`)
+      if (resp.ok) setResult(await resp.json())
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { fetchSNPs(filters) }, [filters, fetchSNPs])
+
+  const updateFilters = useCallback((partial: Partial<SNPFilters>) => {
+    setFilters(prev => ({ ...prev, page: 1, ...partial }))
+  }, [])
+
+  const setPage = useCallback((page: number) => {
+    setFilters(prev => ({ ...prev, page }))
+  }, [])
+
+  return { result, filters, loading, updateFilters, setPage }
+}
