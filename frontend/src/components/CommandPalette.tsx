@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import type { ChatMessage } from '../hooks/useChat'
 
 interface Props {
@@ -94,7 +95,7 @@ export function CommandPalette({ open, onClose, messages, streaming, streamingTe
                 <div style={{ marginTop: 'var(--space-xs)', fontSize: 'var(--font-size-sm)', lineHeight: 1.6 }}
                      className={msg.role === 'assistant' ? 'chat-markdown' : undefined}>
                   {msg.role === 'assistant'
-                    ? <ReactMarkdown>{msg.content}</ReactMarkdown>
+                    ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
                     : msg.content}
                 </div>
               </div>
@@ -104,7 +105,7 @@ export function CommandPalette({ open, onClose, messages, streaming, streamingTe
                 <span className="label label--primary">OUTPUT //</span>
                 <div style={{ marginTop: 'var(--space-xs)', fontSize: 'var(--font-size-sm)', lineHeight: 1.6 }}
                      className="chat-markdown">
-                  <ReactMarkdown>{streamingText}</ReactMarkdown>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{streamingText}</ReactMarkdown>
                   <span style={{ animation: 'blink 1s infinite', color: 'var(--primary)' }}>_</span>
                 </div>
               </div>

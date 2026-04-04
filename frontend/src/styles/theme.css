@@ -127,5 +127,50 @@ body {
 /* Markdown in chat */
 .chat-markdown p { margin-bottom: 8px; }
 .chat-markdown ul, .chat-markdown ol { margin-left: 16px; margin-bottom: 8px; }
+.chat-markdown li { margin-bottom: 4px; }
 .chat-markdown code { background: var(--bg-inset); padding: 1px 4px; font-size: var(--font-size-sm); }
+.chat-markdown pre { background: var(--bg-inset); padding: 12px; margin-bottom: 8px; overflow-x: auto; border: 1px dashed var(--border-dashed); }
+.chat-markdown pre code { background: none; padding: 0; }
 .chat-markdown strong { color: var(--accent); font-weight: 600; }
+.chat-markdown h1, .chat-markdown h2, .chat-markdown h3 {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--accent);
+  margin: 12px 0 6px;
+}
+.chat-markdown blockquote {
+  border-left: 2px solid var(--primary-dim);
+  padding-left: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+/* Tables in chat */
+.chat-markdown table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0 12px;
+  font-size: var(--font-size-sm);
+}
+.chat-markdown th {
+  text-align: left;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border-strong);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+.chat-markdown td {
+  padding: 5px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.chat-markdown tr:nth-child(even) {
+  background: var(--bg);
+}
+.chat-markdown tr:hover {
+  background: var(--bg-inset);
+}
