@@ -9,22 +9,48 @@ interface VariantDetail extends SNP {
   mv_significance?: string | null
 }
 
+interface GuidanceData {
+  severity: string
+  what_it_means: string
+  suggested_actions: string[]
+  discuss_with_clinician: boolean
+  external_links: { label: string; url: string }[]
+}
+
 interface Props {
   snp: SNP | null
   onClose: () => void
   onAskAI?: (query: string) => void
 }
 
+const SEVERITY_COLORS: Record<string, string> = {
+  high: 'var(--sig-risk)',
+  moderate: 'var(--sig-reduced)',
+  low: 'var(--sig-benefit)',
+  unknown: 'var(--border)',
+}
+
 export function VariantDrawer({ snp, onClose, onAskAI }: Props) {
   const [detail, setDetail] = useState<VariantDetail | null>(null)
+  const [guidance, setGuidance] = useState<GuidanceData | null>(null)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    if (!snp) { setDetail(null); return }
+    if (!snp) { setDetail(null); setGuidance(null); return }
     setLoading(true)
-    fetch(`/api/snps/${snp.rsid}`)
+
+    const fetchDetail = fetch(`/api/snps/${snp.rsid}`)
       .then(r => r.ok ? r.json() : null)
-      .then(d => { setDetail(d); setLoading(false) })
+
+    const fetchGuidance = fetch(`/api/snps/${snp.rsid}/guidance`)
+      .then(r => r.ok ? r.json() : null)
+
+    Promise.all([fetchDetail, fetchGuidance])
+      .then(([d, g]) => {
+        setDetail(d)
+        setGuidance(g)
+        setLoading(false)
+      })
       .catch(() => setLoading(false))
   }, [snp])
 
@@ -72,6 +98,15 @@ export function VariantDrawer({ snp, onClose, onAskAI }: Props) {
           CLOSE
         </button>
       </div>
+
+      {/* Severity bar */}
+      {guidance && guidance.severity !== 'unknown' && (
+        <div style={{
+          height: 3,
+          background: SEVERITY_COLORS[guidance.severity] || SEVERITY_COLORS.unknown,
+          width: '100%',
+        }} />
+      )}
 
       {/* Content */}
       <div style={{ flex: 1, overflowY: 'auto', padding: 'var(--space-md)' }}>
@@ -140,6 +175,108 @@ export function VariantDrawer({ snp, onClose, onAskAI }: Props) {
                   </tbody>
                 </table>
               </>
+            )}
+
+            {/* Guidance blocks */}
+            {guidance && guidance.what_it_means && (
+              <div style={{ borderTop: '1px dashed var(--border-dashed)', paddingTop: 'var(--space-md)', marginBottom: 'var(--space-lg)' }}>
+
+                {/* Discuss with clinician callout */}
+                {guidance.discuss_with_clinician && (
+                  <div style={{
+                    border: `1px solid ${SEVERITY_COLORS[guidance.severity] || 'var(--border)'}`,
+                    padding: 'var(--space-sm) var(--space-md)',
+                    marginBottom: 'var(--space-md)',
+                    background: 'var(--bg)',
+                  }}>
+                    <span style={{
+                      fontSize: 'var(--font-size-xs)',
+                      letterSpacing: 'var(--tracking-wide)',
+                      textTransform: 'uppercase',
+                      fontWeight: 600,
+                      color: SEVERITY_COLORS[guidance.severity] || 'var(--text-primary)',
+                    }}>
+                      DISCUSS_WITH_CLINICIAN
+                    </span>
+                    <div style={{
+                      fontSize: 'var(--font-size-xs)',
+                      color: 'var(--text-secondary)',
+                      marginTop: 2,
+                    }}>
+                      This result may be clinically relevant. Bring it to your next appointment.
+                    </div>
+                  </div>
+                )}
+
+                {/* What this means */}
+                <span className="label label--accent" style={{ display: 'block', marginBottom: 'var(--space-sm)' }}>
+                  WHAT_THIS_MEANS //
+                </span>
+                <div style={{
+                  fontSize: 'var(--font-size-sm)',
+                  lineHeight: 1.6,
+                  color: 'var(--text-primary)',
+                  marginBottom: 'var(--space-md)',
+                }}>
+                  {guidance.what_it_means}
+                </div>
+
+                {/* Suggested actions */}
+                {guidance.suggested_actions.length > 0 && (
+                  <>
+                    <div style={{ borderTop: '1px dashed var(--border-dashed)', paddingTop: 'var(--space-md)' }}>
+                      <span className="label label--accent" style={{ display: 'block', marginBottom: 'var(--space-sm)' }}>
+                        SUGGESTED_ACTIONS //
+                      </span>
+                      <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                        {guidance.suggested_actions.map((action, i) => (
+                          <li key={i} style={{
+                            fontSize: 'var(--font-size-sm)',
+                            padding: '4px 0',
+                            color: 'var(--text-primary)',
+                            display: 'flex',
+                            alignItems: 'baseline',
+                            gap: 8,
+                          }}>
+                            <span style={{ color: 'var(--text-secondary)', fontSize: 'var(--font-size-xs)', flexShrink: 0 }}>&#9675;</span>
+                            {action}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </>
+                )}
+
+                {/* External links */}
+                {guidance.external_links.length > 0 && (
+                  <div style={{ borderTop: '1px dashed var(--border-dashed)', paddingTop: 'var(--space-md)', marginTop: 'var(--space-md)' }}>
+                    <span className="label label--accent" style={{ display: 'block', marginBottom: 'var(--space-sm)' }}>
+                      EXTERNAL_LINKS //
+                    </span>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-sm)' }}>
+                      {guidance.external_links.map((link, i) => (
+                        <a
+                          key={i}
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            fontSize: 'var(--font-size-xs)',
+                            letterSpacing: 'var(--tracking-wide)',
+                            textTransform: 'uppercase',
+                            color: 'var(--accent)',
+                            textDecoration: 'none',
+                            border: '1px solid var(--border)',
+                            padding: '4px 8px',
+                          }}
+                        >
+                          {link.label}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
 
             {/* Ask AI button */}

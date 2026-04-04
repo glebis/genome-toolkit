@@ -37,7 +37,7 @@ const DEFAULT_FILTERS: SNPFilters = {
   search: '',
   chromosome: '',
   source: '',
-  clinical: false,
+  clinical: true,  // actionable ON by default
   significance: '',
   gene: '',
   condition: '',
@@ -46,8 +46,53 @@ const DEFAULT_FILTERS: SNPFilters = {
   limit: 100,
 }
 
+const STORAGE_KEY = 'genome_filters'
+
+/** Read filters from URL search params, then localStorage, then defaults */
+function initFilters(): SNPFilters {
+  const url = new URLSearchParams(window.location.search)
+  const stored = localStorage.getItem(STORAGE_KEY)
+  const base = stored ? { ...DEFAULT_FILTERS, ...JSON.parse(stored) } : { ...DEFAULT_FILTERS }
+
+  // URL params override stored/default values
+  if (url.has('search')) base.search = url.get('search')!
+  if (url.has('chr')) base.chromosome = url.get('chr')!
+  if (url.has('source')) base.source = url.get('source')!
+  if (url.has('clinical')) base.clinical = url.get('clinical') === 'true'
+  if (url.has('significance')) base.significance = url.get('significance')!
+  if (url.has('gene')) base.gene = url.get('gene')!
+  if (url.has('condition')) base.condition = url.get('condition')!
+  if (url.has('zygosity')) base.zygosity = url.get('zygosity')!
+  if (url.has('page')) base.page = parseInt(url.get('page')!, 10) || 1
+
+  return base
+}
+
+/** Sync filters to URL and localStorage */
+function persistFilters(f: SNPFilters) {
+  // Save to localStorage
+  const { page, limit, ...rest } = f
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(rest))
+
+  // Update URL without reload
+  const params = new URLSearchParams()
+  if (f.search) params.set('search', f.search)
+  if (f.chromosome) params.set('chr', f.chromosome)
+  if (f.source) params.set('source', f.source)
+  if (!f.clinical) params.set('clinical', 'false') // only set when OFF (default is ON)
+  if (f.significance) params.set('significance', f.significance)
+  if (f.gene) params.set('gene', f.gene)
+  if (f.condition) params.set('condition', f.condition)
+  if (f.zygosity) params.set('zygosity', f.zygosity)
+  if (f.page > 1) params.set('page', String(f.page))
+
+  const qs = params.toString()
+  const newUrl = qs ? `${window.location.pathname}?${qs}` : window.location.pathname
+  window.history.replaceState(null, '', newUrl)
+}
+
 export function useSNPs() {
-  const [filters, setFilters] = useState<SNPFilters>(DEFAULT_FILTERS)
+  const [filters, setFilters] = useState<SNPFilters>(initFilters)
   const [result, setResult] = useState<SNPResult>({ items: [], total: 0, page: 1, limit: 100 })
   const [loading, setLoading] = useState(false)
 
@@ -73,7 +118,10 @@ export function useSNPs() {
     }
   }, [])
 
-  useEffect(() => { fetchSNPs(filters) }, [filters, fetchSNPs])
+  useEffect(() => {
+    persistFilters(filters)
+    fetchSNPs(filters)
+  }, [filters, fetchSNPs])
 
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined)
 

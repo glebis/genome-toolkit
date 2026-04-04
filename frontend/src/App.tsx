@@ -5,18 +5,21 @@ import { useChat, type UIAction } from './hooks/useChat'
 import { SNPTable } from './components/SNPTable'
 import { CommandPalette } from './components/CommandPalette'
 import { VariantDrawer } from './components/VariantDrawer'
+import { InsightPanel, type InsightData } from './components/InsightPanel'
 
 function App() {
   const { result, filters, loading, updateFilters, debouncedUpdateFilters, setPage } = useSNPs()
   const [cmdkOpen, setCmdkOpen] = useState(false)
   const [selectedSNP, setSelectedSNP] = useState<SNP | null>(null)
   const [genes, setGenes] = useState<string[]>([])
-  const [searchText, setSearchText] = useState('')
-  const [geneText, setGeneText] = useState('')
-  const [conditionText, setConditionText] = useState('')
+  const [insights, setInsights] = useState<InsightData | null>(null)
+  const [searchText, setSearchText] = useState(filters.search)
+  const [geneText, setGeneText] = useState(filters.gene)
+  const [conditionText, setConditionText] = useState(filters.condition)
 
   useEffect(() => {
     fetch('/api/genes').then(r => r.json()).then(setGenes).catch(() => {})
+    fetch('/api/insights').then(r => r.json()).then(setInsights).catch(() => {})
   }, [])
 
   const hasActiveFilters = !!(filters.search || filters.chromosome || filters.source ||
@@ -217,6 +220,16 @@ function App() {
           {activeFilterCount > 0 ? `${activeFilterCount} FILTERS_ACTIVE` : ''}
         </span>
       </div>
+
+      {/* Insight Panel */}
+      <InsightPanel
+        data={insights}
+        onFilterClinical={() => updateFilters({ clinical: true })}
+        onFilterGene={(gene) => {
+          setGeneText(gene)
+          updateFilters({ gene })
+        }}
+      />
 
       {/* Table */}
       <main style={{ flex: 1 }}>
