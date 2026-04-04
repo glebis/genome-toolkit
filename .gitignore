@@ -32,3 +32,5 @@ vault-template/data/cron.log
 # Enzyme (Obsidian plugin cache)
 .enzyme/
 .enzyme-embeddings/
+data/
+.superpowers/

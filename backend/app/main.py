@@ -5,6 +5,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from backend.app.db.genome import GenomeDB
@@ -18,17 +19,17 @@ USERS_DB_PATH = DATA_DIR / "users.db"
 genome_db = GenomeDB(GENOME_DB_PATH)
 users_db = UsersDB(USERS_DB_PATH)
 
+FRONTEND_DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     await genome_db.connect()
     await users_db.connect()
     await users_db.init_schema()
     set_genome_db(genome_db)
     yield
-    # Shutdown
     await genome_db.close()
     await users_db.close()
 
@@ -42,7 +43,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- Routes ---
+# --- API Routes (registered BEFORE static files) ---
 from backend.app.routes.snps import router as snps_router
 from backend.app.routes.sessions import router as sessions_router
 from backend.app.routes.chat import router as chat_router
@@ -58,7 +59,15 @@ async def health():
     return {"status": "ok", "variants": stats["total"]}
 
 
-# Serve built frontend — must be last (catches all non-API routes)
-FRONTEND_DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
+# Serve built frontend assets at /assets (does NOT catch /api)
 if FRONTEND_DIST.exists():
-    app.mount("/", StaticFiles(directory=FRONTEND_DIST, html=True), name="frontend")
+    app.mount("/assets", StaticFiles(directory=FRONTEND_DIST / "assets"), name="assets")
+
+    # SPA catch-all: serve index.html for any non-API, non-asset route
+    @app.get("/{path:path}")
+    async def spa_catchall(path: str):
+        # Serve static files if they exist (favicon, etc.)
+        file_path = FRONTEND_DIST / path
+        if file_path.is_file():
+            return FileResponse(file_path)
+        return FileResponse(FRONTEND_DIST / "index.html")
