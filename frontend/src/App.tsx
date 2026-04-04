@@ -22,8 +22,6 @@ function App() {
     fetch('/api/insights').then(r => r.json()).then(setInsights).catch(() => {})
   }, [])
 
-  const hasActiveFilters = !!(filters.search || filters.chromosome || filters.source ||
-    filters.clinical || filters.significance || filters.gene || filters.condition || filters.zygosity)
   const activeFilterCount = [filters.search, filters.chromosome, filters.source,
     filters.clinical, filters.significance, filters.gene, filters.condition, filters.zygosity]
     .filter(Boolean).length
@@ -78,7 +76,7 @@ function App() {
           </span>
           <span className="label" style={{ color: 'var(--text-tertiary)' }}>
             {result.total > 0
-              ? `${result.total.toLocaleString()} VARIANTS_LOADED`
+              ? `${result.total.toLocaleString()} VARIANTS`
               : 'AWAITING_DATA'}
           </span>
         </div>
@@ -91,143 +89,27 @@ function App() {
         </button>
       </header>
 
-      {/* Filter bar — row 1 */}
-      <div style={{
-        display: 'flex',
-        gap: 'var(--space-sm)',
-        padding: 'var(--space-sm) var(--space-lg) 0',
-        alignItems: 'center',
-        flexWrap: 'wrap',
-      }}>
-        <input
-          className="input"
-          placeholder="SEARCH // RSID, POSITION..."
-          style={{ maxWidth: 280 }}
-          value={searchText}
-          onChange={e => {
-            setSearchText(e.target.value)
-            debouncedUpdateFilters({ search: e.target.value })
-          }}
-        />
-        <input
-          className="input"
-          placeholder="GENE // CYP2D6, MTHFR..."
-          style={{ maxWidth: 180 }}
-          value={geneText}
-          onChange={e => {
-            setGeneText(e.target.value)
-            debouncedUpdateFilters({ gene: e.target.value })
-          }}
-          list="gene-list"
-        />
-        <datalist id="gene-list">
-          {genes.map(g => <option key={g} value={g} />)}
-        </datalist>
-        <input
-          className="input"
-          placeholder="CONDITION // CANCER, DIABETES..."
-          style={{ maxWidth: 220 }}
-          value={conditionText}
-          onChange={e => {
-            setConditionText(e.target.value)
-            debouncedUpdateFilters({ condition: e.target.value })
-          }}
-        />
-        <select
-          className="input"
-          style={{ maxWidth: 130 }}
-          value={filters.chromosome}
-          onChange={e => updateFilters({ chromosome: e.target.value })}
-        >
-          <option value="">ALL_CHR</option>
-          {Array.from({ length: 22 }, (_, i) => i + 1).map(n => (
-            <option key={n} value={String(n)}>CHR_{n}</option>
-          ))}
-          <option value="X">CHR_X</option>
-          <option value="Y">CHR_Y</option>
-          <option value="MT">CHR_MT</option>
-        </select>
-        <select
-          className="input"
-          style={{ maxWidth: 180 }}
-          value={filters.significance}
-          onChange={e => updateFilters({ significance: e.target.value })}
-        >
-          <option value="">ALL_SIGNIFICANCE</option>
-          <option value="Pathogenic">PATHOGENIC</option>
-          <option value="Likely pathogenic">LIKELY_PATHOGENIC</option>
-          <option value="drug response">DRUG_RESPONSE</option>
-          <option value="risk factor">RISK_FACTOR</option>
-          <option value="protective">PROTECTIVE</option>
-          <option value="Uncertain significance">UNCERTAIN</option>
-          <option value="Conflicting">CONFLICTING</option>
-        </select>
-        <select
-          className="input"
-          style={{ maxWidth: 160 }}
-          value={filters.zygosity}
-          onChange={e => updateFilters({ zygosity: e.target.value })}
-        >
-          <option value="">ALL_ZYGOSITY</option>
-          <option value="homozygous">HOMOZYGOUS</option>
-          <option value="heterozygous">HETEROZYGOUS</option>
-        </select>
-      </div>
-      {/* Filter bar — row 2: toggles */}
-      <div style={{
-        display: 'flex',
-        gap: 'var(--space-sm)',
-        padding: '0 var(--space-lg) var(--space-sm)',
-        borderBottom: '1px dashed var(--border-dashed)',
-        alignItems: 'center',
-        marginTop: 'var(--space-xs)',
-      }}>
-        <select
-          className="input"
-          style={{ maxWidth: 140 }}
-          value={filters.source}
-          onChange={e => updateFilters({ source: e.target.value })}
-        >
-          <option value="">ALL_SOURCES</option>
-          <option value="genotyped">GENOTYPED</option>
-          <option value="imputed">IMPUTED</option>
-        </select>
-        <button
-          className={`btn ${filters.clinical ? 'btn--active' : ''}`}
-          style={{ fontSize: 'var(--font-size-xs)', whiteSpace: 'nowrap' }}
-          onClick={() => updateFilters({ clinical: !filters.clinical })}
-        >
-          ACTIONABLE
-        </button>
-        {hasActiveFilters && (
-          <button
-            className="btn"
-            style={{ fontSize: 'var(--font-size-xs)' }}
-            onClick={() => {
-              setSearchText('')
-              setGeneText('')
-              setConditionText('')
-              updateFilters({
-                search: '', chromosome: '', source: '', clinical: false,
-                significance: '', gene: '', condition: '', zygosity: '',
-              })
-            }}
-          >
-            CLEAR_ALL
-          </button>
-        )}
-        <span className="label" style={{ marginLeft: 'auto' }}>
-          {activeFilterCount > 0 ? `${activeFilterCount} FILTERS_ACTIVE` : ''}
-        </span>
-      </div>
-
-      {/* Insight Panel */}
+      {/* Unified filter panel */}
       <InsightPanel
         data={insights}
-        onFilterClinical={() => updateFilters({ clinical: true })}
-        onFilterGene={(gene) => {
-          setGeneText(gene)
-          updateFilters({ gene })
+        filters={filters}
+        genes={genes}
+        activeFilterCount={activeFilterCount}
+        searchText={searchText}
+        geneText={geneText}
+        conditionText={conditionText}
+        onSearchChange={(v) => { setSearchText(v); debouncedUpdateFilters({ search: v }) }}
+        onGeneChange={(v) => { setGeneText(v); debouncedUpdateFilters({ gene: v }) }}
+        onConditionChange={(v) => { setConditionText(v); debouncedUpdateFilters({ condition: v }) }}
+        onFilterChange={updateFilters}
+        onClearAll={() => {
+          setSearchText('')
+          setGeneText('')
+          setConditionText('')
+          updateFilters({
+            search: '', chromosome: '', source: '', clinical: false,
+            significance: '', gene: '', condition: '', zygosity: '',
+          })
         }}
       />
 

@@ -308,6 +308,24 @@ class GenomeDB:
                 {"gene": row[0], "count": row[1]} for row in await c.fetchall()
             ]
 
+        # Top 10 diseases/conditions (split semicolons, exclude generic)
+        top_diseases_sql = """
+            SELECT trim(value) as condition, COUNT(*) as cnt
+            FROM enrichments, json_each('["' || replace(json_extract(data, '$.disease_name'), '; ', '","') || '"]')
+            WHERE source = 'clinvar'
+            AND json_extract(data, '$.clinical_significance') NOT IN (
+                'Benign', 'Likely benign', 'Benign/Likely benign', 'not provided'
+            )
+            AND trim(value) NOT IN ('not specified', 'not provided', '')
+            GROUP BY condition
+            ORDER BY cnt DESC
+            LIMIT 10
+        """
+        async with self._conn.execute(top_diseases_sql) as c:
+            insights["top_conditions"] = [
+                {"condition": row[0], "count": row[1]} for row in await c.fetchall()
+            ]
+
         return insights
 
     async def insert_batch(self, records: list[tuple]) -> int:
