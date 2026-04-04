@@ -105,13 +105,16 @@ function StatCard({ label, value, sub, color, active, onClick }: {
   active?: boolean
   onClick?: () => void
 }) {
+  const formatted = typeof value === 'number' ? value.toLocaleString() : value
+  const fontSize = formatted.length > 7 ? 'var(--font-size-xl)' : 'var(--font-size-2xl)'
+
   return (
     <div
       style={{
         ...cardBase,
         borderColor: active ? (color || 'var(--primary)') : 'var(--border)',
-        borderStyle: active ? 'solid' : 'solid',
         background: active ? 'var(--bg-inset)' : 'var(--bg-raised)',
+        overflow: 'hidden',
       }}
       onClick={onClick}
       onMouseEnter={e => { e.currentTarget.style.borderColor = color || 'var(--primary)' }}
@@ -120,8 +123,8 @@ function StatCard({ label, value, sub, color, active, onClick }: {
       <span style={{ ...labelStyle, color: active ? (color || 'var(--primary)') : 'var(--text-secondary)' }}>
         {label}
       </span>
-      <span style={{ ...valueStyle, color: color || 'var(--text)' }}>
-        {typeof value === 'number' ? value.toLocaleString() : value}
+      <span style={{ ...valueStyle, fontSize, color: color || 'var(--text)' }}>
+        {formatted}
       </span>
       {sub && <span style={subStyle}>{sub}</span>}
     </div>
@@ -213,41 +216,48 @@ export function InsightPanel({
           </div>
         ))}
 
-        {/* Top conditions */}
-        {data && data.top_conditions && data.top_conditions.slice(0, 5).map(c => {
-          const shortName = c.condition.length > 20 ? c.condition.slice(0, 18) + '..' : c.condition
-          const isActive = filters.condition && c.condition.toLowerCase().includes(filters.condition.toLowerCase())
-          return (
-            <div
-              key={c.condition}
-              style={{
-                ...cardBase,
-                borderColor: isActive ? 'var(--sig-risk)' : 'var(--border)',
-                background: isActive ? 'var(--bg-inset)' : 'var(--bg-raised)',
-              }}
-              onClick={() => {
-                if (isActive) {
-                  onConditionChange('')
-                  onFilterChange({ condition: '' })
-                } else {
-                  onConditionChange(c.condition)
-                  onFilterChange({ condition: c.condition })
-                }
-              }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--sig-risk)' }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = isActive ? 'var(--sig-risk)' : 'var(--border)' }}
-              title={c.condition}
-            >
-              <span style={{ ...labelStyle, color: isActive ? 'var(--sig-risk)' : 'var(--text-secondary)', fontSize: '8px' }}>
-                {shortName.toUpperCase()}
-              </span>
-              <span style={{ ...valueStyle, fontSize: 'var(--font-size-lg)', color: 'var(--sig-risk)' }}>
-                {c.count}
-              </span>
-              <span style={subStyle}>VARIANTS</span>
+        {/* Top conditions — single card with list */}
+        {data && data.top_conditions && (
+          <div style={{ ...cardBase, minWidth: 220, cursor: 'default', gridColumn: 'span 2' }}>
+            <span style={labelStyle}>TOP_CONDITIONS</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {data.top_conditions.slice(0, 10).map(c => {
+                const isActive = filters.condition === c.condition
+                const shortName = c.condition.length > 28 ? c.condition.slice(0, 26) + '..' : c.condition
+                return (
+                  <span
+                    key={c.condition}
+                    onClick={() => {
+                      if (isActive) {
+                        onConditionChange('')
+                        onFilterChange({ condition: '' })
+                      } else {
+                        onConditionChange(c.condition)
+                        onFilterChange({ condition: c.condition })
+                      }
+                    }}
+                    style={{
+                      fontSize: 'var(--font-size-sm)',
+                      cursor: 'pointer',
+                      color: isActive ? 'var(--sig-risk)' : 'var(--text)',
+                      fontWeight: isActive ? 600 : 400,
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      padding: '1px 0',
+                      transition: 'color 0.15s',
+                    }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLSpanElement).style.color = 'var(--sig-risk)' }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLSpanElement).style.color = isActive ? 'var(--sig-risk)' : 'var(--text)' }}
+                    title={c.condition}
+                  >
+                    <span>{shortName}</span>
+                    <span style={{ color: 'var(--text-tertiary)', fontWeight: 400 }}>{c.count}</span>
+                  </span>
+                )
+              })}
             </div>
-          )
-        })}
+          </div>
+        )}
       </div>
 
       {/* Row 2: Text inputs + dropdowns */}
