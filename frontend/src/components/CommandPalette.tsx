@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import type { ChatMessage } from '../hooks/useChat'
@@ -14,8 +14,34 @@ interface Props {
   onSend: (text: string) => void
 }
 
+function messagesToMarkdown(messages: ChatMessage[]): string {
+  return messages.map(m => {
+    const prefix = m.role === 'user' ? '**You:**' : '**AI:**'
+    return `${prefix}\n\n${m.content}`
+  }).join('\n\n---\n\n')
+}
+
+function singleMessageMarkdown(msg: ChatMessage): string {
+  return msg.content
+}
+
+function copyToClipboard(text: string) {
+  navigator.clipboard.writeText(text)
+}
+
+function downloadMarkdown(text: string, filename: string) {
+  const blob = new Blob([text], { type: 'text/markdown' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 export function CommandPalette({ open, onClose, messages, streaming, streamingText, status, suggestions, onSend }: Props) {
   const [input, setInput] = useState('')
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -34,6 +60,23 @@ export function CommandPalette({ open, onClose, messages, streaming, streamingTe
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
   }, [open, onClose])
+
+  const handleCopyMessage = useCallback((idx: number) => {
+    copyToClipboard(singleMessageMarkdown(messages[idx]))
+    setCopiedIdx(idx)
+    setTimeout(() => setCopiedIdx(null), 1500)
+  }, [messages])
+
+  const handleCopyAll = useCallback(() => {
+    copyToClipboard(messagesToMarkdown(messages))
+    setCopiedIdx(-1)
+    setTimeout(() => setCopiedIdx(null), 1500)
+  }, [messages])
+
+  const handleDownloadAll = useCallback(() => {
+    const date = new Date().toISOString().slice(0, 10)
+    downloadMarkdown(messagesToMarkdown(messages), `genome-chat-${date}.md`)
+  }, [messages])
 
   if (!open) return null
 
@@ -73,9 +116,36 @@ export function CommandPalette({ open, onClose, messages, streaming, streamingTe
           borderBottom: '1px dashed var(--border-dashed)',
           display: 'flex',
           justifyContent: 'space-between',
+          alignItems: 'center',
         }}>
           <span className="label label--accent">GENOME_AI // COMMAND_INTERFACE</span>
-          <span className="label">ESC // CLOSE</span>
+          <div style={{ display: 'flex', gap: 'var(--space-sm)', alignItems: 'center' }}>
+            {messages.length > 0 && (
+              <>
+                <button
+                  className="btn"
+                  style={{ fontSize: '9px', padding: '2px 6px' }}
+                  onClick={handleCopyAll}
+                >
+                  {copiedIdx === -1 ? 'COPIED' : 'COPY_ALL'}
+                </button>
+                <button
+                  className="btn"
+                  style={{ fontSize: '9px', padding: '2px 6px' }}
+                  onClick={handleDownloadAll}
+                >
+                  DOWNLOAD_MD
+                </button>
+              </>
+            )}
+            <button
+              className="btn"
+              style={{ fontSize: '9px', padding: '2px 6px' }}
+              onClick={onClose}
+            >
+              ESC // CLOSE
+            </button>
+          </div>
         </div>
 
         {/* Messages */}
@@ -90,10 +160,28 @@ export function CommandPalette({ open, onClose, messages, streaming, streamingTe
             }}
           >
             {messages.map((msg, i) => (
-              <div key={i} style={{ marginBottom: 'var(--space-md)' }}>
-                <span className="label" style={{ color: msg.role === 'user' ? 'var(--accent)' : 'var(--primary)' }}>
-                  {msg.role === 'user' ? 'INPUT //' : 'OUTPUT //'}
-                </span>
+              <div key={i} style={{ marginBottom: 'var(--space-md)', position: 'relative' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span className="label" style={{ color: msg.role === 'user' ? 'var(--accent)' : 'var(--primary)' }}>
+                    {msg.role === 'user' ? 'INPUT //' : 'OUTPUT //'}
+                  </span>
+                  {msg.role === 'assistant' && (
+                    <button
+                      className="btn"
+                      style={{
+                        fontSize: '8px',
+                        padding: '1px 5px',
+                        opacity: 0.5,
+                        transition: 'opacity 0.15s',
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.opacity = '1' }}
+                      onMouseLeave={e => { e.currentTarget.style.opacity = '0.5' }}
+                      onClick={() => handleCopyMessage(i)}
+                    >
+                      {copiedIdx === i ? 'COPIED' : 'COPY'}
+                    </button>
+                  )}
+                </div>
                 <div style={{ marginTop: 'var(--space-xs)', fontSize: 'var(--font-size-sm)', lineHeight: 1.6 }}
                      className={msg.role === 'assistant' ? 'chat-markdown' : undefined}>
                   {msg.role === 'assistant'
