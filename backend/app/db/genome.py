@@ -74,7 +74,7 @@ class GenomeDB:
             params.append(gene.upper())
 
         if condition:
-            conditions.append("json_extract(e_cv.data, '$.disease_name') LIKE ?")
+            conditions.append("e_cv.rsid IS NOT NULL AND json_extract(e_cv.data, '$.disease_name') LIKE ?")
             params.append(f"%{condition}%")
 
         if zygosity == "homozygous":
@@ -153,6 +153,91 @@ class GenomeDB:
             row = await cursor.fetchone()
             return dict(row) if row else None
 
+    async def get_variant_guidance(self, rsid: str) -> dict:
+        """Generate guidance data for a variant based on its enrichments."""
+        snp = await self.get_snp(rsid)
+        if not snp:
+            return {}
+
+        guidance: dict = {
+            "severity": "unknown",
+            "what_it_means": "",
+            "suggested_actions": [],
+            "discuss_with_clinician": False,
+            "external_links": [],
+        }
+
+        sig = (snp.get("significance") or "").lower()
+        disease = snp.get("disease") or ""
+
+        if "pathogenic" in sig:
+            guidance["severity"] = "high"
+            guidance["what_it_means"] = (
+                f"This variant is classified as {snp['significance']} and is associated with: {disease}. "
+                "Pathogenic variants have strong evidence of causing disease."
+            )
+            guidance["suggested_actions"] = [
+                "Discuss with your healthcare provider",
+                "Consider genetic counseling",
+                "Ask about relevant screening tests",
+            ]
+            guidance["discuss_with_clinician"] = True
+        elif "drug response" in sig:
+            guidance["severity"] = "moderate"
+            guidance["what_it_means"] = (
+                f"This variant affects how you metabolize certain medications. Associated with: {disease}."
+            )
+            guidance["suggested_actions"] = [
+                "Share this with your prescribing physician",
+                "Request pharmacogenomic review before new medications",
+                "Keep a copy in your medical records",
+            ]
+            guidance["discuss_with_clinician"] = True
+        elif "risk factor" in sig:
+            guidance["severity"] = "moderate"
+            guidance["what_it_means"] = (
+                f"This variant is a risk factor for: {disease}. "
+                "It increases probability but does not guarantee disease."
+            )
+            guidance["suggested_actions"] = [
+                "Learn about modifiable risk factors for this condition",
+                "Discuss preventive screening options",
+            ]
+            guidance["discuss_with_clinician"] = True
+        elif "protective" in sig:
+            guidance["severity"] = "low"
+            guidance["what_it_means"] = f"This variant may offer some protection related to: {disease}."
+            guidance["suggested_actions"] = []
+        elif "benign" in sig:
+            guidance["severity"] = "low"
+            guidance["what_it_means"] = "This variant is classified as benign — it is not expected to cause disease."
+            guidance["suggested_actions"] = []
+        elif "uncertain" in sig:
+            guidance["severity"] = "moderate"
+            guidance["what_it_means"] = (
+                f"The clinical significance of this variant is uncertain. Associated with: {disease}. "
+                "More research is needed."
+            )
+            guidance["suggested_actions"] = [
+                "Check back periodically — classifications can change",
+                "Discuss with a genetic counselor if concerned",
+            ]
+        else:
+            guidance["what_it_means"] = "No clinical annotation available for this variant."
+
+        guidance["external_links"] = [
+            {"label": "ClinVar", "url": f"https://www.ncbi.nlm.nih.gov/clinvar/?term={rsid}"},
+            {"label": "dbSNP", "url": f"https://www.ncbi.nlm.nih.gov/snp/{rsid}"},
+            {"label": "SNPedia", "url": f"https://www.snpedia.com/index.php/{rsid}"},
+        ]
+
+        if snp.get("gene_name"):
+            guidance["external_links"].append(
+                {"label": "GeneCards", "url": f"https://www.genecards.org/cgi-bin/carddisp.pl?gene={snp['gene_name']}"}
+            )
+
+        return guidance
+
     async def get_stats(self) -> dict:
         stats = {}
         async with self._conn.execute("SELECT COUNT(*) FROM snps") as c:
@@ -164,6 +249,65 @@ class GenomeDB:
         async with self._conn.execute("SELECT COUNT(DISTINCT chromosome) FROM snps") as c:
             stats["chromosomes"] = (await c.fetchone())[0]
         return stats
+
+    async def get_insights(self) -> dict:
+        """Return dashboard summary stats for the insight panel."""
+        insights: dict = {}
+
+        # Total / genotyped / imputed
+        async with self._conn.execute("SELECT COUNT(*) FROM snps") as c:
+            insights["total_variants"] = (await c.fetchone())[0]
+        async with self._conn.execute("SELECT COUNT(*) FROM snps WHERE source = 'genotyped'") as c:
+            insights["genotyped"] = (await c.fetchone())[0]
+        async with self._conn.execute("SELECT COUNT(*) FROM snps WHERE source = 'imputed'") as c:
+            insights["imputed"] = (await c.fetchone())[0]
+
+        # Clinical significance counts from ClinVar enrichments
+        sig_queries = {
+            "pathogenic_count": "%athogenic%",
+            "drug_response_count": "%drug response%",
+            "risk_factor_count": "%risk factor%",
+            "uncertain_count": "%Uncertain%",
+        }
+        for key, pattern in sig_queries.items():
+            sql = """
+                SELECT COUNT(*) FROM enrichments
+                WHERE source = 'clinvar'
+                AND json_extract(data, '$.clinical_significance') LIKE ?
+            """
+            async with self._conn.execute(sql, [pattern]) as c:
+                insights[key] = (await c.fetchone())[0]
+
+        # Actionable count (same logic as clinically_relevant filter)
+        actionable_sql = """
+            SELECT COUNT(*) FROM snps s
+            JOIN enrichments e_cv ON s.rsid = e_cv.rsid AND e_cv.source = 'clinvar'
+            WHERE json_extract(e_cv.data, '$.clinical_significance') NOT IN (
+                'Benign', 'Likely benign', 'Benign/Likely benign',
+                'not provided', 'no classification for the single variant',
+                'no classifications from unflagged records'
+            )
+            AND json_extract(e_cv.data, '$.disease_name') NOT IN ('not provided', 'not specified', '')
+        """
+        async with self._conn.execute(actionable_sql) as c:
+            insights["actionable_count"] = (await c.fetchone())[0]
+
+        # Top 10 genes by variant count
+        top_genes_sql = """
+            SELECT json_extract(data, '$.gene_symbol') as gene, COUNT(*) as cnt
+            FROM enrichments
+            WHERE source = 'myvariant'
+            AND gene IS NOT NULL
+            GROUP BY gene
+            ORDER BY cnt DESC
+            LIMIT 10
+        """
+        async with self._conn.execute(top_genes_sql) as c:
+            insights["top_genes"] = [
+                {"gene": row[0], "count": row[1]} for row in await c.fetchall()
+            ]
+
+        return insights
 
     async def insert_batch(self, records: list[tuple]) -> int:
         """Insert a batch of SNP records. Returns number inserted."""
