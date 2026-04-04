@@ -129,17 +129,34 @@ class GenomeDB:
 
         return {"items": items, "total": total, "page": page, "limit": limit}
 
-    async def list_genes(self) -> list[dict]:
-        """Return gene symbols with variant counts from myvariant enrichments."""
+    async def list_genes(self, vault_path: str | None = None) -> list[dict]:
+        """Return gene symbols with variant counts, merged from myvariant + vault."""
+        # Genes from myvariant enrichments with counts
         sql = """
             SELECT json_extract(data, '$.gene_symbol') as gene, COUNT(*) as cnt
             FROM enrichments WHERE source = 'myvariant'
             AND gene IS NOT NULL
             GROUP BY gene
-            ORDER BY cnt DESC
         """
         async with self._conn.execute(sql) as cursor:
-            return [{"gene": row[0], "count": row[1]} for row in await cursor.fetchall()]
+            gene_counts = {row[0]: row[1] for row in await cursor.fetchall()}
+
+        # Merge vault genes (from Genes/ directory if available)
+        if vault_path:
+            import os
+            genes_dir = os.path.join(vault_path, "Genes")
+            if os.path.isdir(genes_dir):
+                for f in os.listdir(genes_dir):
+                    if f.endswith(".md"):
+                        gene = f[:-3]
+                        if gene not in gene_counts:
+                            gene_counts[gene] = 0
+
+        # Sort by count descending, then alphabetically
+        return sorted(
+            [{"gene": g, "count": c} for g, c in gene_counts.items()],
+            key=lambda x: (-x["count"], x["gene"]),
+        )
 
     async def get_snp(self, rsid: str) -> dict | None:
         sql = """

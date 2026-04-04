@@ -1,7 +1,11 @@
 """REST API routes for SNP data."""
+import os
+
 from fastapi import APIRouter, HTTPException, Query
 
 from backend.app.main import genome_db
+
+VAULT_PATH = os.environ.get("GENOME_VAULT_PATH", os.path.expanduser("~/Brains/genome"))
 
 router = APIRouter(prefix="/api")
 
@@ -28,7 +32,7 @@ async def list_snps(
 
 @router.get("/genes")
 async def list_genes():
-    return await genome_db.list_genes()
+    return await genome_db.list_genes(vault_path=VAULT_PATH)
 
 
 @router.get("/snps/{rsid}")
