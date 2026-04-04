@@ -16,6 +16,8 @@ dependencies = [
 dev = [
     "pytest>=7.0",
     "pytest-cov",
+    "pytest-asyncio>=0.23.0",
+    "httpx>=0.27.0",
 ]
 triage = [
     "textual>=0.80.0",
@@ -25,6 +27,13 @@ triage = [
 ]
 verify = [
     "evidence-check>=0.1.0",
+]
+web = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "aiosqlite>=0.20.0",
+    "claude-agent-sdk>=0.1.56",
+    "sse-starlette>=2.0.0",
 ]
 
 [build-system]
