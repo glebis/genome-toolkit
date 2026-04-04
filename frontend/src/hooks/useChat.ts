@@ -17,6 +17,7 @@ export function useChat(onUIAction?: (action: UIAction) => void) {
   const [streaming, setStreaming] = useState(false)
   const [streamingText, setStreamingText] = useState('')
   const [status, setStatus] = useState('')
+  const [suggestions, setSuggestions] = useState<string[]>([])
   const abortRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
@@ -62,6 +63,7 @@ export function useChat(onUIAction?: (action: UIAction) => void) {
     setStreaming(true)
     setStreamingText('')
     setStatus('CONNECTING')
+    setSuggestions([])
 
     const abort = new AbortController()
     abortRef.current = abort
@@ -78,8 +80,14 @@ export function useChat(onUIAction?: (action: UIAction) => void) {
           setStatus(toolName.toUpperCase())
         } else if (event.event === 'session_init') {
           setStatus('THINKING')
-        } else if (event.event === 'ui_action' && onUIAction) {
-          onUIAction(event.data as unknown as UIAction)
+        } else if (event.event === 'ui_action') {
+          const action = event.data as unknown as UIAction
+          if (action.action === 'suggest_responses') {
+            const s = (action.params as unknown as { suggestions: string[] }).suggestions
+            if (Array.isArray(s)) setSuggestions(s)
+          } else if (onUIAction) {
+            onUIAction(action)
+          }
           setStatus('UPDATING_VIEW')
         } else if (event.event === 'result') {
           setStatus('DONE')
@@ -106,5 +114,5 @@ export function useChat(onUIAction?: (action: UIAction) => void) {
     abortRef.current?.abort()
   }, [])
 
-  return { messages, streaming, streamingText, status, send, cancel, sessionId }
+  return { messages, streaming, streamingText, status, suggestions, send, cancel, sessionId }
 }

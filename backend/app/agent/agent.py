@@ -29,7 +29,8 @@ Guidelines:
 - If asked about a gene, search for variants in that gene
 - Explain significance in plain language
 - Note when data is imputed (lower confidence) vs genotyped (directly measured)
-- Format responses with markdown for readability"""
+- Format responses with markdown for readability
+- ALWAYS call suggest_responses at the end of every response with 2-4 short follow-up options the user might want to explore next. Make them specific to the current conversation context."""
 
 # MCP server config — created once, shared across sessions
 _genome_mcp = None
@@ -60,6 +61,7 @@ async def create_agent_session(cwd: str | None = None) -> tuple[ClaudeSDKClient,
             "mcp__genome__get_snp_detail",
             "mcp__genome__get_genome_stats",
             "mcp__genome__update_table_view",
+            "mcp__genome__suggest_responses",
         ],
         permission_mode="bypassPermissions",
         max_turns=10,
@@ -98,6 +100,18 @@ async def stream_agent_response(
                         yield {
                             "event": "ui_action",
                             "data": {"action": "filter_table", "params": block.input},
+                        }
+                    elif block.name == "mcp__genome__suggest_responses":
+                        suggestions = block.input.get("suggestions", "[]")
+                        if isinstance(suggestions, str):
+                            import json as _json
+                            try:
+                                suggestions = _json.loads(suggestions)
+                            except Exception:
+                                suggestions = [suggestions]
+                        yield {
+                            "event": "ui_action",
+                            "data": {"action": "suggest_responses", "params": {"suggestions": suggestions}},
                         }
 
         elif isinstance(msg, ResultMessage):

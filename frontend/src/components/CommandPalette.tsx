@@ -10,10 +10,11 @@ interface Props {
   streaming: boolean
   streamingText: string
   status: string
+  suggestions: string[]
   onSend: (text: string) => void
 }
 
-export function CommandPalette({ open, onClose, messages, streaming, streamingText, status, onSend }: Props) {
+export function CommandPalette({ open, onClose, messages, streaming, streamingText, status, suggestions, onSend }: Props) {
   const [input, setInput] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -111,6 +112,33 @@ export function CommandPalette({ open, onClose, messages, streaming, streamingTe
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Suggested responses */}
+        {suggestions.length > 0 && !streaming && (
+          <div style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 'var(--space-xs)',
+            padding: 'var(--space-sm) var(--space-md)',
+            borderTop: '1px dashed var(--border-dashed)',
+          }}>
+            {suggestions.map((s, i) => (
+              <button
+                key={i}
+                className="btn"
+                style={{
+                  fontSize: 'var(--font-size-xs)',
+                  padding: '4px 10px',
+                  color: 'var(--primary)',
+                  borderColor: 'var(--primary-dim)',
+                }}
+                onClick={() => onSend(s)}
+              >
+                {s}
+              </button>
+            ))}
           </div>
         )}
 

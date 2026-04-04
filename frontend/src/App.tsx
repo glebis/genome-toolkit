@@ -38,7 +38,7 @@ function App() {
     }
   }, [updateFilters])
 
-  const { messages, streaming, streamingText, status, send } = useChat(handleUIAction)
+  const { messages, streaming, streamingText, status, suggestions, send } = useChat(handleUIAction)
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -269,6 +269,7 @@ function App() {
         streaming={streaming}
         streamingText={streamingText}
         status={status}
+        suggestions={suggestions}
         onSend={send}
       />
     </div>

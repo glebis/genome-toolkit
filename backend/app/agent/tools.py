@@ -98,10 +98,23 @@ async def update_table_view(args: dict[str, Any]) -> dict[str, Any]:
     return {"content": [{"type": "text", "text": text}]}
 
 
+@tool(
+    "suggest_responses",
+    "Suggest 2-4 follow-up responses the user can click to continue the conversation. ALWAYS call this tool at the end of every response. Provide short, actionable options that help the user explore their genome data further.",
+    {
+        "suggestions": str,  # JSON array of strings will be passed
+    },
+)
+async def suggest_responses(args: dict[str, Any]) -> dict[str, Any]:
+    # The suggestions are intercepted by the SSE handler and sent as a ui_action event.
+    # The tool just acknowledges.
+    return {"content": [{"type": "text", "text": "Suggestions displayed to user."}]}
+
+
 def create_genome_mcp_server():
     """Create an in-process MCP server with all genome tools."""
     return create_sdk_mcp_server(
         name="genome",
         version="1.0.0",
-        tools=[query_snps, get_snp_detail, get_genome_stats, update_table_view],
+        tools=[query_snps, get_snp_detail, get_genome_stats, update_table_view, suggest_responses],
     )

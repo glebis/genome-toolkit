@@ -88,7 +88,7 @@ class GenomeDB:
         mv_join = "LEFT JOIN enrichments e_mv ON s.rsid = e_mv.rsid AND e_mv.source = 'myvariant'"
 
         count_sql = f"""
-            SELECT COUNT(*) FROM snps s
+            SELECT COUNT(DISTINCT s.rsid) FROM snps s
             LEFT JOIN enrichments e_cv ON s.rsid = e_cv.rsid AND e_cv.source = 'clinvar'
             {mv_join}
             {where}
@@ -107,6 +107,7 @@ class GenomeDB:
             LEFT JOIN enrichments e_cv ON s.rsid = e_cv.rsid AND e_cv.source = 'clinvar'
             {mv_join}
             {where}
+            GROUP BY s.rsid
             ORDER BY CASE
                 WHEN s.chromosome GLOB '[0-9]*' THEN CAST(s.chromosome AS INTEGER)
                 WHEN s.chromosome = 'X' THEN 23
