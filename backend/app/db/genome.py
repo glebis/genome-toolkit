@@ -131,6 +131,9 @@ class GenomeDB:
 
     async def list_genes(self, vault_path: str | None = None) -> list[dict]:
         """Return gene symbols with variant counts, merged from myvariant + vault."""
+        import os
+        import yaml
+
         # Genes from myvariant enrichments with counts
         sql = """
             SELECT json_extract(data, '$.gene_symbol') as gene, COUNT(*) as cnt
@@ -139,20 +142,31 @@ class GenomeDB:
             GROUP BY gene
         """
         async with self._conn.execute(sql) as cursor:
-            gene_counts = {row[0]: row[1] for row in await cursor.fetchall()}
+            gene_counts: dict[str, int] = {row[0]: row[1] for row in await cursor.fetchall()}
 
-        # Merge vault genes (from Genes/ directory if available)
+        # Merge vault genes — parse frontmatter for personal_variants count
         if vault_path:
-            import os
             genes_dir = os.path.join(vault_path, "Genes")
             if os.path.isdir(genes_dir):
                 for f in os.listdir(genes_dir):
-                    if f.endswith(".md"):
-                        gene = f[:-3]
-                        if gene not in gene_counts:
-                            gene_counts[gene] = 0
+                    if not f.endswith(".md"):
+                        continue
+                    gene = f[:-3]
+                    try:
+                        with open(os.path.join(genes_dir, f)) as fh:
+                            content = fh.read()
+                        if content.startswith("---"):
+                            end = content.index("---", 3)
+                            fm = yaml.safe_load(content[3:end])
+                            variants = fm.get("personal_variants", [])
+                            vault_count = len(variants) if isinstance(variants, list) else 0
+                        else:
+                            vault_count = 0
+                    except Exception:
+                        vault_count = 0
+                    # Use max of vault count and myvariant count
+                    gene_counts[gene] = max(gene_counts.get(gene, 0), vault_count)
 
-        # Sort by count descending, then alphabetically
         return sorted(
             [{"gene": g, "count": c} for g, c in gene_counts.items()],
             key=lambda x: (-x["count"], x["gene"]),
