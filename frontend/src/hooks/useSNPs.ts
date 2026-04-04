@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 
 export interface SNP {
   rsid: string
@@ -20,6 +20,7 @@ export interface SNPFilters {
   clinical: boolean
   significance: string
   gene: string
+  condition: string
   zygosity: string
   page: number
   limit: number
@@ -39,6 +40,7 @@ const DEFAULT_FILTERS: SNPFilters = {
   clinical: false,
   significance: '',
   gene: '',
+  condition: '',
   zygosity: '',
   page: 1,
   limit: 100,
@@ -60,6 +62,7 @@ export function useSNPs() {
     if (f.clinical) params.set('clinical', 'true')
     if (f.significance) params.set('significance', f.significance)
     if (f.gene) params.set('gene', f.gene)
+    if (f.condition) params.set('condition', f.condition)
     if (f.zygosity) params.set('zygosity', f.zygosity)
 
     try {
@@ -72,13 +75,22 @@ export function useSNPs() {
 
   useEffect(() => { fetchSNPs(filters) }, [filters, fetchSNPs])
 
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined)
+
   const updateFilters = useCallback((partial: Partial<SNPFilters>) => {
     setFilters(prev => ({ ...prev, page: 1, ...partial }))
+  }, [])
+
+  const debouncedUpdateFilters = useCallback((partial: Partial<SNPFilters>) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      setFilters(prev => ({ ...prev, page: 1, ...partial }))
+    }, 300)
   }, [])
 
   const setPage = useCallback((page: number) => {
     setFilters(prev => ({ ...prev, page }))
   }, [])
 
-  return { result, filters, loading, updateFilters, setPage }
+  return { result, filters, loading, updateFilters, debouncedUpdateFilters, setPage }
 }

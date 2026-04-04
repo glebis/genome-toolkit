@@ -17,11 +17,12 @@ async def list_snps(
     significance: str | None = None,
     gene: str | None = None,
     zygosity: str | None = None,
+    condition: str | None = None,
 ):
     return await genome_db.query_snps(
         page=page, limit=limit, search=search, chromosome=chr, source=source,
         clinically_relevant=clinical, significance=significance, gene=gene,
-        zygosity=zygosity,
+        zygosity=zygosity, condition=condition,
     )
 
 

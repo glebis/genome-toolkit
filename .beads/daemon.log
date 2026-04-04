@@ -65,3 +65,8 @@ time=2026-04-04T08:21:50.616+02:00 level=INFO msg="Mutation detected: %s %s" upd
 time=2026-04-04T08:21:51.117+02:00 level=INFO msg="Export triggered by mutation events"
 time=2026-04-04T08:21:51.117+02:00 level=INFO msg="Starting %s..." !BADKEY=export
 time=2026-04-04T08:21:51.118+02:00 level=INFO msg="Pre-export validation failed: %v" !BADKEY="refusing to export: JSONL content has changed since last import (import first to avoid data loss)"
+time=2026-04-04T08:22:20.689+02:00 level=INFO msg="Git ref change detected: %s" !BADKEY=/Users/glebkalinin/genome-toolkit/.git/refs/heads/main.lock
+time=2026-04-04T08:22:21.692+02:00 level=INFO msg="Import triggered by file change"
+time=2026-04-04T08:22:21.692+02:00 level=INFO msg="Starting %s..." !BADKEY=auto-import
+time=2026-04-04T08:22:21.692+02:00 level=INFO msg="JSONL content changed, proceeding with %s..." !BADKEY=auto-import
+time=2026-04-04T08:22:21.771+02:00 level=INFO msg="Pull failed: %v (backoff: %v)" !BADKEY="git pull failed: exit status 128\nerror: cannot pull with rebase: You have unstaged changes.\nerror: Please commit or stash them.\n" !BADKEY=30s

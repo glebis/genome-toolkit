@@ -33,13 +33,18 @@ class GenomeDB:
         significance: str | None = None,
         gene: str | None = None,
         zygosity: str | None = None,
+        condition: str | None = None,
     ) -> dict:
         conditions = []
         params: list = []
 
         if search:
-            conditions.append("(s.rsid LIKE ? OR s.rsid = ?)")
-            params.extend([f"%{search}%", search])
+            conditions.append("""(
+                s.rsid LIKE ? OR s.rsid = ?
+                OR json_extract(e_mv.data, '$.gene_symbol') LIKE ?
+                OR json_extract(e_cv.data, '$.disease_name') LIKE ?
+            )""")
+            params.extend([f"%{search}%", search, f"%{search}%", f"%{search}%"])
 
         if chromosome:
             conditions.append("s.chromosome = ?")
@@ -67,6 +72,10 @@ class GenomeDB:
         if gene:
             conditions.append("json_extract(e_mv.data, '$.gene_symbol') = ?")
             params.append(gene.upper())
+
+        if condition:
+            conditions.append("json_extract(e_cv.data, '$.disease_name') LIKE ?")
+            params.append(f"%{condition}%")
 
         if zygosity == "homozygous":
             conditions.append("length(s.genotype) = 2 AND substr(s.genotype, 1, 1) = substr(s.genotype, 2, 1)")
@@ -98,7 +107,13 @@ class GenomeDB:
             LEFT JOIN enrichments e_cv ON s.rsid = e_cv.rsid AND e_cv.source = 'clinvar'
             {mv_join}
             {where}
-            ORDER BY s.chromosome, s.position
+            ORDER BY CASE
+                WHEN s.chromosome GLOB '[0-9]*' THEN CAST(s.chromosome AS INTEGER)
+                WHEN s.chromosome = 'X' THEN 23
+                WHEN s.chromosome = 'Y' THEN 24
+                WHEN s.chromosome = 'MT' THEN 25
+                ELSE 26
+            END, s.position
             LIMIT ? OFFSET ?
         """
         async with self._conn.execute(data_sql, params + [limit, offset]) as cursor:

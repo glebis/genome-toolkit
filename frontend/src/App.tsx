@@ -7,19 +7,22 @@ import { CommandPalette } from './components/CommandPalette'
 import { VariantDrawer } from './components/VariantDrawer'
 
 function App() {
-  const { result, filters, loading, updateFilters, setPage } = useSNPs()
+  const { result, filters, loading, updateFilters, debouncedUpdateFilters, setPage } = useSNPs()
   const [cmdkOpen, setCmdkOpen] = useState(false)
   const [selectedSNP, setSelectedSNP] = useState<SNP | null>(null)
   const [genes, setGenes] = useState<string[]>([])
+  const [searchText, setSearchText] = useState('')
+  const [geneText, setGeneText] = useState('')
+  const [conditionText, setConditionText] = useState('')
 
   useEffect(() => {
     fetch('/api/genes').then(r => r.json()).then(setGenes).catch(() => {})
   }, [])
 
   const hasActiveFilters = !!(filters.search || filters.chromosome || filters.source ||
-    filters.clinical || filters.significance || filters.gene || filters.zygosity)
+    filters.clinical || filters.significance || filters.gene || filters.condition || filters.zygosity)
   const activeFilterCount = [filters.search, filters.chromosome, filters.source,
-    filters.clinical, filters.significance, filters.gene, filters.zygosity]
+    filters.clinical, filters.significance, filters.gene, filters.condition, filters.zygosity]
     .filter(Boolean).length
 
   const handleUIAction = useCallback((action: UIAction) => {
@@ -97,20 +100,36 @@ function App() {
           className="input"
           placeholder="SEARCH // RSID, POSITION..."
           style={{ maxWidth: 280 }}
-          value={filters.search}
-          onChange={e => updateFilters({ search: e.target.value })}
+          value={searchText}
+          onChange={e => {
+            setSearchText(e.target.value)
+            debouncedUpdateFilters({ search: e.target.value })
+          }}
         />
         <input
           className="input"
           placeholder="GENE // CYP2D6, MTHFR..."
           style={{ maxWidth: 180 }}
-          value={filters.gene}
-          onChange={e => updateFilters({ gene: e.target.value })}
+          value={geneText}
+          onChange={e => {
+            setGeneText(e.target.value)
+            debouncedUpdateFilters({ gene: e.target.value })
+          }}
           list="gene-list"
         />
         <datalist id="gene-list">
           {genes.map(g => <option key={g} value={g} />)}
         </datalist>
+        <input
+          className="input"
+          placeholder="CONDITION // CANCER, DIABETES..."
+          style={{ maxWidth: 220 }}
+          value={conditionText}
+          onChange={e => {
+            setConditionText(e.target.value)
+            debouncedUpdateFilters({ condition: e.target.value })
+          }}
+        />
         <select
           className="input"
           style={{ maxWidth: 130 }}
@@ -181,10 +200,15 @@ function App() {
           <button
             className="btn"
             style={{ fontSize: 'var(--font-size-xs)' }}
-            onClick={() => updateFilters({
-              search: '', chromosome: '', source: '', clinical: false,
-              significance: '', gene: '', zygosity: '',
-            })}
+            onClick={() => {
+              setSearchText('')
+              setGeneText('')
+              setConditionText('')
+              updateFilters({
+                search: '', chromosome: '', source: '', clinical: false,
+                significance: '', gene: '', condition: '', zygosity: '',
+              })
+            }}
           >
             CLEAR_ALL
           </button>

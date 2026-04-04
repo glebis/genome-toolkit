@@ -20,10 +20,39 @@ export function useChat(onUIAction?: (action: UIAction) => void) {
   const abortRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
-    fetch('/api/sessions', { method: 'POST' })
-      .then(r => r.json())
-      .then(s => setSessionId(s.id))
-      .catch(() => {})
+    const stored = localStorage.getItem('genome_session_id')
+    if (stored) {
+      fetch(`/api/sessions/${stored}`)
+        .then(r => {
+          if (r.ok) return r.json()
+          throw new Error('session expired')
+        })
+        .then(s => {
+          setSessionId(s.id)
+          if (s.messages && s.messages.length > 0) {
+            setMessages(s.messages.map((m: any) => ({
+              role: m.role as 'user' | 'assistant',
+              content: m.content,
+            })))
+          }
+        })
+        .catch(() => {
+          fetch('/api/sessions', { method: 'POST' })
+            .then(r => r.json())
+            .then(s => {
+              setSessionId(s.id)
+              localStorage.setItem('genome_session_id', s.id)
+            })
+        })
+    } else {
+      fetch('/api/sessions', { method: 'POST' })
+        .then(r => r.json())
+        .then(s => {
+          setSessionId(s.id)
+          localStorage.setItem('genome_session_id', s.id)
+        })
+        .catch(() => {})
+    }
   }, [])
 
   const send = useCallback(async (text: string) => {
