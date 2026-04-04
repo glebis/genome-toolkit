@@ -8,20 +8,19 @@ import { VariantDrawer } from './components/VariantDrawer'
 import { InsightPanel, type InsightData } from './components/InsightPanel'
 
 function App() {
-  const { result, filters, loading, updateFilters, debouncedUpdateFilters, setPage } = useSNPs()
+  const { result, filters, loading, updateFilters, debouncedUpdateFilters, setPage, resetFilters, activeFilterCount } = useSNPs()
   const [cmdkOpen, setCmdkOpen] = useState(false)
   const [selectedSNP, setSelectedSNP] = useState<SNP | null>(null)
   const [genes, setGenes] = useState<{ gene: string; count: number }[]>([])
   const [insights, setInsights] = useState<InsightData | null>(null)
   const [searchText, setSearchText] = useState(filters.search)
-  const [geneText, setGeneText] = useState(filters.gene)
+  const [geneText, setGeneText] = useState('')
   const [conditionText, setConditionText] = useState(filters.condition)
 
   useEffect(() => {
     fetch('/api/genes').then(r => r.json()).then(setGenes).catch(() => {})
     fetch('/api/insights').then(r => r.json()).then(setInsights).catch(() => {})
 
-    // Restore variant drawer from URL
     const params = new URLSearchParams(window.location.search)
     const variantId = params.get('variant')
     if (variantId) {
@@ -31,10 +30,6 @@ function App() {
         .catch(() => {})
     }
   }, [])
-
-  const activeFilterCount = [filters.search, filters.chromosome, filters.source,
-    filters.clinical, filters.significance, filters.gene, filters.condition, filters.zygosity]
-    .filter(Boolean).length
 
   const handleUIAction = useCallback((action: UIAction) => {
     if (action.action === 'filter_table') {
@@ -121,17 +116,14 @@ function App() {
         geneText={geneText}
         conditionText={conditionText}
         onSearchChange={(v) => { setSearchText(v); debouncedUpdateFilters({ search: v }) }}
-        onGeneChange={(v) => { setGeneText(v); debouncedUpdateFilters({ gene: v }) }}
+        onGeneChange={setGeneText}
         onConditionChange={(v) => { setConditionText(v); debouncedUpdateFilters({ condition: v }) }}
         onFilterChange={updateFilters}
         onClearAll={() => {
           setSearchText('')
           setGeneText('')
           setConditionText('')
-          updateFilters({
-            search: '', chromosome: '', source: '', clinical: false,
-            significance: '', gene: '', condition: '', zygosity: '',
-          })
+          resetFilters()
         }}
       />
 

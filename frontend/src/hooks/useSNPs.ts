@@ -140,5 +140,20 @@ export function useSNPs() {
     setFilters(prev => ({ ...prev, page }))
   }, [])
 
-  return { result, filters, loading, updateFilters, debouncedUpdateFilters, setPage }
+  const resetFilters = useCallback(() => {
+    setFilters({ ...DEFAULT_FILTERS })
+  }, [])
+
+  // Count filters that differ from defaults (not just truthy)
+  const activeFilterCount =
+    (filters.search !== DEFAULT_FILTERS.search ? 1 : 0) +
+    (filters.chromosome !== DEFAULT_FILTERS.chromosome ? 1 : 0) +
+    (filters.source !== DEFAULT_FILTERS.source ? 1 : 0) +
+    (filters.clinical !== DEFAULT_FILTERS.clinical ? 1 : 0) +
+    (filters.significance !== DEFAULT_FILTERS.significance ? 1 : 0) +
+    (filters.gene !== DEFAULT_FILTERS.gene ? 1 : 0) +
+    (filters.condition !== DEFAULT_FILTERS.condition ? 1 : 0) +
+    (filters.zygosity !== DEFAULT_FILTERS.zygosity ? 1 : 0)
+
+  return { result, filters, loading, updateFilters, debouncedUpdateFilters, setPage, resetFilters, activeFilterCount }
 }

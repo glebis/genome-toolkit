@@ -97,19 +97,21 @@ const selectStyle: CSSProperties = {
   WebkitAppearance: 'none',
 }
 
-function StatCard({ label, value, sub, color, active, onClick }: {
+function StatCard({ label, value, sub, color, active, onClick, title }: {
   label: string
   value: string | number
   sub?: string
   color?: string
   active?: boolean
   onClick?: () => void
+  title?: string
 }) {
   const formatted = typeof value === 'number' ? value.toLocaleString() : value
   const fontSize = formatted.length > 7 ? 'var(--font-size-xl)' : 'var(--font-size-2xl)'
 
   return (
     <div
+      title={title}
       style={{
         ...cardBase,
         borderColor: active ? (color || 'var(--primary)') : 'var(--border)',
@@ -184,6 +186,7 @@ export function InsightPanel({
               color="var(--primary)"
               active={filters.clinical}
               onClick={() => onFilterChange({ clinical: !filters.clinical, significance: '' })}
+              title="Variants with clinical significance (pathogenic, drug response, risk factor, uncertain). Excludes benign and not-provided."
             />
           </>
         )}
@@ -269,7 +272,6 @@ export function InsightPanel({
                   if (!geneText) return true
                   return g.gene.toLowerCase().includes(geneText.toLowerCase())
                 })
-                .slice(0, 15)
                 .map(g => (
                   <div
                     key={g.gene}
@@ -386,21 +388,21 @@ export function InsightPanel({
           </select>
         </div>
 
-        <div style={{ ...inputCard, flex: '0 1 120px' }}>
+        <div style={{ ...inputCard, flex: '0 1 120px' }} title="Homozygous = same allele on both copies. Heterozygous = different alleles (carrier).">
           <span style={{ ...labelStyle, fontSize: '8px', marginBottom: -2 }}>ZYGOSITY</span>
           <select style={selectStyle} value={filters.zygosity} onChange={e => onFilterChange({ zygosity: e.target.value })}>
             <option value="">ALL</option>
-            <option value="homozygous">HOM</option>
-            <option value="heterozygous">HET</option>
+            <option value="homozygous">HOMOZYGOUS</option>
+            <option value="heterozygous">HETEROZYGOUS</option>
           </select>
         </div>
 
-        <div style={{ ...inputCard, flex: '0 1 120px' }}>
+        <div style={{ ...inputCard, flex: '0 1 120px' }} title="Genotyped = directly measured by chip. Imputed = statistically inferred, lower confidence.">
           <span style={{ ...labelStyle, fontSize: '8px', marginBottom: -2 }}>SOURCE</span>
           <select style={selectStyle} value={filters.source} onChange={e => onFilterChange({ source: e.target.value })}>
             <option value="">ALL</option>
-            <option value="genotyped">GEN</option>
-            <option value="imputed">IMP</option>
+            <option value="genotyped">GENOTYPED</option>
+            <option value="imputed">IMPUTED</option>
           </select>
         </div>
 
