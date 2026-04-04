@@ -1,13 +1,15 @@
 import { useState, useEffect, useCallback } from 'react'
 import './styles/theme.css'
-import { useSNPs } from './hooks/useSNPs'
+import { useSNPs, type SNP } from './hooks/useSNPs'
 import { useChat, type UIAction } from './hooks/useChat'
 import { SNPTable } from './components/SNPTable'
 import { CommandPalette } from './components/CommandPalette'
+import { VariantDrawer } from './components/VariantDrawer'
 
 function App() {
   const { result, filters, loading, updateFilters, setPage } = useSNPs()
   const [cmdkOpen, setCmdkOpen] = useState(false)
+  const [selectedSNP, setSelectedSNP] = useState<SNP | null>(null)
 
   const handleUIAction = useCallback((action: UIAction) => {
     if (action.action === 'filter_table') {
@@ -31,6 +33,12 @@ function App() {
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
   }, [])
+
+  const handleAskAI = useCallback((query: string) => {
+    setSelectedSNP(null)
+    setCmdkOpen(true)
+    setTimeout(() => send(query), 100)
+  }, [send])
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -105,11 +113,18 @@ function App() {
           <option value="genotyped">GENOTYPED</option>
           <option value="imputed">IMPUTED</option>
         </select>
-        {(filters.search || filters.chromosome || filters.source) && (
+        <button
+          className={`btn ${filters.clinical ? 'btn--active' : ''}`}
+          style={{ fontSize: 'var(--font-size-xs)', whiteSpace: 'nowrap' }}
+          onClick={() => updateFilters({ clinical: !filters.clinical })}
+        >
+          CLINICAL_ONLY
+        </button>
+        {(filters.search || filters.chromosome || filters.source || filters.clinical) && (
           <button
             className="btn"
             style={{ fontSize: 'var(--font-size-xs)' }}
-            onClick={() => updateFilters({ search: '', chromosome: '', source: '' })}
+            onClick={() => updateFilters({ search: '', chromosome: '', source: '', clinical: false })}
           >
             CLEAR
           </button>
@@ -118,7 +133,12 @@ function App() {
 
       {/* Table */}
       <main style={{ flex: 1 }}>
-        <SNPTable data={result} loading={loading} onPageChange={setPage} />
+        <SNPTable
+          data={result}
+          loading={loading}
+          onPageChange={setPage}
+          onRowClick={setSelectedSNP}
+        />
       </main>
 
       {/* Status bar */}
@@ -133,6 +153,13 @@ function App() {
         </span>
         <span className="label">GENOME_TOOLKIT // V0.1.0</span>
       </footer>
+
+      {/* Variant Drawer */}
+      <VariantDrawer
+        snp={selectedSNP}
+        onClose={() => setSelectedSNP(null)}
+        onAskAI={handleAskAI}
+      />
 
       {/* Command Palette */}
       <CommandPalette

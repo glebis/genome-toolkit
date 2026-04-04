@@ -13,9 +13,11 @@ async def list_snps(
     search: str | None = None,
     chr: str | None = None,
     source: str | None = None,
+    clinical: bool = False,
 ):
     return await genome_db.query_snps(
-        page=page, limit=limit, search=search, chromosome=chr, source=source
+        page=page, limit=limit, search=search, chromosome=chr, source=source,
+        clinically_relevant=clinical,
     )
 
 

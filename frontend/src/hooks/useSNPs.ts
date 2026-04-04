@@ -8,12 +8,15 @@ export interface SNP {
   is_rsid: boolean
   source: string
   r2_quality: number | null
+  significance: string | null
+  disease: string | null
 }
 
 export interface SNPFilters {
   search: string
   chromosome: string
   source: string
+  clinical: boolean
   page: number
   limit: number
 }
@@ -29,6 +32,7 @@ const DEFAULT_FILTERS: SNPFilters = {
   search: '',
   chromosome: '',
   source: '',
+  clinical: false,
   page: 1,
   limit: 100,
 }
@@ -46,6 +50,7 @@ export function useSNPs() {
     if (f.search) params.set('search', f.search)
     if (f.chromosome) params.set('chr', f.chromosome)
     if (f.source) params.set('source', f.source)
+    if (f.clinical) params.set('clinical', 'true')
 
     try {
       const resp = await fetch(`/api/snps?${params}`)

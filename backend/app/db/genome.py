@@ -29,33 +29,49 @@ class GenomeDB:
         search: str | None = None,
         chromosome: str | None = None,
         source: str | None = None,
+        clinically_relevant: bool = False,
     ) -> dict:
         conditions = []
         params: list = []
 
         if search:
-            conditions.append("(rsid LIKE ? OR rsid = ?)")
+            conditions.append("(s.rsid LIKE ? OR s.rsid = ?)")
             params.extend([f"%{search}%", search])
 
         if chromosome:
-            conditions.append("chromosome = ?")
+            conditions.append("s.chromosome = ?")
             params.append(chromosome)
 
         if source:
-            conditions.append("source = ?")
+            conditions.append("s.source = ?")
             params.append(source)
+
+        if clinically_relevant:
+            conditions.append("e.rsid IS NOT NULL")
 
         where = f"WHERE {' AND '.join(conditions)}" if conditions else ""
 
-        count_sql = f"SELECT COUNT(*) FROM snps {where}"
+        # Count with enrichment join
+        count_sql = f"""
+            SELECT COUNT(*) FROM snps s
+            LEFT JOIN enrichments e ON s.rsid = e.rsid AND e.source = 'clinvar'
+            {where}
+        """
         async with self._conn.execute(count_sql, params) as cursor:
             total = (await cursor.fetchone())[0]
 
         offset = (page - 1) * limit
-        data_sql = (
-            f"SELECT rsid, chromosome, position, genotype, is_rsid, source, r2_quality "
-            f"FROM snps {where} ORDER BY chromosome, position LIMIT ? OFFSET ?"
-        )
+        data_sql = f"""
+            SELECT s.rsid, s.chromosome, s.position, s.genotype, s.is_rsid,
+                   s.source, s.r2_quality,
+                   json_extract(e.data, '$.clinical_significance') as significance,
+                   json_extract(e.data, '$.disease_name') as disease
+            FROM snps s
+            LEFT JOIN enrichments e ON s.rsid = e.rsid AND e.source = 'clinvar'
+            {where}
+            ORDER BY s.chromosome, s.position
+            LIMIT ? OFFSET ?
+        """
         async with self._conn.execute(data_sql, params + [limit, offset]) as cursor:
             rows = await cursor.fetchall()
             items = [dict(row) for row in rows]
@@ -63,7 +79,21 @@ class GenomeDB:
         return {"items": items, "total": total, "page": page, "limit": limit}
 
     async def get_snp(self, rsid: str) -> dict | None:
-        sql = "SELECT rsid, chromosome, position, genotype, is_rsid, source, r2_quality FROM snps WHERE rsid = ?"
+        sql = """
+            SELECT s.rsid, s.chromosome, s.position, s.genotype, s.is_rsid,
+                   s.source, s.r2_quality,
+                   json_extract(e_cv.data, '$.clinical_significance') as significance,
+                   json_extract(e_cv.data, '$.disease_name') as disease,
+                   json_extract(e_cv.data, '$.review_status') as review_status,
+                   json_extract(e_cv.data, '$.ref') as ref_allele,
+                   json_extract(e_cv.data, '$.alt') as alt_allele,
+                   json_extract(e_mv.data, '$.gene_name') as gene_name,
+                   json_extract(e_mv.data, '$.clinvar_significance') as mv_significance
+            FROM snps s
+            LEFT JOIN enrichments e_cv ON s.rsid = e_cv.rsid AND e_cv.source = 'clinvar'
+            LEFT JOIN enrichments e_mv ON s.rsid = e_mv.rsid AND e_mv.source = 'myvariant'
+            WHERE s.rsid = ?
+        """
         async with self._conn.execute(sql, [rsid]) as cursor:
             row = await cursor.fetchone()
             return dict(row) if row else None

@@ -9,6 +9,16 @@ import type { SNP, SNPResult } from '../hooks/useSNPs'
 
 const col = createColumnHelper<SNP>()
 
+function SignificanceBadge({ value }: { value: string | null }) {
+  if (!value) return <span style={{ color: 'var(--text-tertiary)' }}>--</span>
+  const lower = value.toLowerCase()
+  let cls = 'badge badge--neutral'
+  if (lower.includes('pathogenic')) cls = 'badge badge--risk'
+  else if (lower.includes('benign')) cls = 'badge badge--benefit'
+  else if (lower.includes('drug response')) cls = 'badge badge--reduced'
+  return <span className={cls}>{value.length > 20 ? value.slice(0, 18) + '..' : value}</span>
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const columns: ColumnDef<SNP, any>[] = [
   col.accessor('rsid', {
@@ -28,12 +38,30 @@ const columns: ColumnDef<SNP, any>[] = [
     header: 'GENOTYPE',
     cell: info => <span style={{ fontWeight: 500 }}>{info.getValue()}</span>,
   }),
+  col.accessor('significance', {
+    header: 'CLINICAL',
+    cell: info => <SignificanceBadge value={info.getValue()} />,
+  }),
+  col.accessor('disease', {
+    header: 'CONDITION',
+    cell: info => {
+      const val = info.getValue() as string | null
+      if (!val) return <span style={{ color: 'var(--text-tertiary)' }}>--</span>
+      const short = val.split(';')[0].trim()
+      return (
+        <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)' }}
+              title={val}>
+          {short.length > 30 ? short.slice(0, 28) + '..' : short}
+        </span>
+      )
+    },
+  }),
   col.accessor('source', {
-    header: 'SOURCE',
+    header: 'SRC',
     cell: info => {
       const src = info.getValue() as string
       const cls = src === 'imputed' ? 'badge badge--reduced' : 'badge badge--neutral'
-      return <span className={cls}>{src.toUpperCase()}</span>
+      return <span className={cls}>{src === 'genotyped' ? 'GEN' : 'IMP'}</span>
     },
   }),
 ]
