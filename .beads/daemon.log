@@ -1,0 +1,67 @@
+time=2026-04-04T08:20:36.106+02:00 level=INFO msg="Daemon started (interval: %v, auto-commit: %v, auto-push: %v)" !BADKEY=5s !BADKEY=false !BADKEY=false
+time=2026-04-04T08:20:36.107+02:00 level=INFO msg="using database" path=/Users/glebkalinin/genome-toolkit/.beads/beads.db
+time=2026-04-04T08:20:36.115+02:00 level=INFO msg="database opened" path=/Users/glebkalinin/genome-toolkit/.beads/beads.db freshness_checking=true
+time=2026-04-04T08:20:36.115+02:00 level=INFO msg="upgrading .beads/.gitignore"
+time=2026-04-04T08:20:36.115+02:00 level=WARN msg="failed to upgrade .gitignore" error="open .beads/.gitignore: no such file or directory"
+time=2026-04-04T08:20:36.129+02:00 level=INFO msg="Repository fingerprint validated: %s" !BADKEY=101f37e3
+time=2026-04-04T08:20:36.129+02:00 level=INFO msg="starting RPC server" socket=/Users/glebkalinin/genome-toolkit/.beads/bd.sock
+time=2026-04-04T08:20:36.131+02:00 level=INFO msg="RPC server ready (socket listening)"
+time=2026-04-04T08:20:36.135+02:00 level=INFO msg="registered in global registry"
+time=2026-04-04T08:20:36.135+02:00 level=INFO msg="Starting %s..." !BADKEY="sync cycle"
+time=2026-04-04T08:20:36.137+02:00 level=INFO msg="Exported to JSONL"
+time=2026-04-04T08:20:36.229+02:00 level=INFO msg="Pull failed: %v" !BADKEY="git pull failed: exit status 128\nerror: cannot pull with rebase: Your index contains uncommitted changes.\nerror: Please commit or stash them.\n"
+time=2026-04-04T08:20:36.230+02:00 level=INFO msg="monitoring parent process" pid=0
+time=2026-04-04T08:20:36.230+02:00 level=INFO msg="using event-driven mode"
+time=2026-04-04T08:20:36.231+02:00 level=INFO msg="Auto-pull disabled: use 'git pull' manually to sync remote changes"
+time=2026-04-04T08:20:36.249+02:00 level=INFO msg="Mutation detected: %s %s" create=genome-toolkit-an7
+time=2026-04-04T08:20:36.751+02:00 level=INFO msg="Export triggered by mutation events"
+time=2026-04-04T08:20:36.751+02:00 level=INFO msg="Starting %s..." !BADKEY=export
+time=2026-04-04T08:20:36.751+02:00 level=INFO msg="Pre-export validation failed: %v" !BADKEY="refusing to export: JSONL content has changed since last import (import first to avoid data loss)"
+time=2026-04-04T08:20:56.164+02:00 level=INFO msg="Mutation detected: %s %s" create=genome-toolkit-6oi
+time=2026-04-04T08:20:56.321+02:00 level=INFO msg="Mutation detected: %s %s" create=genome-toolkit-8gx
+time=2026-04-04T08:20:56.466+02:00 level=INFO msg="Mutation detected: %s %s" create=genome-toolkit-ff2
+time=2026-04-04T08:20:56.606+02:00 level=INFO msg="Mutation detected: %s %s" create=genome-toolkit-az0
+time=2026-04-04T08:20:56.740+02:00 level=INFO msg="Mutation detected: %s %s" create=genome-toolkit-6w0
+time=2026-04-04T08:20:56.887+02:00 level=INFO msg="Mutation detected: %s %s" create=genome-toolkit-3cp
+time=2026-04-04T08:20:57.387+02:00 level=INFO msg="Export triggered by mutation events"
+time=2026-04-04T08:20:57.388+02:00 level=INFO msg="Starting %s..." !BADKEY=export
+time=2026-04-04T08:20:57.388+02:00 level=INFO msg="Pre-export validation failed: %v" !BADKEY="refusing to export: JSONL content has changed since last import (import first to avoid data loss)"
+time=2026-04-04T08:21:16.267+02:00 level=INFO msg="Mutation detected: %s %s" create=genome-toolkit-3od
+time=2026-04-04T08:21:16.430+02:00 level=INFO msg="Mutation detected: %s %s" create=genome-toolkit-138
+time=2026-04-04T08:21:16.572+02:00 level=INFO msg="Mutation detected: %s %s" create=genome-toolkit-yde
+time=2026-04-04T08:21:16.696+02:00 level=INFO msg="Mutation detected: %s %s" create=genome-toolkit-40f
+time=2026-04-04T08:21:16.828+02:00 level=INFO msg="Mutation detected: %s %s" create=genome-toolkit-6n1
+time=2026-04-04T08:21:16.964+02:00 level=INFO msg="Mutation detected: %s %s" create=genome-toolkit-0kk
+time=2026-04-04T08:21:17.465+02:00 level=INFO msg="Export triggered by mutation events"
+time=2026-04-04T08:21:17.465+02:00 level=INFO msg="Starting %s..." !BADKEY=export
+time=2026-04-04T08:21:17.466+02:00 level=INFO msg="Pre-export validation failed: %v" !BADKEY="refusing to export: JSONL content has changed since last import (import first to avoid data loss)"
+time=2026-04-04T08:21:36.373+02:00 level=INFO msg="Mutation detected: %s %s" create=genome-toolkit-59l
+time=2026-04-04T08:21:36.527+02:00 level=INFO msg="Mutation detected: %s %s" create=genome-toolkit-soy
+time=2026-04-04T08:21:36.671+02:00 level=INFO msg="Mutation detected: %s %s" create=genome-toolkit-9v6
+time=2026-04-04T08:21:36.796+02:00 level=INFO msg="Mutation detected: %s %s" create=genome-toolkit-btd
+time=2026-04-04T08:21:36.923+02:00 level=INFO msg="Mutation detected: %s %s" create=genome-toolkit-2y7
+time=2026-04-04T08:21:37.062+02:00 level=INFO msg="Mutation detected: %s %s" create=genome-toolkit-seh
+time=2026-04-04T08:21:37.563+02:00 level=INFO msg="Export triggered by mutation events"
+time=2026-04-04T08:21:37.563+02:00 level=INFO msg="Starting %s..." !BADKEY=export
+time=2026-04-04T08:21:37.564+02:00 level=INFO msg="Pre-export validation failed: %v" !BADKEY="refusing to export: JSONL content has changed since last import (import first to avoid data loss)"
+time=2026-04-04T08:21:48.910+02:00 level=INFO msg="Mutation detected: %s %s" update=genome-toolkit-6oi
+time=2026-04-04T08:21:49.019+02:00 level=INFO msg="Mutation detected: %s %s" update=genome-toolkit-8gx
+time=2026-04-04T08:21:49.153+02:00 level=INFO msg="Mutation detected: %s %s" update=genome-toolkit-ff2
+time=2026-04-04T08:21:49.256+02:00 level=INFO msg="Mutation detected: %s %s" update=genome-toolkit-az0
+time=2026-04-04T08:21:49.361+02:00 level=INFO msg="Mutation detected: %s %s" update=genome-toolkit-6w0
+time=2026-04-04T08:21:49.469+02:00 level=INFO msg="Mutation detected: %s %s" update=genome-toolkit-3cp
+time=2026-04-04T08:21:49.556+02:00 level=INFO msg="Mutation detected: %s %s" update=genome-toolkit-3od
+time=2026-04-04T08:21:49.646+02:00 level=INFO msg="Mutation detected: %s %s" update=genome-toolkit-138
+time=2026-04-04T08:21:49.759+02:00 level=INFO msg="Mutation detected: %s %s" update=genome-toolkit-yde
+time=2026-04-04T08:21:49.853+02:00 level=INFO msg="Mutation detected: %s %s" update=genome-toolkit-40f
+time=2026-04-04T08:21:49.947+02:00 level=INFO msg="Mutation detected: %s %s" update=genome-toolkit-6n1
+time=2026-04-04T08:21:50.046+02:00 level=INFO msg="Mutation detected: %s %s" update=genome-toolkit-0kk
+time=2026-04-04T08:21:50.146+02:00 level=INFO msg="Mutation detected: %s %s" update=genome-toolkit-59l
+time=2026-04-04T08:21:50.241+02:00 level=INFO msg="Mutation detected: %s %s" update=genome-toolkit-soy
+time=2026-04-04T08:21:50.334+02:00 level=INFO msg="Mutation detected: %s %s" update=genome-toolkit-9v6
+time=2026-04-04T08:21:50.433+02:00 level=INFO msg="Mutation detected: %s %s" update=genome-toolkit-btd
+time=2026-04-04T08:21:50.524+02:00 level=INFO msg="Mutation detected: %s %s" update=genome-toolkit-2y7
+time=2026-04-04T08:21:50.616+02:00 level=INFO msg="Mutation detected: %s %s" update=genome-toolkit-seh
+time=2026-04-04T08:21:51.117+02:00 level=INFO msg="Export triggered by mutation events"
+time=2026-04-04T08:21:51.117+02:00 level=INFO msg="Starting %s..." !BADKEY=export
+time=2026-04-04T08:21:51.118+02:00 level=INFO msg="Pre-export validation failed: %v" !BADKEY="refusing to export: JSONL content has changed since last import (import first to avoid data loss)"
