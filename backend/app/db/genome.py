@@ -70,8 +70,14 @@ class GenomeDB:
             params.append(f"%{significance}%")
 
         if gene:
-            conditions.append("json_extract(e_mv.data, '$.gene_symbol') = ?")
-            params.append(gene.upper())
+            gene_list = [g.strip().upper() for g in gene.split(',') if g.strip()]
+            if len(gene_list) == 1:
+                conditions.append("json_extract(e_mv.data, '$.gene_symbol') = ?")
+                params.append(gene_list[0])
+            else:
+                placeholders = ','.join('?' * len(gene_list))
+                conditions.append(f"json_extract(e_mv.data, '$.gene_symbol') IN ({placeholders})")
+                params.extend(gene_list)
 
         if condition:
             conditions.append("e_cv.rsid IS NOT NULL AND json_extract(e_cv.data, '$.disease_name') LIKE ?")
@@ -123,16 +129,17 @@ class GenomeDB:
 
         return {"items": items, "total": total, "page": page, "limit": limit}
 
-    async def list_genes(self) -> list[str]:
-        """Return all gene symbols from myvariant enrichments."""
+    async def list_genes(self) -> list[dict]:
+        """Return gene symbols with variant counts from myvariant enrichments."""
         sql = """
-            SELECT DISTINCT json_extract(data, '$.gene_symbol') as gene
+            SELECT json_extract(data, '$.gene_symbol') as gene, COUNT(*) as cnt
             FROM enrichments WHERE source = 'myvariant'
             AND gene IS NOT NULL
-            ORDER BY gene
+            GROUP BY gene
+            ORDER BY cnt DESC
         """
         async with self._conn.execute(sql) as cursor:
-            return [row[0] for row in await cursor.fetchall()]
+            return [{"gene": row[0], "count": row[1]} for row in await cursor.fetchall()]
 
     async def get_snp(self, rsid: str) -> dict | None:
         sql = """

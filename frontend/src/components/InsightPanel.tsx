@@ -27,7 +27,7 @@ interface FilterState {
 interface Props {
   data: InsightData | null
   filters: FilterState
-  genes: string[]
+  genes: { gene: string; count: number }[]
   activeFilterCount: number
   searchText: string
   geneText: string
@@ -138,6 +138,8 @@ export function InsightPanel({
   onFilterChange, onClearAll,
 }: Props) {
   const [conditionFocused, setConditionFocused] = useState(false)
+  const [geneFocused, setGeneFocused] = useState(false)
+  const selectedGenes = filters.gene ? filters.gene.split(',').map(g => g.trim()).filter(Boolean) : []
   return (
     <div style={{
       padding: 'var(--space-sm) var(--space-lg)',
@@ -186,36 +188,6 @@ export function InsightPanel({
           </>
         )}
 
-        {/* Top genes */}
-        {data && data.top_genes.slice(0, 5).map(g => (
-          <div
-            key={g.gene}
-            style={{
-              ...cardBase,
-              borderColor: filters.gene === g.gene ? 'var(--accent)' : 'var(--border)',
-              background: filters.gene === g.gene ? 'var(--bg-inset)' : 'var(--bg-raised)',
-            }}
-            onClick={() => {
-              if (filters.gene === g.gene) {
-                onGeneChange('')
-                onFilterChange({ gene: '' })
-              } else {
-                onGeneChange(g.gene)
-                onFilterChange({ gene: g.gene })
-              }
-            }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)' }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = filters.gene === g.gene ? 'var(--accent)' : 'var(--border)' }}
-          >
-            <span style={{ ...labelStyle, color: filters.gene === g.gene ? 'var(--accent)' : 'var(--text-secondary)' }}>
-              {g.gene}
-            </span>
-            <span style={{ ...valueStyle, fontSize: 'var(--font-size-lg)', color: 'var(--accent)' }}>
-              {g.count}
-            </span>
-            <span style={subStyle}>VARIANTS</span>
-          </div>
-        ))}
 
       </div>
 
@@ -236,18 +208,96 @@ export function InsightPanel({
           />
         </div>
 
-        <div style={{ ...inputCard, flex: '1 1 140px' }}>
+        <div
+          style={{ ...inputCard, flex: '2 1 200px', position: 'relative' }}
+          onFocus={() => setGeneFocused(true)}
+          onBlur={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+              setTimeout(() => setGeneFocused(false), 150)
+            }
+          }}
+        >
           <span style={{ ...labelStyle, fontSize: '8px', marginBottom: -2 }}>GENE</span>
-          <input
-            style={inputStyle}
-            placeholder="CYP2D6, MTHFR..."
-            value={geneText}
-            onChange={e => onGeneChange(e.target.value)}
-            list="gene-list"
-          />
-          <datalist id="gene-list">
-            {genes.map(g => <option key={g} value={g} />)}
-          </datalist>
+          {/* Selected gene chips */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, alignItems: 'center' }}>
+            {selectedGenes.map(g => (
+              <span
+                key={g}
+                style={{
+                  fontSize: 'var(--font-size-xs)',
+                  letterSpacing: '0.08em',
+                  padding: '1px 6px',
+                  border: '1px solid var(--accent)',
+                  color: 'var(--accent)',
+                  cursor: 'pointer',
+                  fontWeight: 500,
+                }}
+                onClick={() => {
+                  const next = selectedGenes.filter(x => x !== g).join(',')
+                  onGeneChange(next)
+                  onFilterChange({ gene: next })
+                }}
+                title={`Remove ${g}`}
+              >
+                {g} x
+              </span>
+            ))}
+            <input
+              style={{ ...inputStyle, flex: 1, minWidth: 60 }}
+              placeholder={selectedGenes.length ? '' : 'CYP2D6, MTHFR...'}
+              value={geneText}
+              onChange={e => onGeneChange(e.target.value)}
+            />
+          </div>
+          {/* Gene suggest dropdown */}
+          {geneFocused && genes.length > 0 && (
+            <div style={{
+              position: 'absolute',
+              top: '100%',
+              left: -1,
+              right: -1,
+              background: 'var(--bg-raised)',
+              border: '1px solid var(--primary)',
+              borderTop: 'none',
+              zIndex: 100,
+              maxHeight: 280,
+              overflowY: 'auto',
+            }}>
+              {(genes as { gene: string; count: number }[])
+                .filter(g => {
+                  if (selectedGenes.includes(g.gene)) return false
+                  if (!geneText) return true
+                  return g.gene.toLowerCase().includes(geneText.toLowerCase())
+                })
+                .slice(0, 15)
+                .map(g => (
+                  <div
+                    key={g.gene}
+                    tabIndex={-1}
+                    onClick={() => {
+                      const next = [...selectedGenes, g.gene].join(',')
+                      onGeneChange('')
+                      onFilterChange({ gene: next })
+                      setGeneFocused(false)
+                    }}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '5px 8px',
+                      fontSize: 'var(--font-size-sm)',
+                      cursor: 'pointer',
+                      borderBottom: '1px solid var(--border)',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-inset)' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+                  >
+                    <span style={{ fontWeight: 500 }}>{g.gene}</span>
+                    <span style={{ color: 'var(--text-tertiary)', fontSize: 'var(--font-size-xs)' }}>{g.count}</span>
+                  </div>
+                ))}
+            </div>
+          )}
         </div>
 
         <div

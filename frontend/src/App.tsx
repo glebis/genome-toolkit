@@ -11,7 +11,7 @@ function App() {
   const { result, filters, loading, updateFilters, debouncedUpdateFilters, setPage } = useSNPs()
   const [cmdkOpen, setCmdkOpen] = useState(false)
   const [selectedSNP, setSelectedSNP] = useState<SNP | null>(null)
-  const [genes, setGenes] = useState<string[]>([])
+  const [genes, setGenes] = useState<{ gene: string; count: number }[]>([])
   const [insights, setInsights] = useState<InsightData | null>(null)
   const [searchText, setSearchText] = useState(filters.search)
   const [geneText, setGeneText] = useState(filters.gene)
