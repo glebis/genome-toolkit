@@ -155,20 +155,58 @@ export function useMentalHealthData(): UseMentalHealthDataReturn {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Attempt to fetch from backend; fall back to mock data
-    fetch('/api/mental-health/genes')
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
-        if (data && Array.isArray(data)) {
-          setSections(data)
+    const healthChecks = async () => {
+      // Check backend health
+      try {
+        const healthRes = await fetch('/api/health')
+        if (healthRes.ok) {
+          const health = await healthRes.json()
+          console.log('[genome-toolkit] Backend: OK | Variants:', health.variants)
         } else {
-          setSections(MOCK_SECTIONS)
+          console.warn('[genome-toolkit] Backend: responded with', healthRes.status)
         }
-      })
-      .catch(() => {
-        setSections(MOCK_SECTIONS)
-      })
-      .finally(() => setLoading(false))
+      } catch {
+        console.error('[genome-toolkit] Backend: unreachable at /api/health')
+      }
+
+      // Check mental health API
+      try {
+        const mhRes = await fetch('/api/mental-health/genes')
+        if (mhRes.ok) {
+          const mhData = await mhRes.json()
+          const genes = mhData?.genes || []
+          const withNotes = genes.filter((g: { has_vault_note: boolean }) => g.has_vault_note).length
+          console.log(`[genome-toolkit] Mental Health API: OK | ${genes.length} genes, ${withNotes} with vault notes`)
+
+          if (withNotes === 0) {
+            console.info('[genome-toolkit] No vault notes found — using mock data. Set GENOME_VAULT_PATH to your Obsidian vault.')
+          }
+        } else {
+          console.warn('[genome-toolkit] Mental Health API: responded with', mhRes.status)
+        }
+      } catch {
+        console.error('[genome-toolkit] Mental Health API: unreachable')
+      }
+
+      // Check TTS
+      try {
+        const ttsRes = await fetch('/api/tts/voices')
+        if (ttsRes.ok) {
+          console.log('[genome-toolkit] TTS (Orpheus): OK')
+        } else {
+          console.info('[genome-toolkit] TTS: not configured (browser fallback active)')
+        }
+      } catch {
+        console.info('[genome-toolkit] TTS: endpoint unreachable (browser fallback active)')
+      }
+    }
+
+    healthChecks()
+
+    // Load dashboard data — use mock for now since API returns gene list, not structured sections
+    console.log('[genome-toolkit] Dashboard: loading mock data (4 pathways, 6 genes, 5 actions)')
+    setSections(MOCK_SECTIONS)
+    setLoading(false)
   }, [])
 
   const totalGenes = sections.reduce((sum, s) => sum + s.genes.length, 0)

@@ -58,7 +58,7 @@ export function MentalHealthDashboard({
   onToggleAction,
 }: MentalHealthDashboardProps) {
   const [expandedGene, setExpandedGene] = useState<GeneData | null>(null)
-  const { activeCategory, activeActionType, setCategory, setActionType, clearAll, matchesGene } =
+  const { activeCategory, activeActionType, setCategory, setActionType, clearAll, matchesGene, matchesAction } =
     useMentalHealthFilters()
 
   const handleGeneClick = (gene: GeneData) => {
@@ -68,8 +68,17 @@ export function MentalHealthDashboard({
 
   const filteredSections = data.filter(section => {
     if (activeCategory === null && activeActionType === null) return true
-    // Keep section if any gene in it matches the active category filter
-    return section.genes.some(gene => matchesGene(gene))
+    // Category filter: keep section if any gene matches
+    if (activeCategory && !section.genes.some(gene => matchesGene(gene))) return false
+    // Action type filter: keep section if any gene has matching actions
+    if (activeActionType) {
+      const sectionGeneSymbols = section.genes.map(g => g.symbol)
+      const hasMatchingAction = sectionGeneSymbols.some(symbol =>
+        (actions[symbol] || []).some(a => matchesAction(a))
+      )
+      if (!hasMatchingAction) return false
+    }
+    return true
   })
 
   return (
@@ -159,7 +168,7 @@ export function MentalHealthDashboard({
                 {expandedGene && visibleGenes.some(g => g.rsid === expandedGene.rsid) && (
                   <GeneDetail
                     gene={expandedGene}
-                    actions={actions[expandedGene.symbol] || []}
+                    actions={(actions[expandedGene.symbol] || []).filter(a => matchesAction(a))}
                     populationInfo={GENE_META[expandedGene.symbol]?.populationInfo}
                     explanation={GENE_META[expandedGene.symbol]?.explanation}
                     interactions={GENE_META[expandedGene.symbol]?.interactions}
