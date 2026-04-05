@@ -30,10 +30,11 @@ function App() {
   const [checklistOpen, setChecklistOpen] = useState(false)
   const [checklistHighlight, setChecklistHighlight] = useState(false)
 
-  const navigate = useCallback((v: 'snps' | 'mental-health' | 'pgx') => {
+  const navigate = useCallback((v: 'snps' | 'mental-health' | 'pgx' | 'addiction') => {
     setView(v)
     if (v === 'mental-health') window.location.hash = '#/mental-health'
     else if (v === 'pgx') window.location.hash = '#/pgx'
+    else if (v === 'addiction') window.location.hash = '#/addiction'
     else window.location.hash = '#/'
   }, [])
 
@@ -42,6 +43,7 @@ function App() {
       const hash = window.location.hash
       if (hash === '#/mental-health') setView('mental-health')
       else if (hash === '#/pgx') setView('pgx')
+      else if (hash === '#/addiction') setView('addiction')
       else setView('snps')
     }
     window.addEventListener('hashchange', onHashChange)
@@ -243,6 +245,18 @@ function App() {
             className="btn"
             style={{
               fontSize: 'var(--font-size-xs)',
+              background: view === 'addiction' ? 'var(--bg-inset)' : 'transparent',
+              borderColor: view === 'addiction' ? 'var(--primary)' : 'var(--border)',
+              color: view === 'addiction' ? 'var(--primary)' : 'var(--text-secondary)',
+            }}
+            onClick={() => navigate('addiction')}
+          >
+            ADDICTION
+          </button>
+          <button
+            className="btn"
+            style={{
+              fontSize: 'var(--font-size-xs)',
               position: 'relative',
               borderColor: checklistHighlight ? 'var(--accent)' : checklistOpen ? 'var(--primary)' : 'var(--border)',
               color: checklistHighlight ? 'var(--accent)' : checklistOpen ? 'var(--primary)' : undefined,
@@ -339,6 +353,10 @@ function App() {
       ) : view === 'pgx' ? (
         <main>
           <PGxPanel />
+        </main>
+      ) : view === 'addiction' ? (
+        <main>
+          <AddictionProfile />
         </main>
       ) : (
         <main>

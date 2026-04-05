@@ -1,0 +1,1 @@
+export { AddictionProfile } from './AddictionProfile'
