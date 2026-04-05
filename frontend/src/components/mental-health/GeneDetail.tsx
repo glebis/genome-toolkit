@@ -264,16 +264,33 @@ export function GeneDetail({
           gap: 12,
         }}>
           <span>{gene.studyCount} sources</span>
-          <a
-            href="#"
+          <span
+            onClick={() => {
+              const query = encodeURIComponent(`${gene.symbol} ${gene.variant} genetics`)
+              window.open(`https://pubmed.ncbi.nlm.nih.gov/?term=${query}`, '_blank', 'noopener')
+            }}
             style={{
               color: 'var(--primary)',
-              textDecoration: 'none',
+              textDecoration: 'underline',
               fontSize: 11,
+              cursor: 'pointer',
             }}
           >
-            View all references
-          </a>
+            View references on PubMed
+          </span>
+          <span
+            onClick={() => {
+              window.open(`https://www.snpedia.com/index.php/${gene.rsid}`, '_blank', 'noopener')
+            }}
+            style={{
+              color: 'var(--primary)',
+              textDecoration: 'underline',
+              fontSize: 11,
+              cursor: 'pointer',
+            }}
+          >
+            SNPedia
+          </span>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button style={{
