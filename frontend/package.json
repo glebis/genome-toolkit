@@ -18,7 +18,8 @@
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-markdown": "^10.1.0",
-    "remark-gfm": "^4.0.1"
+    "remark-gfm": "^4.0.1",
+    "seqviz": "^3.10.19"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",

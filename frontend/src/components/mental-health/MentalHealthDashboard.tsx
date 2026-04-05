@@ -6,6 +6,7 @@ import { FilterBar } from './FilterBar'
 import { NarrativeBlock } from './NarrativeBlock'
 import { GeneCard } from './GeneCard'
 import { GeneDetail } from './GeneDetail'
+import { GenomeGlyph } from '../GenomeGlyph'
 
 const GENE_META: Record<string, { populationInfo: string; explanation: string; interactions?: { genes: string; description: string }[] }> = {
   'MTHFR': {
@@ -38,6 +39,7 @@ interface MentalHealthDashboardProps {
   onGeneClick: (gene: GeneData) => void
   actions: Record<string, ActionData[]>
   onToggleAction: (id: string) => void
+  onDiscuss?: (context: string) => void
 }
 
 const LEGEND_ITEMS: { status: GeneStatus; label: string }[] = [
@@ -56,6 +58,7 @@ export function MentalHealthDashboard({
   onGeneClick,
   actions,
   onToggleAction,
+  onDiscuss,
 }: MentalHealthDashboardProps) {
   const [expandedGene, setExpandedGene] = useState<GeneData | null>(null)
   const { activeCategory, activeActionType, setCategory, setActionType, clearAll, matchesGene, matchesAction } =
@@ -132,7 +135,17 @@ export function MentalHealthDashboard({
       <div style={{
         padding: '40px 24px 32px',
         borderBottom: '1px solid var(--border)',
+        display: 'flex',
+        gap: 24,
+        alignItems: 'flex-start',
       }}>
+        {/* Genome Glyph */}
+        <GenomeGlyph
+          genotypes={data.flatMap(s => s.genes.map(g => g.genotype))}
+          size={100}
+          label="your profile"
+        />
+        <div style={{ flex: 1 }}>
         <div style={{
           fontSize: 28,
           fontWeight: 600,
@@ -198,6 +211,7 @@ export function MentalHealthDashboard({
             </span>
           </div>
         </div>
+        </div>{/* close flex wrapper */}
       </div>
 
       <FilterBar
@@ -292,6 +306,7 @@ export function MentalHealthDashboard({
                       interactions={GENE_META[expandedGene.symbol]?.interactions}
                       onClose={() => setExpandedGene(null)}
                       onToggleAction={onToggleAction}
+                      onDiscuss={onDiscuss}
                     />
                   </div>
                 )}
