@@ -137,8 +137,10 @@ Rules for voice output:
 - No markdown, no tables, no lists
 - Conversational, warm tone
 - Focus on what matters most and what to do about it
-- Keep under 30 seconds of speech (roughly 60-80 words)""",
-    {"text": str},
+- Keep under 30 seconds of speech (roughly 60-80 words)
+- You can use Orpheus emotion tags: [cheerful], [whisper], [calm], [excited]
+- You can embed sounds: <laugh>, <sigh>, <gasp>, <chuckle>""",
+    {"text": str, "emotion": str},
 )
 async def voice_summary(args: dict[str, Any]) -> dict[str, Any]:
     return {"content": [{"type": "text", "text": "Voice summary delivered."}]}
@@ -239,6 +241,28 @@ async def list_vault_notes(args: dict[str, Any]) -> dict[str, Any]:
     return {"content": [{"type": "text", "text": text}]}
 
 
+@tool(
+    "suggest_actions",
+    """Suggest 1-4 actionable items the user can execute with one click. Call this at the end of responses when there are concrete next steps.
+
+Each action is a JSON object with:
+- type: "add_to_checklist" | "show_gene" | "show_variant" | "open_link"
+- label: short button text (e.g. "Add to checklist", "View MTHFR details")
+- params: type-specific parameters
+
+Parameter schemas by type:
+- add_to_checklist: { title, gene_symbol?, action_type?, health_domain?, practical_category? }
+- show_gene: { gene_symbol }
+- show_variant: { rsid }
+- open_link: { url, title? }
+
+Pass a JSON array of action objects as the "actions" parameter.""",
+    {"actions": str},
+)
+async def suggest_actions(args: dict[str, Any]) -> dict[str, Any]:
+    return {"content": [{"type": "text", "text": "Actions displayed to user."}]}
+
+
 def create_genome_mcp_server():
     """Create an in-process MCP server with all genome tools."""
     return create_sdk_mcp_server(
@@ -246,7 +270,8 @@ def create_genome_mcp_server():
         version="1.0.0",
         tools=[
             query_snps, get_snp_detail, get_genome_stats,
-            update_table_view, suggest_responses, voice_summary,
+            update_table_view, suggest_responses, suggest_actions,
+            voice_summary,
             read_gene_note, read_vault_note, list_vault_notes,
         ],
     )

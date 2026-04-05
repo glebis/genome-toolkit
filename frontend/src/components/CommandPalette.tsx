@@ -1,7 +1,165 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, type ReactNode, type ComponentPropsWithoutRef } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import type { ChatMessage } from '../hooks/useChat'
+import type { ChatMessage, AgentAction } from '../hooks/useChat'
+
+/* ── Vault link / gene name helpers ── */
+
+const GENE_NAME_RE = /^[A-Z][A-Z0-9]{1,9}$/
+const WIKILINK_RE = /\[\[([^\]]+)\]\]/g
+
+/** Convert `[[NoteName]]` or `[[Path/Note]]` wikilinks to markdown links with vault: scheme */
+function preprocessWikilinks(content: string): string {
+  return content.replace(WIKILINK_RE, (_match, inner: string) => {
+    const display = inner.includes('/') ? inner.split('/').pop()! : inner
+    return `[${display}](vault:${inner})`
+  })
+}
+
+const vaultLinkStyle: React.CSSProperties = {
+  color: 'var(--primary)',
+  cursor: 'pointer',
+  textDecoration: 'none',
+  borderBottom: '1px dashed var(--primary-dim)',
+}
+
+const geneLinkStyle: React.CSSProperties = {
+  ...vaultLinkStyle,
+  fontFamily: 'var(--font-mono)',
+}
+
+function makeMarkdownComponents(onSend: (text: string) => void) {
+  const components: Record<string, React.ComponentType<ComponentPropsWithoutRef<any>>> = {
+    a({ href, children, ...rest }: ComponentPropsWithoutRef<'a'>) {
+      if (typeof href === 'string' && href.startsWith('vault:')) {
+        const noteName = href.slice('vault:'.length)
+        return (
+          <span
+            style={vaultLinkStyle}
+            role="link"
+            tabIndex={0}
+            onClick={() => onSend(`Read the vault note for ${noteName}`)}
+            onKeyDown={e => { if (e.key === 'Enter') onSend(`Read the vault note for ${noteName}`) }}
+            {...rest}
+          >
+            {children}
+          </span>
+        )
+      }
+      return <a href={href} target="_blank" rel="noopener noreferrer" {...rest}>{children}</a>
+    },
+    code({ children, className, ...rest }: ComponentPropsWithoutRef<'code'>) {
+      // Only transform inline code (no className means no language-* fenced block)
+      const text = typeof children === 'string' ? children : ''
+      if (!className && GENE_NAME_RE.test(text)) {
+        return (
+          <code
+            style={geneLinkStyle}
+            role="link"
+            tabIndex={0}
+            onClick={() => onSend(`Tell me about ${text}`)}
+            onKeyDown={e => { if (e.key === 'Enter') onSend(`Tell me about ${text}`) }}
+            {...rest}
+          >
+            {children}
+          </code>
+        )
+      }
+      return <code className={className} {...rest}>{children}</code>
+    },
+  }
+  return components
+}
+
+/**
+ * Regex to detect insight blocks in AI messages.
+ * Pattern:
+ *   ★ Insight ───...
+ *   <content>
+ *   ───...
+ */
+const INSIGHT_BLOCK_RE = /★\s*Insight\s*─+\n([\s\S]*?)\n─{5,}/g
+
+interface ContentSegment {
+  type: 'markdown' | 'insight'
+  text: string
+}
+
+function parseInsightBlocks(content: string): ContentSegment[] {
+  const segments: ContentSegment[] = []
+  let lastIndex = 0
+
+  for (const match of content.matchAll(INSIGHT_BLOCK_RE)) {
+    const matchStart = match.index!
+    if (matchStart > lastIndex) {
+      segments.push({ type: 'markdown', text: content.slice(lastIndex, matchStart) })
+    }
+    segments.push({ type: 'insight', text: match[1].trim() })
+    lastIndex = matchStart + match[0].length
+  }
+
+  if (lastIndex < content.length) {
+    segments.push({ type: 'markdown', text: content.slice(lastIndex) })
+  }
+
+  return segments
+}
+
+function InsightBlock({ text, onSend }: { text: string; onSend: (text: string) => void }) {
+  const components = makeMarkdownComponents(onSend)
+  return (
+    <div style={{
+      borderLeft: '3px solid var(--primary)',
+      background: 'var(--bg-inset)',
+      padding: 'var(--space-md) var(--space-lg)',
+      margin: 'var(--space-md) 0',
+    }}>
+      <div style={{
+        fontFamily: 'var(--font-mono)',
+        fontSize: 'var(--font-size-xs)',
+        fontWeight: 600,
+        letterSpacing: 'var(--tracking-wide)',
+        color: 'var(--primary)',
+        marginBottom: 'var(--space-sm)',
+        textTransform: 'uppercase',
+      }}>
+        ★ INSIGHT
+      </div>
+      <div style={{
+        fontSize: 'var(--font-size-md)',
+        lineHeight: 1.7,
+        color: 'var(--text)',
+      }}>
+        <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>{preprocessWikilinks(text)}</ReactMarkdown>
+      </div>
+    </div>
+  )
+}
+
+function renderAssistantContent(content: string, onSend: (text: string) => void): ReactNode {
+  const components = makeMarkdownComponents(onSend)
+  const processed = preprocessWikilinks(content)
+  const segments = parseInsightBlocks(processed)
+  if (segments.length === 1 && segments[0].type === 'markdown') {
+    return <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>{processed}</ReactMarkdown>
+  }
+  return (
+    <>
+      {segments.map((seg, i) =>
+        seg.type === 'insight'
+          ? <InsightBlock key={i} text={seg.text} onSend={onSend} />
+          : <ReactMarkdown key={i} remarkPlugins={[remarkGfm]} components={components}>{seg.text}</ReactMarkdown>
+      )}
+    </>
+  )
+}
+
+const ACTION_ICONS: Record<string, string> = {
+  add_to_checklist: '+',
+  show_gene: 'G',
+  show_variant: 'V',
+  open_link: '->',
+}
 
 interface Props {
   open: boolean
@@ -11,7 +169,9 @@ interface Props {
   streamingText: string
   status: string
   suggestions: string[]
+  actions: AgentAction[]
   onSend: (text: string) => void
+  onAction: (action: AgentAction) => void
 }
 
 function messagesToMarkdown(messages: ChatMessage[]): string {
@@ -39,7 +199,7 @@ function downloadMarkdown(text: string, filename: string) {
   URL.revokeObjectURL(url)
 }
 
-export function CommandPalette({ open, onClose, messages, streaming, streamingText, status, suggestions, onSend }: Props) {
+export function CommandPalette({ open, onClose, messages, streaming, streamingText, status, suggestions, actions, onSend, onAction }: Props) {
   const [input, setInput] = useState('')
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -92,21 +252,20 @@ export function CommandPalette({ open, onClose, messages, streaming, streamingTe
       style={{
         position: 'fixed',
         inset: 0,
-        background: 'rgba(58, 58, 56, 0.3)',
+        background: 'rgba(58, 58, 56, 0.55)',
         display: 'flex',
-        alignItems: 'flex-start',
+        alignItems: 'center',
         justifyContent: 'center',
-        paddingTop: '12vh',
         zIndex: 1000,
       }}
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
     >
       <div style={{
         width: '100%',
-        maxWidth: 640,
+        maxWidth: 860,
         background: 'var(--bg-raised)',
         border: '1px solid var(--primary)',
-        maxHeight: '65vh',
+        height: '85vh',
         display: 'flex',
         flexDirection: 'column',
       }}>
@@ -149,84 +308,131 @@ export function CommandPalette({ open, onClose, messages, streaming, streamingTe
         </div>
 
         {/* Messages */}
-        {messages.length > 0 && (
-          <div
-            ref={scrollRef}
-            style={{
-              flex: 1,
-              overflowY: 'auto',
-              padding: 'var(--space-md)',
-              maxHeight: '45vh',
-            }}
-          >
-            {messages.map((msg, i) => (
-              <div key={i} style={{ marginBottom: 'var(--space-md)', position: 'relative' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span className="label" style={{ color: msg.role === 'user' ? 'var(--accent)' : 'var(--primary)' }}>
-                    {msg.role === 'user' ? 'INPUT //' : 'OUTPUT //'}
-                  </span>
-                  {msg.role === 'assistant' && (
-                    <button
-                      className="btn"
-                      style={{
-                        fontSize: '8px',
-                        padding: '1px 5px',
-                        opacity: 0.5,
-                        transition: 'opacity 0.15s',
-                      }}
-                      onMouseEnter={e => { e.currentTarget.style.opacity = '1' }}
-                      onMouseLeave={e => { e.currentTarget.style.opacity = '0.5' }}
-                      onClick={() => handleCopyMessage(i)}
-                    >
-                      {copiedIdx === i ? 'COPIED' : 'COPY'}
-                    </button>
-                  )}
-                </div>
-                <div style={{ marginTop: 'var(--space-xs)', fontSize: 'var(--font-size-sm)', lineHeight: 1.6 }}
-                     className={msg.role === 'assistant' ? 'chat-markdown' : undefined}>
-                  {msg.role === 'assistant'
-                    ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
-                    : (msg.content.startsWith('[VOICE] ') ? msg.content.slice(8) : msg.content)}
-                </div>
+        <div
+          ref={scrollRef}
+          style={{
+            flex: 1,
+            overflowY: 'auto',
+            padding: 'var(--space-lg) var(--space-xl)',
+          }}
+        >
+          {messages.length === 0 && !streaming && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '100%',
+              color: 'var(--text-tertiary)',
+              fontSize: 'var(--font-size-lg)',
+              fontFamily: 'var(--font-mono)',
+              letterSpacing: 'var(--tracking-wide)',
+              textTransform: 'uppercase',
+            }}>
+              ASK_ANYTHING_ABOUT_YOUR_GENOME
+            </div>
+          )}
+          {messages.map((msg, i) => (
+            <div key={i} style={{ marginBottom: 'var(--space-xl)', position: 'relative' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-sm)' }}>
+                <span className="label" style={{ color: msg.role === 'user' ? 'var(--accent)' : 'var(--primary)' }}>
+                  {msg.role === 'user' ? 'INPUT //' : 'OUTPUT //'}
+                </span>
+                {msg.role === 'assistant' && (
+                  <button
+                    className="btn"
+                    style={{
+                      fontSize: '9px',
+                      padding: '2px 6px',
+                      opacity: 0.4,
+                      transition: 'opacity 0.15s',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.opacity = '1' }}
+                    onMouseLeave={e => { e.currentTarget.style.opacity = '0.4' }}
+                    onClick={() => handleCopyMessage(i)}
+                  >
+                    {copiedIdx === i ? 'COPIED' : 'COPY'}
+                  </button>
+                )}
               </div>
-            ))}
-            {streaming && streamingText && (
-              <div style={{ marginBottom: 'var(--space-md)' }}>
-                <span className="label label--primary">OUTPUT //</span>
-                <div style={{ marginTop: 'var(--space-xs)', fontSize: 'var(--font-size-sm)', lineHeight: 1.6 }}
-                     className="chat-markdown">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{streamingText}</ReactMarkdown>
-                  <span style={{ animation: 'blink 1s infinite', color: 'var(--primary)' }}>_</span>
-                </div>
+              <div style={{ fontSize: 'var(--font-size-md)', lineHeight: 1.7 }}
+                   className={msg.role === 'assistant' ? 'chat-markdown chat-markdown--lg' : undefined}>
+                {msg.role === 'assistant'
+                  ? renderAssistantContent(msg.content, onSend)
+                  : <span style={{ fontSize: 'var(--font-size-lg)', color: 'var(--text)' }}>
+                      {msg.content.startsWith('[VOICE] ') ? msg.content.slice(8) : msg.content}
+                    </span>}
+              </div>
+            </div>
+          ))}
+          {streaming && streamingText && (
+            <div style={{ marginBottom: 'var(--space-xl)' }}>
+              <span className="label label--primary" style={{ marginBottom: 'var(--space-sm)', display: 'inline-block' }}>OUTPUT //</span>
+              <div style={{ fontSize: 'var(--font-size-md)', lineHeight: 1.7 }}
+                   className="chat-markdown chat-markdown--lg">
+                {renderAssistantContent(streamingText, onSend)}
+                <span style={{ animation: 'blink 1s infinite', color: 'var(--primary)' }}>_</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Actions + Suggested responses */}
+        {(actions.length > 0 || suggestions.length > 0) && !streaming && (
+          <div style={{
+            padding: 'var(--space-md) var(--space-xl)',
+            borderTop: '1px dashed var(--border-dashed)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 'var(--space-sm)',
+          }}>
+            {actions.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-sm)' }}>
+                {actions.map((a, i) => (
+                  <button
+                    key={i}
+                    className="btn"
+                    style={{
+                      fontSize: 'var(--font-size-sm)',
+                      padding: '6px 14px',
+                      color: 'var(--bg-raised)',
+                      background: 'var(--primary)',
+                      borderColor: 'var(--primary)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}
+                    onClick={() => onAction(a)}
+                  >
+                    <span style={{
+                      fontWeight: 700,
+                      fontSize: '10px',
+                      opacity: 0.7,
+                      fontFamily: 'var(--font-mono)',
+                    }}>{ACTION_ICONS[a.type] || '>'}</span>
+                    {a.label}
+                  </button>
+                ))}
               </div>
             )}
-          </div>
-        )}
-
-        {/* Suggested responses */}
-        {suggestions.length > 0 && !streaming && (
-          <div style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: 'var(--space-xs)',
-            padding: 'var(--space-sm) var(--space-md)',
-            borderTop: '1px dashed var(--border-dashed)',
-          }}>
-            {suggestions.map((s, i) => (
-              <button
-                key={i}
-                className="btn"
-                style={{
-                  fontSize: 'var(--font-size-xs)',
-                  padding: '4px 10px',
-                  color: 'var(--primary)',
-                  borderColor: 'var(--primary-dim)',
-                }}
-                onClick={() => onSend(s)}
-              >
-                {s}
-              </button>
-            ))}
+            {suggestions.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-sm)' }}>
+                {suggestions.map((s, i) => (
+                  <button
+                    key={i}
+                    className="btn"
+                    style={{
+                      fontSize: 'var(--font-size-sm)',
+                      padding: '6px 14px',
+                      color: 'var(--primary)',
+                      borderColor: 'var(--primary-dim)',
+                    }}
+                    onClick={() => onSend(s)}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -234,15 +440,16 @@ export function CommandPalette({ open, onClose, messages, streaming, streamingTe
         <form onSubmit={handleSubmit} style={{
           display: 'flex',
           alignItems: 'center',
-          padding: 'var(--space-sm) var(--space-md)',
+          padding: 'var(--space-md) var(--space-xl)',
           gap: 'var(--space-sm)',
-          borderTop: messages.length > 0 ? '1px dashed var(--border-dashed)' : 'none',
+          borderTop: '1px dashed var(--border-dashed)',
+          background: 'var(--bg)',
         }}>
-          <span style={{ color: 'var(--primary)', fontWeight: 600, fontSize: 'var(--font-size-lg)' }}>&gt;</span>
+          <span style={{ color: 'var(--primary)', fontWeight: 600, fontSize: 'var(--font-size-xl)' }}>&gt;</span>
           <input
             ref={inputRef}
             className="input"
-            style={{ border: 'none', background: 'transparent', flex: 1, fontSize: 'var(--font-size-md)' }}
+            style={{ border: 'none', background: 'transparent', flex: 1, fontSize: 'var(--font-size-lg)' }}
             placeholder={messages.length === 0 ? 'ASK_ABOUT_YOUR_GENOME...' : 'FOLLOW_UP...'}
             value={input}
             onChange={e => setInput(e.target.value)}

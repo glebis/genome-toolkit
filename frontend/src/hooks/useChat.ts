@@ -11,6 +11,12 @@ export interface UIAction {
   params: Record<string, string>
 }
 
+export interface AgentAction {
+  type: 'add_to_checklist' | 'show_gene' | 'show_variant' | 'open_link'
+  label: string
+  params: Record<string, string>
+}
+
 export function useChat(onUIAction?: (action: UIAction) => void) {
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -18,6 +24,7 @@ export function useChat(onUIAction?: (action: UIAction) => void) {
   const [streamingText, setStreamingText] = useState('')
   const [status, setStatus] = useState('')
   const [suggestions, setSuggestions] = useState<string[]>([])
+  const [actions, setActions] = useState<AgentAction[]>([])
   const abortRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
@@ -64,6 +71,7 @@ export function useChat(onUIAction?: (action: UIAction) => void) {
     setStreamingText('')
     setStatus('CONNECTING')
     setSuggestions([])
+    setActions([])
 
     const abort = new AbortController()
     abortRef.current = abort
@@ -85,6 +93,9 @@ export function useChat(onUIAction?: (action: UIAction) => void) {
           if (action.action === 'suggest_responses') {
             const s = (action.params as unknown as { suggestions: string[] }).suggestions
             if (Array.isArray(s)) setSuggestions(s)
+          } else if (action.action === 'suggest_actions') {
+            const a = (action.params as unknown as { actions: AgentAction[] }).actions
+            if (Array.isArray(a)) setActions(a)
           } else if (onUIAction) {
             onUIAction(action)
           }
@@ -114,5 +125,5 @@ export function useChat(onUIAction?: (action: UIAction) => void) {
     abortRef.current?.abort()
   }, [])
 
-  return { messages, streaming, streamingText, status, suggestions, send, cancel, sessionId }
+  return { messages, streaming, streamingText, status, suggestions, actions, send, cancel, sessionId }
 }

@@ -21,6 +21,7 @@ interface Props {
   snp: SNP | null
   onClose: () => void
   onAskAI?: (query: string) => void
+  onAddToChecklist?: (title: string, geneSymbol: string) => void
 }
 
 const SEVERITY_COLORS: Record<string, string> = {
@@ -30,13 +31,15 @@ const SEVERITY_COLORS: Record<string, string> = {
   unknown: 'var(--border)',
 }
 
-export function VariantDrawer({ snp, onClose, onAskAI }: Props) {
+export function VariantDrawer({ snp, onClose, onAskAI, onAddToChecklist }: Props) {
+  const [addedActions, setAddedActions] = useState<Set<number>>(new Set())
   const [detail, setDetail] = useState<VariantDetail | null>(null)
   const [guidance, setGuidance] = useState<GuidanceData | null>(null)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     if (!snp) { setDetail(null); setGuidance(null); return }
+    setAddedActions(new Set())
     setLoading(true)
 
     const fetchDetail = fetch(`/api/snps/${snp.rsid}`)
@@ -235,11 +238,35 @@ export function VariantDrawer({ snp, onClose, onAskAI }: Props) {
                             padding: '4px 0',
                             color: 'var(--text-primary)',
                             display: 'flex',
-                            alignItems: 'baseline',
+                            alignItems: 'center',
                             gap: 8,
                           }}>
                             <span style={{ color: 'var(--text-secondary)', fontSize: 'var(--font-size-xs)', flexShrink: 0 }}>&#9675;</span>
-                            {action}
+                            <span style={{ flex: 1 }}>{action}</span>
+                            {onAddToChecklist && (
+                              <button
+                                className="btn"
+                                style={{
+                                  fontSize: '9px',
+                                  padding: '1px 6px',
+                                  flexShrink: 0,
+                                  opacity: addedActions.has(i) ? 0.4 : 0.6,
+                                  color: addedActions.has(i) ? 'var(--sig-benefit)' : 'var(--primary)',
+                                  borderColor: addedActions.has(i) ? 'var(--sig-benefit)' : 'var(--border)',
+                                  cursor: addedActions.has(i) ? 'default' : 'pointer',
+                                }}
+                                disabled={addedActions.has(i)}
+                                onClick={() => {
+                                  const gene = (detail as VariantDetail)?.gene || d.gene || 'custom'
+                                  onAddToChecklist(action, gene)
+                                  setAddedActions(prev => new Set(prev).add(i))
+                                }}
+                                onMouseEnter={e => { if (!addedActions.has(i)) e.currentTarget.style.opacity = '1' }}
+                                onMouseLeave={e => { e.currentTarget.style.opacity = addedActions.has(i) ? '0.4' : '0.6' }}
+                              >
+                                {addedActions.has(i) ? 'ADDED' : '+'}
+                              </button>
+                            )}
                           </li>
                         ))}
                       </ul>

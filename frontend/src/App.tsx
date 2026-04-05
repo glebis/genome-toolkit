@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import './styles/theme.css'
 import { useSNPs, type SNP } from './hooks/useSNPs'
-import { useChat, type UIAction } from './hooks/useChat'
+import { useChat, type UIAction, type AgentAction } from './hooks/useChat'
 import { useVoice } from './hooks/useVoice'
 import { SNPTable } from './components/SNPTable'
 import { CommandPalette } from './components/CommandPalette'
@@ -94,7 +94,7 @@ function App() {
     }
   }, [updateFilters, voice])
 
-  const { messages, streaming, streamingText, status, suggestions, send: rawSend } = useChat(handleUIAction)
+  const { messages, streaming, streamingText, status, suggestions, actions, send: rawSend } = useChat(handleUIAction)
 
   // Wrap send to prefix [VOICE] when voice mode active
   // The prefix tells the agent to call voice_summary but is stripped from display
@@ -110,6 +110,32 @@ function App() {
     setCmdkOpen(true)
     setTimeout(() => send(context), 150)
   }, [send])
+
+  const handleAgentAction = useCallback((action: AgentAction) => {
+    switch (action.type) {
+      case 'add_to_checklist':
+        checklist.addItem(
+          action.params.title || action.label,
+          action.params.gene_symbol || 'custom',
+          action.params.action_type || 'consider',
+          action.params.practical_category || '',
+          action.params.health_domain || '',
+        )
+        break
+      case 'show_gene':
+        setCmdkOpen(false)
+        send(`Tell me about ${action.params.gene_symbol}`)
+        setCmdkOpen(true)
+        break
+      case 'show_variant':
+        setCmdkOpen(false)
+        updateFilters({ search: action.params.rsid })
+        break
+      case 'open_link':
+        window.open(action.params.url, '_blank', 'noopener')
+        break
+    }
+  }, [checklist, send, updateFilters])
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -331,6 +357,7 @@ function App() {
         snp={selectedSNP}
         onClose={() => selectVariant(null)}
         onAskAI={handleAskAI}
+        onAddToChecklist={(title, gene) => checklist.addItem(title, gene, 'consider')}
       />
 
       {/* Command Palette */}
@@ -342,7 +369,9 @@ function App() {
         streamingText={streamingText}
         status={status}
         suggestions={suggestions}
+        actions={actions}
         onSend={send}
+        onAction={handleAgentAction}
       />
 
       {/* Checklist Sidebar */}
