@@ -3,15 +3,31 @@ from pathlib import Path
 
 from fastapi import APIRouter
 
-from backend.app.agent.tools import _vault_path
+from backend.app.agent import tools as _tools
 
 router = APIRouter(prefix="/api/mental-health")
 
 
+def _normalize_gene_symbol(symbol: str) -> str:
+    """Normalize gene symbol for file lookup: MAO-A -> MAOA, SLC6A3 -> SLC6A3."""
+    return symbol.replace("-", "").upper()
+
+
 def _read_gene_note(symbol: str) -> dict | None:
-    if not _vault_path:
+    if not _tools._vault_path:
         return None
-    gene_file = Path(_vault_path) / "Genes" / f"{symbol}.md"
+    normalized = _normalize_gene_symbol(symbol)
+    vault = _tools._vault_path
+    gene_file = Path(vault) / "Genes" / f"{normalized}.md"
+    if not gene_file.exists():
+        gene_file = Path(vault) / "Genes" / f"{symbol}.md"
+    if not gene_file.exists():
+        genes_dir = Path(vault) / "Genes"
+        if genes_dir.exists():
+            for f in genes_dir.iterdir():
+                if f.stem.upper().replace("-", "") == normalized:
+                    gene_file = f
+                    break
     if not gene_file.exists():
         return None
     content = gene_file.read_text()
