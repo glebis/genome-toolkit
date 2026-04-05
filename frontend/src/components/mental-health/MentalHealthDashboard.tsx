@@ -81,8 +81,84 @@ export function MentalHealthDashboard({
     return true
   })
 
+  // Count actionable genes
+  const actionableCount = data.reduce((sum, s) => sum + s.genes.filter(g => g.status === 'actionable').length, 0)
+  const monitorCount = data.reduce((sum, s) => sum + s.genes.filter(g => g.status === 'monitor').length, 0)
+  const optimalCount = data.reduce((sum, s) => sum + s.genes.filter(g => g.status === 'optimal').length, 0)
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
+      {/* Hero header */}
+      <div style={{
+        padding: '40px 24px 32px',
+        borderBottom: '1px solid var(--border)',
+      }}>
+        <div style={{
+          fontSize: 28,
+          fontWeight: 600,
+          letterSpacing: '0.08em',
+          fontFamily: 'var(--font-mono)',
+          marginBottom: 8,
+        }}>
+          Mental Health
+        </div>
+        <div style={{
+          fontSize: 13,
+          color: 'var(--text-secondary)',
+          lineHeight: 1.7,
+          maxWidth: 720,
+          fontFamily: 'var(--font-mono)',
+        }}>
+          Your neurotransmitter pathways, methylation status, and mental health genetics — with actionable recommendations based on your genotype.
+        </div>
+        <div style={{
+          display: 'flex',
+          gap: 24,
+          marginTop: 20,
+        }}>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: 20, fontWeight: 600, color: 'var(--sig-risk)', fontFamily: 'var(--font-mono)' }}>
+              {actionableCount}
+            </span>
+            <span style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text-secondary)', marginTop: 2, fontFamily: 'var(--font-mono)' }}>
+              Actionable
+            </span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: 20, fontWeight: 600, color: 'var(--sig-reduced)', fontFamily: 'var(--font-mono)' }}>
+              {monitorCount}
+            </span>
+            <span style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text-secondary)', marginTop: 2, fontFamily: 'var(--font-mono)' }}>
+              Monitor
+            </span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: 20, fontWeight: 600, color: 'var(--sig-benefit)', fontFamily: 'var(--font-mono)' }}>
+              {optimalCount}
+            </span>
+            <span style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text-secondary)', marginTop: 2, fontFamily: 'var(--font-mono)' }}>
+              Optimal
+            </span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: 20, fontWeight: 600, color: 'var(--primary)', fontFamily: 'var(--font-mono)' }}>
+              {totalActions}
+            </span>
+            <span style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text-secondary)', marginTop: 2, fontFamily: 'var(--font-mono)' }}>
+              Actions available
+            </span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: 20, fontWeight: 600, color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
+              {data.length}
+            </span>
+            <span style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text-secondary)', marginTop: 2, fontFamily: 'var(--font-mono)' }}>
+              Pathways mapped
+            </span>
+          </div>
+        </div>
+      </div>
+
       <FilterBar
         activeCategory={activeCategory}
         activeActionType={activeActionType}
