@@ -7,10 +7,15 @@ import { SNPTable } from './components/SNPTable'
 import { CommandPalette } from './components/CommandPalette'
 import { VariantDrawer } from './components/VariantDrawer'
 import { InsightPanel, type InsightData } from './components/InsightPanel'
+import { VoiceButton } from './components/VoiceButton'
+import { MentalHealthDashboard } from './components/mental-health/MentalHealthDashboard'
+import { useMentalHealthData } from './hooks/useMentalHealthData'
 
 function App() {
   const { result, filters, loading, updateFilters, debouncedUpdateFilters, setPage, resetFilters, activeFilterCount } = useSNPs()
   const voice = useVoice()
+  const [view, setView] = useState<'snps' | 'mental-health'>('snps')
+  const mentalHealth = useMentalHealthData()
   const [cmdkOpen, setCmdkOpen] = useState(false)
   const [selectedSNP, setSelectedSNP] = useState<SNP | null>(null)
   const [genes, setGenes] = useState<{ gene: string; count: number }[]>([])
@@ -55,7 +60,8 @@ function App() {
 
       updateFilters(update)
     } else if (action.action === 'speak') {
-      voice.speak((action.params as unknown as { text: string }).text)
+      const p = action.params as unknown as { text: string; emotion?: string }
+      voice.speak(p.text, p.emotion)
     }
   }, [updateFilters, voice])
 
@@ -126,50 +132,45 @@ function App() {
           </span>
         </div>
         <div style={{ display: 'flex', gap: 'var(--space-sm)', alignItems: 'center' }}>
+          <button
+            className="btn"
+            style={{
+              fontSize: 'var(--font-size-xs)',
+              background: view === 'snps' ? 'var(--bg-inset)' : 'transparent',
+              borderColor: view === 'snps' ? 'var(--primary)' : 'var(--border)',
+              color: view === 'snps' ? 'var(--primary)' : 'var(--text-secondary)',
+            }}
+            onClick={() => setView('snps')}
+          >
+            SNP_BROWSER
+          </button>
+          <button
+            className="btn"
+            style={{
+              fontSize: 'var(--font-size-xs)',
+              background: view === 'mental-health' ? 'var(--bg-inset)' : 'transparent',
+              borderColor: view === 'mental-health' ? 'var(--primary)' : 'var(--border)',
+              color: view === 'mental-health' ? 'var(--primary)' : 'var(--text-secondary)',
+            }}
+            onClick={() => setView('mental-health')}
+          >
+            MENTAL_HEALTH
+          </button>
           {voice.supported && (
-            <>
-              <button
-                className={`btn ${voice.voiceEnabled ? 'btn--active' : ''}`}
-                style={{ fontSize: 'var(--font-size-xs)', padding: '4px 8px' }}
-                onClick={voice.toggleVoice}
-                title={voice.voiceEnabled ? 'Voice mode ON — responses will be spoken' : 'Enable voice mode'}
-              >
-                {voice.voiceEnabled ? 'VOICE_ON' : 'VOICE'}
-              </button>
-              {voice.voiceEnabled && (
-                <button
-                  className={`btn ${voice.listening ? 'btn--active' : ''}`}
-                  style={{
-                    fontSize: 'var(--font-size-xs)',
-                    padding: '4px 8px',
-                    color: voice.listening ? 'var(--sig-risk)' : undefined,
-                    borderColor: voice.listening ? 'var(--sig-risk)' : undefined,
-                  }}
-                  onClick={() => {
-                    if (voice.listening) {
-                      voice.stopListening()
-                    } else {
-                      setCmdkOpen(true)
-                      voice.startListening((text) => {
-                        send(text)
-                      })
-                    }
-                  }}
-                  title={voice.listening ? 'Listening...' : 'Push to talk'}
-                >
-                  {voice.listening ? 'LISTENING...' : 'MIC'}
-                </button>
-              )}
-              {voice.speaking && (
-                <button
-                  className="btn"
-                  style={{ fontSize: 'var(--font-size-xs)', padding: '4px 8px', color: 'var(--primary)' }}
-                  onClick={voice.stopSpeaking}
-                >
-                  STOP
-                </button>
-              )}
-            </>
+            <VoiceButton
+              voiceEnabled={voice.voiceEnabled}
+              state={voice.state}
+              recordingTime={voice.recordingTime}
+              onToggleVoice={voice.toggleVoice}
+              onStartListening={() => {
+                setCmdkOpen(true)
+                voice.startListening((text) => {
+                  send(text)
+                })
+              }}
+              onStopListening={voice.stopListening}
+              onStopSpeaking={voice.stopSpeaking}
+            />
           )}
           <button
             className="btn btn--accent"
@@ -181,36 +182,50 @@ function App() {
         </div>
       </header>
 
-      {/* Unified filter panel */}
-      <InsightPanel
-        data={insights}
-        filters={filters}
-        genes={genes}
-        activeFilterCount={activeFilterCount}
-        searchText={searchText}
-        geneText={geneText}
-        conditionText={conditionText}
-        onSearchChange={(v) => { setSearchText(v); debouncedUpdateFilters({ search: v }) }}
-        onGeneChange={setGeneText}
-        onConditionChange={(v) => { setConditionText(v); debouncedUpdateFilters({ condition: v }) }}
-        onFilterChange={updateFilters}
-        onClearAll={() => {
-          setSearchText('')
-          setGeneText('')
-          setConditionText('')
-          resetFilters()
-        }}
-      />
-
-      {/* Table */}
-      <main style={{ flex: 1 }}>
-        <SNPTable
-          data={result}
-          loading={loading}
-          onPageChange={setPage}
-          onRowClick={selectVariant}
-        />
-      </main>
+      {/* Main content: SNP Browser or Mental Health Dashboard */}
+      {view === 'snps' ? (
+        <>
+          {/* Unified filter panel */}
+          <InsightPanel
+            data={insights}
+            filters={filters}
+            genes={genes}
+            activeFilterCount={activeFilterCount}
+            searchText={searchText}
+            geneText={geneText}
+            conditionText={conditionText}
+            onSearchChange={(v) => { setSearchText(v); debouncedUpdateFilters({ search: v }) }}
+            onGeneChange={setGeneText}
+            onConditionChange={(v) => { setConditionText(v); debouncedUpdateFilters({ condition: v }) }}
+            onFilterChange={updateFilters}
+            onClearAll={() => {
+              setSearchText('')
+              setGeneText('')
+              setConditionText('')
+              resetFilters()
+            }}
+          />
+          {/* Table */}
+          <main style={{ flex: 1 }}>
+            <SNPTable
+              data={result}
+              loading={loading}
+              onPageChange={setPage}
+              onRowClick={selectVariant}
+            />
+          </main>
+        </>
+      ) : (
+        <main style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <MentalHealthDashboard
+            data={mentalHealth.sections}
+            totalGenes={mentalHealth.totalGenes}
+            totalActions={mentalHealth.totalActions}
+            onExport={(format) => console.log('export', format)}
+            onGeneClick={(gene) => console.log('gene click', gene.symbol)}
+          />
+        </main>
+      )}
 
       {/* Status bar */}
       <footer style={{
