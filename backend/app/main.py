@@ -26,7 +26,14 @@ FRONTEND_DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
 async def lifespan(app: FastAPI):
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     await genome_db.connect()
-    await genome_db.ensure_schema()
+    # Run versioned migrations (scripts/data/migrations/*.sql)
+    # This is the single source of truth for schema — no ensure_schema()
+    from scripts.lib.db import init_db
+    migrations_dir = Path(__file__).resolve().parents[2] / "scripts" / "data" / "migrations"
+    applied = init_db(GENOME_DB_PATH, migrations_dir)
+    if applied:
+        import logging
+        logging.getLogger("genome").info(f"Applied migrations: {applied}")
     await users_db.connect()
     await users_db.init_schema()
     set_genome_db(genome_db)
