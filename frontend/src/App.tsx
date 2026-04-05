@@ -12,25 +12,34 @@ import { MentalHealthDashboard } from './components/mental-health/MentalHealthDa
 import { useMentalHealthData } from './hooks/useMentalHealthData'
 import { useChecklist } from './hooks/useChecklist'
 import { ChecklistSidebar } from './components/mental-health/ChecklistSidebar'
+import { PGxPanel } from './components/pgx/PGxPanel'
 
 function App() {
   const { result, filters, loading, updateFilters, debouncedUpdateFilters, setPage, resetFilters, activeFilterCount } = useSNPs()
   const voice = useVoice()
-  const [view, setView] = useState<'snps' | 'mental-health'>(() => {
-    return window.location.hash === '#/mental-health' ? 'mental-health' : 'snps'
+  const [view, setView] = useState<'snps' | 'mental-health' | 'pgx'>(() => {
+    const hash = window.location.hash
+    if (hash === '#/mental-health') return 'mental-health'
+    if (hash === '#/pgx') return 'pgx'
+    return 'snps'
   })
   const mentalHealth = useMentalHealthData()
   const checklist = useChecklist()
   const [checklistOpen, setChecklistOpen] = useState(false)
 
-  const navigate = useCallback((v: 'snps' | 'mental-health') => {
+  const navigate = useCallback((v: 'snps' | 'mental-health' | 'pgx') => {
     setView(v)
-    window.location.hash = v === 'mental-health' ? '#/mental-health' : '#/'
+    if (v === 'mental-health') window.location.hash = '#/mental-health'
+    else if (v === 'pgx') window.location.hash = '#/pgx'
+    else window.location.hash = '#/'
   }, [])
 
   useEffect(() => {
     const onHashChange = () => {
-      setView(window.location.hash === '#/mental-health' ? 'mental-health' : 'snps')
+      const hash = window.location.hash
+      if (hash === '#/mental-health') setView('mental-health')
+      else if (hash === '#/pgx') setView('pgx')
+      else setView('snps')
     }
     window.addEventListener('hashchange', onHashChange)
     return () => window.removeEventListener('hashchange', onHashChange)
@@ -189,6 +198,18 @@ function App() {
             className="btn"
             style={{
               fontSize: 'var(--font-size-xs)',
+              background: view === 'pgx' ? 'var(--bg-inset)' : 'transparent',
+              borderColor: view === 'pgx' ? 'var(--primary)' : 'var(--border)',
+              color: view === 'pgx' ? 'var(--primary)' : 'var(--text-secondary)',
+            }}
+            onClick={() => navigate('pgx')}
+          >
+            PGX_/_DRUGS
+          </button>
+          <button
+            className="btn"
+            style={{
+              fontSize: 'var(--font-size-xs)',
               position: 'relative',
               borderColor: checklistOpen ? 'var(--primary)' : 'var(--border)',
               color: checklistOpen ? 'var(--primary)' : undefined,
@@ -261,11 +282,22 @@ function App() {
             <SNPTable
               data={result}
               loading={loading}
+              totalVariants={insights?.total_variants}
               onPageChange={setPage}
               onRowClick={selectVariant}
+              onResetFilters={() => {
+                setSearchText('')
+                setGeneText('')
+                setConditionText('')
+                resetFilters()
+              }}
             />
           </main>
         </>
+      ) : view === 'pgx' ? (
+        <main>
+          <PGxPanel />
+        </main>
       ) : (
         <main>
           <MentalHealthDashboard
