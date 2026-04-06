@@ -12,19 +12,19 @@ const MH_SYSTEMS: Record<string, { name: string; tags: string[] }> = {
   },
   serotonin: {
     name: 'Serotonin & Neuroplasticity',
-    tags: ['Serotonin System', 'Neuroplasticity', 'Serotonin & Neuroplasticity'],
+    tags: ['Serotonin System', 'Neuroplasticity', 'Neurotransmitter Synthesis'],
   },
-  monoamine: {
-    name: 'Monoamine Regulation',
-    tags: ['Monoamine Regulation', 'MAO System'],
+  dopamine: {
+    name: 'Dopamine & Reward',
+    tags: ['Dopamine System', 'Dopamine & Reward', 'Opioid and Reward', 'Behavioral Architecture'],
   },
   gaba: {
     name: 'GABA & Sleep',
-    tags: ['GABA System', 'GABA & Sleep'],
+    tags: ['GABA System', 'Sleep Architecture'],
   },
-  dopamine: {
-    name: 'Dopamine System',
-    tags: ['Dopamine System', 'Dopamine & Reward'],
+  stress: {
+    name: 'Stress Response',
+    tags: ['Stress Response', 'HPA Axis'],
   },
 }
 
@@ -176,38 +176,9 @@ export function useMentalHealthData(): UseMentalHealthDataReturn {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (genesLoading) return
+    if (genesLoading || genes.length === 0) return
 
-    // Try the dashboard endpoint first (returns parsed vault data with actions)
-    fetch('/api/mental-health/dashboard')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (data && data.sections && data.sections.length > 0) {
-          console.log(`[genome-toolkit] Dashboard: loaded ${data.totalGenes} genes from vault`)
-          setSections(data.sections)
-          // Collect actions from all sections
-          const vaultActions: Record<string, ActionData[]> = {}
-          for (const section of data.sections) {
-            if (section.actions) {
-              for (const [symbol, actionList] of Object.entries(
-                section.actions as Record<string, ActionData[]>,
-              )) {
-                vaultActions[symbol] = actionList
-              }
-            }
-          }
-          if (Object.keys(vaultActions).length > 0) {
-            setActions(vaultActions)
-          }
-        } else {
-          // Fall back to building sections from useVaultGenes
-          console.log('[genome-toolkit] Dashboard: falling back to vault gene list')
-          buildFromVaultGenes(genes, setSections, setActions)
-        }
-      })
-      .catch(() => {
-        buildFromVaultGenes(genes, setSections, setActions)
-      })
+    buildFromVaultGenes(genes, setSections, setActions)
       .finally(() => setLoading(false))
   }, [genes, genesLoading])
 

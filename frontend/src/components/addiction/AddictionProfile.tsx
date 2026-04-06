@@ -4,6 +4,7 @@ import { GeneCard } from '../mental-health/GeneCard'
 import type { GeneData } from '../../types/genomics'
 import { useAddictionData } from '../../hooks/useAddictionData'
 import type { SubstanceCard } from '../../hooks/useAddictionData'
+import { GenomeGlyph } from '../GenomeGlyph'
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
@@ -103,9 +104,18 @@ export function AddictionProfile({ onAddToChecklist }: AddictionProfileProps) {
 
       {/* Hero header */}
       <div style={{
-        padding: '48px 24px 36px',
+        padding: '40px 24px 32px',
         borderBottom: '1px solid var(--border)',
+        display: 'flex',
+        gap: 24,
+        alignItems: 'flex-start',
       }}>
+        <GenomeGlyph
+          genotypes={PATHWAYS.flatMap(s => s.genes.map(g => g.genotype))}
+          size={100}
+          label="reward profile"
+        />
+        <div style={{ flex: 1 }}>
         <div style={{
           fontSize: 28,
           fontWeight: 600,
@@ -159,6 +169,7 @@ export function AddictionProfile({ onAddToChecklist }: AddictionProfileProps) {
             </span>
           </div>
         </div>
+        </div>{/* end flex wrapper */}
       </div>
 
       {/* Main content */}

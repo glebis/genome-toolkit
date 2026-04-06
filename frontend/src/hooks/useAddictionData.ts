@@ -21,23 +21,23 @@ export interface SubstanceCard {
 const PATHWAY_SYSTEMS: Record<string, { name: string; tags: string[] }> = {
   dopamine: {
     name: 'Dopamine & Reward Sensitivity',
-    tags: ['Dopamine System', 'Dopamine & Reward', 'Reward Sensitivity'],
+    tags: ['Dopamine System', 'Behavioral Architecture'],
   },
   opioid: {
     name: 'Opioid Receptor Sensitivity',
-    tags: ['Opioid System', 'Opioid Sensitivity'],
+    tags: ['Opioid and Reward'],
   },
   alcohol: {
     name: 'Alcohol Metabolism',
-    tags: ['Alcohol Metabolism'],
+    tags: ['Liver and Metabolism', 'Drug Metabolism'],
   },
   gaba: {
     name: 'GABA & Sedative Sensitivity',
-    tags: ['GABA System', 'GABA & Sedative Sensitivity'],
+    tags: ['GABA System', 'Sleep Architecture'],
   },
-  nicotine: {
-    name: 'Nicotine Metabolism',
-    tags: ['Nicotine Metabolism'],
+  endocannabinoid: {
+    name: 'Endocannabinoid System',
+    tags: ['Endocannabinoid System'],
   },
 }
 

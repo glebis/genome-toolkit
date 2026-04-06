@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useRiskData } from '../../hooks/useRiskData'
+import { GenomeGlyph } from '../GenomeGlyph'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -482,13 +483,22 @@ export function RiskLandscape({ onExport, onAddToChecklist }: RiskLandscapeProps
       {/* Hero */}
       <div
         style={{
-          padding: '48px 24px 36px',
+          padding: '40px 24px 32px',
           borderBottom: '1px solid var(--border)',
           maxWidth: 1100,
           margin: '0 auto',
           width: '100%',
+          display: 'flex',
+          gap: 24,
+          alignItems: 'flex-start',
         }}
       >
+        <GenomeGlyph
+          genotypes={CAUSES.flatMap(c => (c.genes || []).map(g => g.variant))}
+          size={100}
+          label="risk profile"
+        />
+        <div style={{ flex: 1 }}>
         <div
           style={{
             fontSize: 28,
@@ -538,6 +548,7 @@ export function RiskLandscape({ onExport, onAddToChecklist }: RiskLandscapeProps
             </div>
           ))}
         </div>
+        </div>{/* end flex wrapper */}
       </div>
 
       {/* Main content */}
