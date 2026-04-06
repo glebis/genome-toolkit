@@ -10,16 +10,26 @@ interface ConfigEnzyme {
   default_position?: number
   guideline?: string
   description?: string
-  drugs: ConfigDrug[]
+  drug_cards?: ConfigDrug[]  // YAML uses drug_cards
+  drugs?: ConfigDrug[]       // fallback
 }
 
 interface ConfigDrug {
-  drugClass: string
-  category: 'prescription' | 'substance'
+  class?: string             // YAML uses 'class'
+  drugClass?: string         // fallback
+  category: string
   description?: string
-  drugList?: string
+  drugs?: string             // YAML uses 'drugs' for drug list
+  drugList?: string          // fallback
   dangerNote?: string
-  impact_by_status?: Record<string, { impact: DrugImpact; statusText: string; description?: string }>
+  danger_note?: string
+  impact_by_status?: Record<string, {
+    impact: DrugImpact
+    text?: string            // YAML uses 'text'
+    statusText?: string      // fallback
+    description?: string
+    danger_note?: string     // per-status danger notes
+  }>
 }
 
 function mapMetabolizerStatus(ps: string): MetabolizerStatus {
@@ -89,18 +99,19 @@ export function usePGxData(): UsePGxDataReturn {
         guideline: ce.guideline,
       }
 
-      const drugs: DrugCardData[] = (ce.drugs ?? []).map((cd) => {
+      const drugCards = ce.drug_cards ?? ce.drugs ?? []
+      const drugs: DrugCardData[] = drugCards.map((cd) => {
         const statusKey = metStatus as string
         const byStatus = cd.impact_by_status?.[statusKey]
 
         return {
-          drugClass: cd.drugClass,
+          drugClass: cd.class ?? cd.drugClass ?? '',
           impact: byStatus?.impact ?? 'ok',
-          statusText: byStatus?.statusText ?? 'Standard dosing',
+          statusText: byStatus?.text ?? byStatus?.statusText ?? 'Standard dosing',
           description: byStatus?.description ?? cd.description ?? '',
-          drugList: cd.drugList ?? '',
-          dangerNote: cd.dangerNote,
-          category: cd.category,
+          drugList: cd.drugs ?? cd.drugList ?? '',
+          dangerNote: byStatus?.danger_note ?? cd.danger_note ?? cd.dangerNote,
+          category: cd.category as 'drug' | 'substance',
         }
       })
 

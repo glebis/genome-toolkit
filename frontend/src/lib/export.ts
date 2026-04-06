@@ -88,25 +88,38 @@ export function pgxToMarkdown(sections: PGxEnzymeSection[]): string {
     `# PGx / Drug Metabolism Report`,
     `_Date: ${today()}_`,
     '',
+    '> This report summarizes pharmacogenomic findings relevant to medication dosing.',
+    '> Discuss all changes with your prescribing physician.',
+    '',
   ]
 
   for (const section of sections) {
     const e = section.enzyme
-    lines.push(`## ${e.symbol} (${e.alleles}) -- ${e.status} metabolizer`)
-    if (e.guideline) lines.push(`_Guideline: ${e.guideline}_`)
+    lines.push(`## ${e.symbol} — ${e.status.toUpperCase()} metabolizer`)
+    lines.push(`**Genotype:** ${e.alleles}`)
+    if (e.guideline) lines.push(`**Guideline:** ${e.guideline}`)
     lines.push('')
     lines.push(e.description)
     lines.push('')
 
     if (section.drugs.length > 0) {
-      lines.push('| Drug Class | Category | Impact | Status | Notes |')
-      lines.push('|-----------|----------|--------|--------|-------|')
       for (const d of section.drugs) {
-        const danger = d.dangerNote ? ` **${d.dangerNote}**` : ''
-        lines.push(`| ${d.drugClass} | ${d.category} | ${d.impact} | ${d.statusText} | ${d.description}${danger} |`)
+        const icon = d.impact === 'danger' ? '!!!' : d.impact === 'warn' ? '!!' : d.impact === 'adjust' ? '!' : '-'
+        lines.push(`### ${icon} ${d.drugClass} [${d.impact.toUpperCase()}]`)
+        lines.push(`**Status:** ${d.statusText}`)
+        if (d.drugList) lines.push(`**Drugs affected:** ${d.drugList}`)
+        lines.push('')
+        lines.push(d.description)
+        if (d.dangerNote) {
+          lines.push('')
+          lines.push(`> **WARNING:** ${d.dangerNote}`)
+        }
+        lines.push('')
       }
-      lines.push('')
     }
+
+    lines.push('---')
+    lines.push('')
   }
 
   lines.push(footer())
