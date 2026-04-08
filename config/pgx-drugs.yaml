@@ -1,5 +1,9 @@
 enzymes:
   - symbol: CYP2D6
+    gene_type: enzyme
+    guideline: CPIC
+    description: "CYP2D6 metabolizes about 25% of commonly prescribed drugs including many antidepressants, opioids, antipsychotics, and beta blockers."
+    about: "CYP2D6 lives mainly in the liver and is one of the most variable drug-metabolizing enzymes in humans — status ranges from 'poor metabolizer' (almost no function) to 'ultrarapid' (multiple active gene copies). It handles codeine, tramadol, many SSRIs and TCAs, tamoxifen, antipsychotics, beta blockers, and recreational MDMA. For prodrugs like codeine, poor metabolism means NO effect; for active drugs like most SSRIs, poor metabolism means TOO MUCH effect. This is one of the few enzymes with strong CPIC dosing guidelines for real clinical use."
     drug_cards:
       - class: SSRIs (Fluoxetine, Paroxetine)
         drugs: "Fluoxetine (Prozac), Paroxetine (Paxil), Fluvoxamine"
@@ -55,6 +59,9 @@ enzymes:
           normal: { impact: ok, text: "Standard dosing with monitoring", description: "Normal metabolism. Standard TCA protocols apply." }
           ultrarapid: { impact: warn, text: "May underperform at standard doses", description: "Rapid clearance reduces efficacy. CPIC recommends alternative antidepressant or higher dose with TDM." }
   - symbol: CYP3A4
+    gene_type: enzyme
+    description: "CYP3A4 is the most abundant drug-metabolizing enzyme in humans, responsible for clearing ~50% of all prescription drugs."
+    about: "CYP3A4 is the workhorse enzyme of the liver and gut — it handles an enormous range of drugs: benzodiazepines, statins, calcium channel blockers, immunosuppressants, many HIV meds, erectile dysfunction drugs, and more. Unlike CYP2D6, it has relatively few well-characterized genetic variants, so most people fall near 'normal' function. What makes CYP3A4 clinically critical is drug-drug and FOOD-drug interactions. Grapefruit juice, ketoconazole, and macrolide antibiotics strongly INHIBIT CYP3A4, raising levels of co-administered drugs. Rifampin, St. John's wort, and carbamazepine strongly INDUCE it, lowering drug levels. A small genetic effect can compound with an interaction to cause big problems."
     drug_cards:
       - class: Benzodiazepines
         drugs: "Alprazolam (Xanax), Midazolam, Triazolam"
@@ -94,8 +101,10 @@ enzymes:
           normal: { impact: ok, text: "Standard metabolism", description: "Normal clearance. Standard harm reduction applies." }
 
   - symbol: CYP2C19
+    gene_type: enzyme
     guideline: CPIC
     description: "CYP2C19 handles PPIs, several SSRIs, clopidogrel, and some benzos. It's one of the most clinically actionable enzymes with clear CPIC guidelines."
+    about: "CYP2C19 is highly variable across populations — roughly 2-5% of Europeans and 15-20% of East Asians are poor metabolizers. This matters enormously for clopidogrel (Plavix), a blood-thinner given after heart attacks and stents: poor metabolizers can't activate the drug and get no protection. It also affects how you respond to several common SSRIs (citalopram, escitalopram, sertraline) and how well PPIs like omeprazole suppress stomach acid. There's also an 'ultrarapid' version (CYP2C19*17) that clears these drugs too fast. CPIC publishes clear dosing guidelines — this is one of the most evidence-backed enzymes in pharmacogenomics."
     drug_cards:
       - class: SSRIs (Citalopram, Escitalopram, Sertraline)
         drugs: "Citalopram (Celexa), Escitalopram (Lexapro), Sertraline (Zoloft)"
@@ -128,8 +137,10 @@ enzymes:
           normal: { impact: ok, text: "Standard metabolism", description: "Normal clearance. Standard harm reduction applies." }
 
   - symbol: CYP2C9
+    gene_type: enzyme
     guideline: CPIC
     description: "CYP2C9 metabolizes warfarin, many NSAIDs, and some anticonvulsants. It's also involved in THC clearance — relevant for cannabis users."
+    about: "CYP2C9 is best known for warfarin, the old-school blood thinner with a terrifyingly narrow therapeutic window — too little and you clot, too much and you bleed. CYP2C9 poor metabolizers need roughly half the standard starting dose, and combined with VKORC1 variants, genetic testing can predict the right dose better than trial and error. Beyond warfarin, CYP2C9 clears most NSAIDs (ibuprofen, naproxen, celecoxib), phenytoin (seizures), and sulfonylureas (diabetes). A less-talked-about role: CYP2C9 is a major pathway for THC clearance, so poor metabolizers experience significantly stronger and longer cannabis effects, especially from edibles. About 10-20% of Europeans have reduced CYP2C9 function."
     drug_cards:
       - class: Warfarin (Coumadin)
         drugs: "Warfarin (Coumadin)"
@@ -160,8 +171,10 @@ enzymes:
           normal: { impact: ok, text: "Standard metabolism", description: "Normal clearance. Standard harm reduction applies." }
 
   - symbol: CYP2B6
+    gene_type: enzyme
     guideline: CPIC
     description: "CYP2B6 metabolizes bupropion, methadone, efavirenz, and ketamine. Variable between individuals and highly relevant for both psychiatry and substance use."
+    about: "CYP2B6 used to be considered a minor enzyme but is now recognized as highly clinically relevant. It's the primary pathway for several drugs that matter a lot: bupropion (Wellbutrin for depression and Zyban for quitting smoking), methadone (opioid use disorder treatment), efavirenz (HIV), and therapeutic or recreational ketamine. Expression varies 20-250x between people due to genetics and environmental factors. For ketamine specifically — whether you're getting it for treatment-resistant depression or using it recreationally — CYP2B6 status heavily determines how long effects last. Poor metabolizers can trip for twice as long as normal metabolizers at the same dose."
     drug_cards:
       - class: Bupropion (Wellbutrin, Zyban)
         drugs: "Bupropion (Wellbutrin, Zyban)"
@@ -192,7 +205,9 @@ enzymes:
           normal: { impact: ok, text: "Standard metabolism", description: "Normal clearance. Standard harm reduction applies." }
 
   - symbol: CYP2E1
+    gene_type: enzyme
     description: "CYP2E1 handles alcohol (secondary to ADH/ALDH2), acetaminophen, and volatile anesthetics. Inducible by chronic alcohol use — chronic drinkers have upregulated CYP2E1."
+    about: "CYP2E1 has a unique property: it's INDUCIBLE, meaning chronic alcohol use literally upregulates the enzyme over weeks to months. This is why heavy drinkers develop tolerance and why they're at higher risk of acetaminophen liver toxicity — both pathways use CYP2E1, and alcohol has 'trained' the enzyme to work harder. CYP2E1 converts a small fraction of acetaminophen into NAPQI, a toxic metabolite normally neutralized by glutathione. In chronic drinkers or ultrarapid metabolizers, more NAPQI is produced and glutathione gets depleted faster — which is why 'don't mix Tylenol and alcohol' is one of the most repeated rules in pharmacology. Genetic ultrarapid status stacks with alcohol induction."
     drug_cards:
       - class: Acetaminophen (Tylenol, Paracetamol)
         drugs: "Acetaminophen (Tylenol), combo products (Percocet, Vicodin, NyQuil)"
@@ -215,8 +230,10 @@ enzymes:
           normal: { impact: ok, text: "Standard metabolism", description: "Normal CYP2E1. ADH/ALDH2 status is more relevant for alcohol — check those genes." }
 
   - symbol: SLCO1B1
+    gene_type: transporter
     guideline: CPIC
     description: "SLCO1B1 is a liver transporter, not a CYP enzyme. It pumps statins into liver cells where they work. Decreased function means statins accumulate in muscle instead — the primary cause of statin-induced muscle pain and myopathy."
+    about: "SLCO1B1 (also called OATP1B1) is not an enzyme — it's a TRANSPORTER protein on the surface of liver cells. Its job is to grab drugs from the bloodstream and pull them into hepatocytes where CYP enzymes then process them. For statins, this transport step is critical: if SLCO1B1 doesn't work well, statins pile up in muscle tissue (where they cause side effects) instead of being delivered to the liver (where they actually do their cholesterol-lowering job). The *5 variant (rs4149056) is the big one — carriers have 2-3x higher statin blood levels and 4-17x higher myopathy risk with simvastatin specifically. CPIC now recommends genotyping before starting high-dose statins. Because SLCO1B1 is a transporter, the status labels are 'Poor/Decreased/Normal/Increased Function' rather than 'Metabolizer' — it's not about speed of breakdown, it's about whether the drug gets to the right tissue."
     drug_cards:
       - class: Statins (Simvastatin, Atorvastatin, Rosuvastatin)
         drugs: "Simvastatin (Zocor), Atorvastatin (Lipitor), Rosuvastatin (Crestor), Pravastatin"

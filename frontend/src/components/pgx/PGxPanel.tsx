@@ -29,6 +29,7 @@ export function PGxPanel({ onExport, onAddToChecklist }: PGxPanelProps) {
   const [filter, setFilter] = useState<DrugFilter>('all')
   const [addedDrugs, setAddedDrugs] = useState<Set<string>>(new Set())
   const [expandedSubstance, setExpandedSubstance] = useState<string | null>(null)
+  const [expandedEnzyme, setExpandedEnzyme] = useState<string | null>(null)
 
   if (loading && substancesLoading) return <div className="label">LOADING_DATA...</div>
 
@@ -134,11 +135,32 @@ export function PGxPanel({ onExport, onAddToChecklist }: PGxPanelProps) {
 
           return (
             <div key={section.enzyme.symbol} style={{ marginBottom: 28 }}>
-              {/* Enzyme header */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                <div>
+              {/* Enzyme header — clickable to expand about */}
+              <div
+                onClick={() => section.enzyme.about && setExpandedEnzyme(
+                  expandedEnzyme === section.enzyme.symbol ? null : section.enzyme.symbol
+                )}
+                style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10,
+                  cursor: section.enzyme.about ? 'pointer' : 'default',
+                }}
+                aria-expanded={expandedEnzyme === section.enzyme.symbol}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{ fontSize: 16, fontWeight: 600 }}>{section.enzyme.symbol}</span>
-                  <span style={{ fontSize: 11, color: 'var(--text-secondary)', marginLeft: 8 }}>{section.enzyme.alleles}</span>
+                  <span style={{
+                    fontSize: 8, color: 'var(--text-tertiary)',
+                    textTransform: 'uppercase', letterSpacing: '0.1em',
+                    border: '1px solid var(--border)', padding: '1px 6px', borderRadius: 2,
+                  }}>
+                    {section.enzyme.geneType}
+                  </span>
+                  <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{section.enzyme.alleles}</span>
+                  {section.enzyme.about && (
+                    <span style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
+                      {expandedEnzyme === section.enzyme.symbol ? '▴ hide' : '▾ what does this do?'}
+                    </span>
+                  )}
                 </div>
                 {section.enzyme.guideline && (
                   <span style={{ fontSize: 8, background: 'var(--primary)', color: 'var(--bg-raised)', padding: '3px 8px', borderRadius: 3, letterSpacing: '0.1em' }}>
@@ -152,6 +174,28 @@ export function PGxPanel({ onExport, onAddToChecklist }: PGxPanelProps) {
               <div style={{ fontSize: 11, color: 'var(--text)', lineHeight: 1.7, marginBottom: 16 }}>
                 {section.enzyme.description}
               </div>
+
+              {/* Expanded "about" educational block */}
+              {expandedEnzyme === section.enzyme.symbol && section.enzyme.about && (
+                <div style={{
+                  background: 'var(--bg-inset)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 4,
+                  padding: '12px 16px',
+                  marginBottom: 16,
+                  fontSize: 10,
+                  lineHeight: 1.7,
+                  color: 'var(--text)',
+                }}>
+                  <div style={{
+                    fontSize: 9, fontWeight: 600, color: 'var(--text-secondary)',
+                    textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6,
+                  }}>
+                    About {section.enzyme.symbol}
+                  </div>
+                  {section.enzyme.about}
+                </div>
+              )}
 
               {/* Drug cards grouped by category */}
               {filteredDrugs.some(d => d.category === 'prescription') && (

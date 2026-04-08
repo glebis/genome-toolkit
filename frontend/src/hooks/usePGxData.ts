@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useVaultGenes } from './useVaultGenes'
 import type { VaultGene } from './useVaultGenes'
-import type { PGxEnzymeSection, MetabolizerStatus, DrugImpact, DrugCardData, EnzymeData } from '../types/pgx'
+import type { PGxEnzymeSection, MetabolizerStatus, DrugImpact, DrugCardData, EnzymeData, GeneType } from '../types/pgx'
 
 interface ConfigEnzyme {
   symbol: string
@@ -10,6 +10,8 @@ interface ConfigEnzyme {
   default_position?: number
   guideline?: string
   description?: string
+  about?: string
+  gene_type?: GeneType
   drug_cards?: ConfigDrug[]  // YAML uses drug_cards
   drugs?: ConfigDrug[]       // fallback
 }
@@ -95,8 +97,10 @@ export function usePGxData(): UsePGxDataReturn {
         status: metStatus,
         position: ce.default_position ?? statusPosition(metStatus),
         description:
-          vaultGene?.description ?? ce.description ?? `${ce.symbol} enzyme — ${metStatus} metabolizer.`,
+          vaultGene?.description ?? ce.description ?? `${ce.symbol} — ${metStatus} metabolizer.`,
         guideline: ce.guideline,
+        geneType: ce.gene_type ?? 'enzyme',
+        about: ce.about,
       }
 
       const drugCards = ce.drug_cards ?? ce.drugs ?? []

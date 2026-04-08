@@ -1,5 +1,5 @@
 import type { EnzymeData } from '../../types/pgx'
-import { METABOLIZER_COLORS, METABOLIZER_LABELS } from '../../types/pgx'
+import { METABOLIZER_COLORS, statusLabel } from '../../types/pgx'
 
 interface MetabolizerBarProps {
   enzyme: EnzymeData
@@ -7,6 +7,10 @@ interface MetabolizerBarProps {
 
 export function MetabolizerBar({ enzyme }: MetabolizerBarProps) {
   const color = METABOLIZER_COLORS[enzyme.status]
+  const isTransporter = enzyme.geneType === 'transporter'
+  const scaleLabels = isTransporter
+    ? ['Poor', 'Decreased', 'Normal', 'Increased']
+    : ['Poor', 'Intermediate', 'Normal', 'Ultrarapid']
 
   return (
     <div style={{ marginBottom: 14 }}>
@@ -15,7 +19,7 @@ export function MetabolizerBar({ enzyme }: MetabolizerBarProps) {
         fontSize: 9, color: 'var(--text-tertiary)', marginBottom: 4,
         letterSpacing: '0.08em', textTransform: 'uppercase',
       }}>
-        <span>Poor</span><span>Intermediate</span><span>Normal</span><span>Ultrarapid</span>
+        {scaleLabels.map(l => <span key={l}>{l}</span>)}
       </div>
       <div style={{
         height: 6, background: 'var(--bg-inset)', borderRadius: 3, position: 'relative',
@@ -35,7 +39,7 @@ export function MetabolizerBar({ enzyme }: MetabolizerBarProps) {
         }} />
       </div>
       <div style={{ fontSize: 11, fontWeight: 500, marginTop: 8, color }}>
-        {METABOLIZER_LABELS[enzyme.status]}
+        {statusLabel(enzyme.status, enzyme.geneType)}
       </div>
     </div>
   )

@@ -1,4 +1,5 @@
 export type MetabolizerStatus = 'poor' | 'intermediate' | 'normal' | 'ultrarapid'
+export type GeneType = 'enzyme' | 'transporter'
 
 export const METABOLIZER_COLORS: Record<MetabolizerStatus, string> = {
   poor: 'var(--sig-risk)',
@@ -14,6 +15,17 @@ export const METABOLIZER_LABELS: Record<MetabolizerStatus, string> = {
   ultrarapid: 'Ultrarapid Metabolizer',
 }
 
+export const TRANSPORTER_LABELS: Record<MetabolizerStatus, string> = {
+  poor: 'Poor Function',
+  intermediate: 'Decreased Function',
+  normal: 'Normal Function',
+  ultrarapid: 'Increased Function',
+}
+
+export function statusLabel(status: MetabolizerStatus, geneType: GeneType): string {
+  return geneType === 'transporter' ? TRANSPORTER_LABELS[status] : METABOLIZER_LABELS[status]
+}
+
 export type DrugImpact = 'ok' | 'adjust' | 'warn' | 'danger'
 
 export interface EnzymeData {
@@ -23,6 +35,8 @@ export interface EnzymeData {
   position: number        // 0-100, position on speed bar
   description: string
   guideline?: string      // "CPIC" or "DPWG"
+  geneType: GeneType      // enzyme vs transporter — affects labels/copy
+  about?: string          // longer educational text shown on expand
 }
 
 export interface DrugCardData {
