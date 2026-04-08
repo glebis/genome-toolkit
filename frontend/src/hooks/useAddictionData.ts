@@ -2,19 +2,10 @@ import { useState, useEffect } from 'react'
 import { useVaultGenes } from './useVaultGenes'
 import type { VaultGene } from './useVaultGenes'
 import type { PathwaySection, GeneData, GeneStatus, EvidenceTier } from '../types/genomics'
+import { useSubstancesData } from './useSubstancesData'
+import type { SubstanceCard } from './useSubstancesData'
 
-// ── SubstanceCard type (matches AddictionProfile.tsx) ────────────────────────
-
-export interface SubstanceCard {
-  name: string
-  status: string
-  statusColor: string
-  borderColor: string
-  description: string
-  genes: string
-  harmTitle: string
-  harmText: string
-}
+export type { SubstanceCard }
 
 // ── Pathway groupings ────────────────────────────────────────────────────────
 
@@ -83,15 +74,6 @@ function matchesSystem(gene: VaultGene, tags: string[]): boolean {
   return gene.systems.some((s) => lower.includes(s.toLowerCase()))
 }
 
-interface ConfigSubstance {
-  name: string
-  relevant_genes: string[]
-  status_text?: string
-  description?: string
-  harm_title?: string
-  harm_text?: string
-}
-
 // ── Hook return ──────────────────────────────────────────────────────────────
 
 interface UseAddictionDataReturn {
@@ -104,29 +86,11 @@ interface UseAddictionDataReturn {
 
 export function useAddictionData(): UseAddictionDataReturn {
   const { genes, loading: genesLoading } = useVaultGenes()
-  const [configSubstances, setConfigSubstances] = useState<ConfigSubstance[] | null>(null)
-  const [configLoading, setConfigLoading] = useState(true)
+  const { substances, loading: substancesLoading } = useSubstancesData()
   const [pathways, setPathways] = useState<PathwaySection[]>([])
-  const [substances, setSubstances] = useState<SubstanceCard[]>([])
 
   useEffect(() => {
-    fetch('/api/config/substances')
-      .then((res) => {
-        if (!res.ok) throw new Error(`Substances config API: ${res.status}`)
-        return res.json()
-      })
-      .then((data) => {
-        setConfigSubstances(data.substances ?? data)
-        setConfigLoading(false)
-      })
-      .catch((err) => {
-        console.error('[useAddictionData] Config fetch failed:', err)
-        setConfigLoading(false)
-      })
-  }, [])
-
-  useEffect(() => {
-    if (genesLoading || configLoading) return
+    if (genesLoading) return
 
     const geneMap = new Map<string, VaultGene>()
     for (const g of genes) geneMap.set(g.symbol.toUpperCase(), g)
@@ -167,48 +131,7 @@ export function useAddictionData(): UseAddictionDataReturn {
     }
 
     setPathways(builtPathways)
-
-    // Build substances
-    if (configSubstances && configSubstances.length > 0) {
-      const builtSubstances: SubstanceCard[] = configSubstances.map((cs) => {
-        const matched = (cs.relevant_genes ?? [])
-          .map((sym: string) => geneMap.get(sym.toUpperCase()))
-          .filter(Boolean) as VaultGene[]
-
-        const hasActionable = matched.some(
-          (g) => g.personal_status === 'risk' || g.personal_status === 'actionable',
-        )
-        const hasMonitor = matched.some(
-          (g) => g.personal_status === 'intermediate' || g.personal_status === 'monitor',
-        )
-
-        const statusColor = hasActionable
-          ? 'var(--sig-risk)'
-          : hasMonitor
-            ? 'var(--sig-reduced)'
-            : 'var(--sig-benefit)'
-
-        const borderColor = hasActionable ? 'var(--sig-risk)' : hasMonitor ? 'var(--sig-reduced)' : 'var(--border)'
-
-        const genesStr =
-          matched.length > 0
-            ? `Genes involved: ${matched.map((g) => g.symbol).join(', ')}`
-            : `Genes involved: ${(cs.relevant_genes ?? []).join(', ')}`
-
-        return {
-          name: cs.name,
-          status: cs.status_text ?? (hasActionable ? 'Caution' : hasMonitor ? 'Be aware' : 'Standard'),
-          statusColor,
-          borderColor,
-          description: cs.description ?? '',
-          genes: genesStr,
-          harmTitle: cs.harm_title ?? 'Harm reduction',
-          harmText: cs.harm_text ?? '',
-        }
-      })
-      setSubstances(builtSubstances)
-    }
-  }, [genes, genesLoading, configSubstances, configLoading])
+  }, [genes, genesLoading])
 
   const totalGenes = pathways.reduce((sum, p) => sum + p.genes.length, 0)
   const actionableCount = pathways.reduce(
@@ -219,7 +142,7 @@ export function useAddictionData(): UseAddictionDataReturn {
   return {
     pathways,
     substances,
-    loading: genesLoading || configLoading,
+    loading: genesLoading || substancesLoading,
     totalGenes,
     actionableCount,
   }

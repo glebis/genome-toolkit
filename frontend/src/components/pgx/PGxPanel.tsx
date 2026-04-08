@@ -4,6 +4,8 @@ import { MetabolizerBar } from './MetabolizerBar'
 import { DrugCard } from './DrugCard'
 import { GenomeGlyph } from '../GenomeGlyph'
 import { usePGxData } from '../../hooks/usePGxData'
+import { useSubstancesData } from '../../hooks/useSubstancesData'
+import type { SubstanceCard } from '../../hooks/useSubstancesData'
 import { printPage, downloadFile, pgxToMarkdown } from '../../lib/export'
 
 type DrugFilter = 'all' | 'antidepressants' | 'pain' | 'cardio' | 'substances' | 'safety'
@@ -23,10 +25,12 @@ interface PGxPanelProps {
 
 export function PGxPanel({ onExport, onAddToChecklist }: PGxPanelProps) {
   const { sections: MOCK_PGX, loading } = usePGxData()
+  const { substances, loading: substancesLoading } = useSubstancesData()
   const [filter, setFilter] = useState<DrugFilter>('all')
   const [addedDrugs, setAddedDrugs] = useState<Set<string>>(new Set())
+  const [expandedSubstance, setExpandedSubstance] = useState<string | null>(null)
 
-  if (loading) return <div className="label">LOADING_DATA...</div>
+  if (loading && substancesLoading) return <div className="label">LOADING_DATA...</div>
 
   const filterDrugs = (drugs: PGxEnzymeSection['drugs']) => {
     if (filter === 'all') return drugs
@@ -209,13 +213,88 @@ export function PGxPanel({ onExport, onAddToChecklist }: PGxPanelProps) {
         })}
       </div>
 
+      {/* Substances section */}
+      {substances.length > 0 && (
+        <div style={{ padding: '0 24px 24px' }}>
+          <div style={{
+            borderTop: '2px solid var(--border)',
+            paddingTop: 24,
+            marginBottom: 16,
+          }}>
+            <div style={{ fontSize: 14, fontWeight: 600, letterSpacing: '0.08em', fontFamily: 'var(--font-mono)', marginBottom: 4 }}>
+              Substances & Harm Reduction
+            </div>
+            <div style={{ fontSize: 10, color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 16 }}>
+              Substance-specific notes based on your enzyme and gene profile. For harm reduction — not encouragement.
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {substances.map((s) => {
+              const isExpanded = expandedSubstance === s.name
+              return (
+                <div
+                  key={s.name}
+                  style={{
+                    background: 'var(--bg-raised)',
+                    borderLeft: `4px solid ${s.borderColor}`,
+                    borderRadius: '0 6px 6px 0',
+                    padding: '14px 18px',
+                    cursor: 'pointer',
+                  }}
+                  onClick={() => setExpandedSubstance(isExpanded ? null : s.name)}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
+                    <span style={{ fontSize: 12, fontWeight: 600 }}>{s.name}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 9, fontWeight: 500, color: s.statusColor, fontFamily: 'var(--font-mono)' }}>
+                        {s.status}
+                      </span>
+                      <span style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
+                        {isExpanded ? '▴' : '▾'}
+                      </span>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 9, color: 'var(--text-secondary)' }}>
+                    Enzymes: {s.relevantEnzymes.length > 0 ? s.relevantEnzymes.join(', ') : '—'} · Genes: {s.genes}
+                  </div>
+
+                  {isExpanded && (
+                    <div style={{ marginTop: 12 }}>
+                      {s.description && (
+                        <div style={{ fontSize: 10, color: 'var(--text)', lineHeight: 1.6, marginBottom: 10 }}>
+                          {s.description}
+                        </div>
+                      )}
+                      <div style={{
+                        padding: '10px 14px',
+                        background: 'var(--bg)',
+                        border: '1px solid var(--border)',
+                        borderRadius: 4,
+                      }}>
+                        <div style={{ fontSize: 9, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                          {s.harmTitle}
+                        </div>
+                        <div style={{ fontSize: 10, color: 'var(--text)', lineHeight: 1.7 }}>
+                          {s.harmText}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Footer */}
       <footer style={{
         padding: '8px 24px', borderTop: '1px dashed var(--border-dashed)',
         display: 'flex', justifyContent: 'space-between', fontSize: 10,
         color: 'var(--text-tertiary)', letterSpacing: '0.1em', textTransform: 'uppercase',
       }}>
-        <span>{MOCK_PGX.length} enzymes / harm reduction mode</span>
+        <span>{MOCK_PGX.length} enzymes · {substances.length} substances / harm reduction mode</span>
         <span>GENOME_TOOLKIT // PGX / DRUGS</span>
       </footer>
     </div>
