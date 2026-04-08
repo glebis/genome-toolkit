@@ -5,7 +5,9 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/api': 'http://localhost:8000',
+      // Use 127.0.0.1 explicitly — 'localhost' resolves to ::1 (IPv6) on macOS,
+      // which can collide with Docker Desktop also listening on port 8000.
+      '/api': 'http://127.0.0.1:8000',
     },
   },
 })
