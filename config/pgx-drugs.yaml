@@ -70,3 +70,124 @@ enzymes:
         impact_by_status:
           poor: { impact: warn, text: "Slower clearance for some substances", description: "Cocaine and ketamine partially rely on CYP3A4. Effects may be slightly prolonged." }
           normal: { impact: ok, text: "Standard metabolism", description: "Normal clearance. Standard harm reduction applies." }
+
+  - symbol: CYP2C19
+    guideline: CPIC
+    description: "CYP2C19 handles PPIs, several SSRIs, clopidogrel, and some benzos. It's one of the most clinically actionable enzymes with clear CPIC guidelines."
+    drug_cards:
+      - class: SSRIs (Citalopram, Escitalopram, Sertraline)
+        drugs: "Citalopram (Celexa), Escitalopram (Lexapro), Sertraline (Zoloft)"
+        category: drug
+        impact_by_status:
+          poor: { impact: warn, text: "Start low — these may hit harder", description: "Poor CYP2C19 metabolism leads to elevated plasma levels of these SSRIs. CPIC recommends 50% starting dose for citalopram/escitalopram.", danger_note: "Expect stronger side effects at standard doses — jitteriness, GI issues, sexual side effects. Start at half dose and titrate slowly. If a doctor prescribes a 'standard' dose, mention your CYP2C19 status." }
+          intermediate: { impact: adjust, text: "Standard dose, watch side effects", description: "Moderately slower metabolism. Standard doses usually work but side effects may be more noticeable." }
+          normal: { impact: ok, text: "Standard dosing works", description: "Normal metabolism. Standard SSRI protocols apply." }
+          ultrarapid: { impact: warn, text: "Standard doses may underperform", description: "Rapid clearance may lead to subtherapeutic levels. If an SSRI feels like it's 'not working' at standard doses, this is why.", danger_note: "Don't assume the drug doesn't work for you — your metabolism is clearing it faster than average. Discuss higher doses or alternative SSRIs (fluoxetine uses different pathway)." }
+      - class: Clopidogrel (Plavix)
+        drugs: "Clopidogrel (Plavix)"
+        category: drug
+        impact_by_status:
+          poor: { impact: danger, text: "AVOID — no antiplatelet protection", description: "Clopidogrel is a prodrug activated by CYP2C19. Poor metabolizers get little to no antiplatelet effect, leaving them at risk for stroke/heart attack after stent placement.", danger_note: "If a cardiologist prescribes Plavix after a stent or stroke — SPEAK UP. This is life-critical. Ask about prasugrel or ticagrelor, which don't depend on CYP2C19." }
+          intermediate: { impact: warn, text: "Reduced protection — discuss alternatives", description: "Partial prodrug activation. Antiplatelet effect is weaker than normal." }
+          normal: { impact: ok, text: "Standard activation", description: "Normal prodrug conversion. Standard dosing protects as expected." }
+          ultrarapid: { impact: ok, text: "Strong activation", description: "Efficient conversion to active metabolite. Standard dosing." }
+      - class: Proton Pump Inhibitors
+        drugs: "Omeprazole (Prilosec), Esomeprazole (Nexium), Lansoprazole (Prevacid), Pantoprazole"
+        category: drug
+        impact_by_status:
+          poor: { impact: adjust, text: "Stronger acid suppression at standard doses", description: "PPIs accumulate in poor metabolizers, giving stronger and longer acid suppression. Usually fine short-term, but consider lower doses for chronic use.", danger_note: "For long-term GERD: a lower dose may work just as well for you. Long PPI courses at high doses carry risks (B12 deficiency, bone density, C. diff) — your genetics mean you need less." }
+          normal: { impact: ok, text: "Standard dosing", description: "Normal metabolism. Standard PPI protocols." }
+          ultrarapid: { impact: warn, text: "PPIs may underperform for H. pylori", description: "Rapid clearance can reduce effectiveness for H. pylori eradication. Discuss higher doses or alternative regimens." }
+      - class: Psychedelics (Psilocybin context)
+        drugs: "Psilocybin, LSD (minor pathway)"
+        category: substance
+        impact_by_status:
+          poor: { impact: adjust, text: "Slightly prolonged effects possible", description: "CYP2C19 plays a secondary role in psilocybin metabolism. Effects may last a bit longer than typical." }
+          normal: { impact: ok, text: "Standard metabolism", description: "Normal clearance. Standard harm reduction applies." }
+
+  - symbol: CYP2C9
+    guideline: CPIC
+    description: "CYP2C9 metabolizes warfarin, many NSAIDs, and some anticonvulsants. It's also involved in THC clearance — relevant for cannabis users."
+    drug_cards:
+      - class: Warfarin (Coumadin)
+        drugs: "Warfarin (Coumadin)"
+        category: drug
+        impact_by_status:
+          poor: { impact: danger, text: "Much lower starting dose required", description: "Warfarin is primarily cleared by CYP2C9. Poor metabolizers need significantly lower doses (sometimes 50-70% lower) to avoid bleeding.", danger_note: "If prescribed warfarin, this MUST be on your chart. Standard starting doses can cause dangerous bleeding. Also check your VKORC1 status — that's the other half of warfarin dosing. Mention both to your prescriber." }
+          intermediate: { impact: warn, text: "Reduced starting dose recommended", description: "Moderately slower clearance. CPIC recommends lower initial doses with careful INR monitoring." }
+          normal: { impact: ok, text: "Standard dosing protocols", description: "Normal metabolism. Standard warfarin initiation and INR monitoring." }
+      - class: NSAIDs (Ibuprofen, Celecoxib, Naproxen)
+        drugs: "Ibuprofen (Advil), Celecoxib (Celebrex), Naproxen (Aleve), Meloxicam"
+        category: drug
+        impact_by_status:
+          poor: { impact: warn, text: "Higher GI bleeding and kidney risk", description: "Poor metabolizers clear NSAIDs slowly, increasing plasma levels and risk of GI bleeding, kidney stress, and cardiovascular events.", danger_note: "For occasional use (headache, sore muscle), use the lowest effective dose and keep courses short. Avoid chronic daily NSAIDs. Consider acetaminophen (different pathway) or topical NSAIDs for localized pain." }
+          intermediate: { impact: adjust, text: "Standard dose, limit duration", description: "Moderately slower clearance. Fine for occasional use; avoid chronic high-dose regimens." }
+          normal: { impact: ok, text: "Standard dosing", description: "Normal metabolism. Standard NSAID use." }
+      - class: Phenytoin (Dilantin)
+        drugs: "Phenytoin (Dilantin)"
+        category: drug
+        impact_by_status:
+          poor: { impact: warn, text: "Toxicity risk at standard doses", description: "Phenytoin has a narrow therapeutic window. Poor metabolizers reach toxic levels quickly. CPIC recommends 25-50% dose reduction." }
+          normal: { impact: ok, text: "Standard dosing with TDM", description: "Normal metabolism. Standard initiation with therapeutic drug monitoring." }
+      - class: Cannabis (THC)
+        drugs: "THC (smoked, edibles, vaped)"
+        category: substance
+        impact_by_status:
+          poor: { impact: warn, text: "Stronger and longer effects than average", description: "CYP2C9 is a major pathway for THC clearance. Poor metabolizers experience significantly more intense and longer-lasting effects, especially from edibles.", danger_note: "Edibles will hit you harder and last longer — sometimes 8-12 hours instead of 4-6. Start with half the 'standard' dose (2.5mg THC, not 5-10mg) and wait at least 2 hours before redosing. Smoking/vaping is more predictable than edibles for you." }
+          intermediate: { impact: adjust, text: "Effects may last longer than typical", description: "Moderately slower THC clearance. Edibles especially may outlast expectations." }
+          normal: { impact: ok, text: "Standard metabolism", description: "Normal clearance. Standard harm reduction applies." }
+
+  - symbol: CYP2B6
+    guideline: CPIC
+    description: "CYP2B6 metabolizes bupropion, methadone, efavirenz, and ketamine. Variable between individuals and highly relevant for both psychiatry and substance use."
+    drug_cards:
+      - class: Bupropion (Wellbutrin, Zyban)
+        drugs: "Bupropion (Wellbutrin, Zyban)"
+        category: drug
+        impact_by_status:
+          poor: { impact: warn, text: "Elevated levels — seizure risk", description: "Bupropion has a dose-dependent seizure risk. Poor metabolizers accumulate higher plasma levels, increasing risk.", danger_note: "If prescribed Wellbutrin for depression or Zyban for smoking cessation, start at the lowest dose (100mg SR, not XL 150). Watch for signs of overstimulation — insomnia, agitation, tremor — these mean levels are too high." }
+          intermediate: { impact: adjust, text: "Standard dose, monitor for overstimulation", description: "Moderately slower clearance. Start lower and titrate carefully." }
+          normal: { impact: ok, text: "Standard dosing", description: "Normal metabolism. Standard bupropion protocols." }
+          ultrarapid: { impact: warn, text: "May underperform at standard doses", description: "Rapid clearance can reduce efficacy. If bupropion feels like 'nothing', this is why." }
+      - class: Methadone
+        drugs: "Methadone (for OUD or chronic pain)"
+        category: drug
+        impact_by_status:
+          poor: { impact: warn, text: "Accumulation and QT prolongation risk", description: "Poor CYP2B6 metabolism can lead to methadone accumulation, respiratory depression, and cardiac QT prolongation.", danger_note: "If you're on methadone maintenance, your clinic should know your status. Accumulation happens gradually over days — signs include excess sedation, slowed breathing, or feeling 'too high' on a stable dose." }
+          normal: { impact: ok, text: "Standard dosing", description: "Normal metabolism. Standard methadone protocols." }
+      - class: Efavirenz (HIV)
+        drugs: "Efavirenz (Sustiva, part of Atripla)"
+        category: drug
+        impact_by_status:
+          poor: { impact: warn, text: "CNS side effects more likely", description: "CPIC recommends dose reduction for CYP2B6 poor metabolizers on efavirenz due to elevated levels and CNS toxicity (vivid dreams, dizziness, depression)." }
+          normal: { impact: ok, text: "Standard dosing", description: "Normal metabolism." }
+      - class: Ketamine (therapeutic and recreational)
+        drugs: "Ketamine (IV, IM, nasal, recreational)"
+        category: substance
+        impact_by_status:
+          poor: { impact: warn, text: "Longer and deeper effects", description: "CYP2B6 is a major ketamine pathway. Poor metabolizers experience longer dissociative effects and slower return to baseline.", danger_note: "Whether therapeutic (for depression) or recreational, expect longer trips than peers report. Space doses further apart. Never combine with alcohol, GHB, or benzos — respiratory depression risk compounds. Stay hydrated; ketamine is hard on the bladder for frequent users." }
+          intermediate: { impact: adjust, text: "Slightly prolonged effects", description: "Moderately slower clearance. Effects may outlast typical reports." }
+          normal: { impact: ok, text: "Standard metabolism", description: "Normal clearance. Standard harm reduction applies." }
+
+  - symbol: CYP2E1
+    description: "CYP2E1 handles alcohol (secondary to ADH/ALDH2), acetaminophen, and volatile anesthetics. Inducible by chronic alcohol use — chronic drinkers have upregulated CYP2E1."
+    drug_cards:
+      - class: Acetaminophen (Tylenol, Paracetamol)
+        drugs: "Acetaminophen (Tylenol), combo products (Percocet, Vicodin, NyQuil)"
+        category: drug
+        impact_by_status:
+          ultrarapid: { impact: warn, text: "Higher liver toxicity risk", description: "CYP2E1 converts a fraction of acetaminophen into NAPQI, a toxic liver metabolite. Ultrarapid metabolism produces more NAPQI per dose.", danger_note: "Stay well under the 4g/day ceiling — aim for <3g on any day you take it. NEVER combine with alcohol (also induces CYP2E1 — effects stack). Watch combo products: NyQuil, Percocet, Vicodin all contain acetaminophen and it adds up fast." }
+          normal: { impact: ok, text: "Standard dosing", description: "Normal metabolism. Standard dosing (max 4g/day, lower with alcohol use)." }
+          poor: { impact: ok, text: "Standard dosing", description: "Slower NAPQI formation. Standard protocols apply." }
+      - class: Volatile Anesthetics
+        drugs: "Isoflurane, Sevoflurane, Halothane"
+        category: drug
+        impact_by_status:
+          ultrarapid: { impact: adjust, text: "Faster metabolism — mention pre-surgery", description: "Ultrarapid CYP2E1 metabolism affects volatile anesthetic clearance. Usually managed by anesthesiologist in real-time but worth mentioning." }
+          normal: { impact: ok, text: "Standard anesthesia", description: "Normal metabolism." }
+      - class: Alcohol (chronic use)
+        drugs: "Ethanol (beer, wine, spirits)"
+        category: substance
+        impact_by_status:
+          ultrarapid: { impact: warn, text: "Faster tolerance + higher ALD risk long-term", description: "CYP2E1 is the secondary alcohol pathway (main one is ADH). Ultrarapid CYP2E1 metabolism generates more reactive oxygen species during alcohol breakdown, increasing long-term liver damage risk.", danger_note: "Short-term: you may feel 'less drunk' per drink than peers — this isn't protection, it's a faster path to tolerance and dependence. Long-term: higher risk of fatty liver and hepatitis at the same drinking level as friends. Alcohol-free days matter more for you than they do for an average person." }
+          normal: { impact: ok, text: "Standard metabolism", description: "Normal CYP2E1. ADH/ALDH2 status is more relevant for alcohol — check those genes." }
