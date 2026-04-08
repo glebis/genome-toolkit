@@ -7,6 +7,7 @@ import { NarrativeBlock } from './NarrativeBlock'
 import { GeneCard } from './GeneCard'
 import { GeneDetail } from './GeneDetail'
 import { GenomeGlyph } from '../GenomeGlyph'
+import { GWASFindings } from './GWASFindings'
 
 const GENE_META: Record<string, { populationInfo: string; explanation: string; interactions?: { genes: string; description: string }[] }> = {
   'MTHFR': {
@@ -320,6 +321,11 @@ export function MentalHealthDashboard({
             )
           })
         )}
+
+        {/* PGC GWAS findings — only shows if config/gwas/anxiety-hits.json exists */}
+        <div style={{ padding: '0 var(--space-lg) var(--space-lg)' }}>
+          <GWASFindings trait="anxiety" />
+        </div>
       </div>
 
       {/* Footer */}

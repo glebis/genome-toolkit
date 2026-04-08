@@ -35,6 +35,10 @@ web = [
     "claude-agent-sdk>=0.1.56",
     "sse-starlette>=2.0.0",
 ]
+gwas = [
+    "datasets>=3.0.0",
+    "pyarrow>=15.0.0",
+]
 
 [build-system]
 requires = ["setuptools>=68.0"]
