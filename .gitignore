@@ -42,3 +42,8 @@ node_modules/
 relay.db
 relay.db-shm
 relay.db-wal
+
+# Claude Code local/transient state
+.claude/settings.local.json
+.claude/projects/
+.claude/worktrees/
