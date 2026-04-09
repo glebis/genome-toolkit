@@ -16,16 +16,17 @@ fi
 
 # Resolve required values
 PYTHON_PATH="$(which python3)"
-HF_TOKEN="${HF_TOKEN:-}"
 GENOME_VAULT_ROOT="${GENOME_VAULT_ROOT:-$HOME/genome-vault}"
 
-if [ -z "$HF_TOKEN" ]; then
-    # Try sourcing from zshrc
-    HF_TOKEN="$(grep 'HF_TOKEN' ~/.zshrc 2>/dev/null | sed 's/.*"\(.*\)"/\1/' | head -1 || true)"
+# Try to load HF_TOKEN from SOPS-encrypted secrets first
+HF_TOKEN="${HF_TOKEN:-}"
+SECRETS_FILE="$PROJECT_DIR/config/secrets.yaml"
+if [ -z "$HF_TOKEN" ] && [ -f "$SECRETS_FILE" ] && command -v sops &>/dev/null; then
+    HF_TOKEN="$(sops decrypt --extract '["hf_token"]' "$SECRETS_FILE" 2>/dev/null || true)"
 fi
 if [ -z "$HF_TOKEN" ]; then
-    echo "Warning: HF_TOKEN not set. Set it in your shell profile or env."
-    echo "  The cron job will run with reduced HuggingFace rate limits."
+    echo "Warning: HF_TOKEN not found in SOPS secrets or env."
+    echo "  Add it: sops config/secrets.yaml"
 fi
 
 # Unload if already loaded
