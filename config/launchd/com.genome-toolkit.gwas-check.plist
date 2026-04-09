@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.genome-toolkit.gwas-check</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/opt/miniconda3/bin/python3</string>
+        <string>/Users/glebkalinin/genome-toolkit/scripts/check_gwas_updates.py</string>
+        <string>--notify</string>
+    </array>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PYTHONPATH</key>
+        <string>/Users/glebkalinin/genome-toolkit</string>
+        <key>HF_TOKEN</key>
+        <string>REDACTED_HF_TOKEN</string>
+        <key>GENOME_VAULT_ROOT</key>
+        <string>/Users/glebkalinin/Brains/genome</string>
+        <key>PATH</key>
+        <string>/opt/miniconda3/bin:/usr/local/bin:/usr/bin:/bin</string>
+    </dict>
+
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Weekday</key>
+        <integer>1</integer>
+        <key>Hour</key>
+        <integer>9</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/Users/glebkalinin/Library/Logs/genome-gwas-check.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/glebkalinin/Library/Logs/genome-gwas-check.log</string>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/glebkalinin/genome-toolkit</string>
+</dict>
+</plist>

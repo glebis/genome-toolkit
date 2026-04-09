@@ -182,10 +182,13 @@ class GenomeDB:
                    json_extract(e_cv.data, '$.ref') as ref_allele,
                    json_extract(e_cv.data, '$.alt') as alt_allele,
                    json_extract(e_mv.data, '$.gene_name') as gene_name,
-                   json_extract(e_mv.data, '$.clinvar_significance') as mv_significance
+                   json_extract(e_mv.data, '$.clinvar_significance') as mv_significance,
+                   COALESCE(s.gene_symbol, gsm.gene_symbol,
+                            json_extract(e_mv.data, '$.gene_symbol')) as gene_symbol
             FROM snps s
             LEFT JOIN enrichments e_cv ON s.rsid = e_cv.rsid AND e_cv.source = 'clinvar'
             LEFT JOIN enrichments e_mv ON s.rsid = e_mv.rsid AND e_mv.source = 'myvariant'
+            LEFT JOIN gene_snp_map gsm ON s.rsid = gsm.rsid
             WHERE s.rsid = ?
         """
         async with self._conn.execute(sql, [rsid]) as cursor:

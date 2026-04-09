@@ -78,11 +78,12 @@ TRAITS: dict[str, dict] = {
     },
     "ptsd": {
         "dataset": "OpenMed/pgc-ptsd",
-        "default_config": "ptsd2019",
-        "publication": "PGC PTSD Working Group, 2019",
+        "default_config": "ptsd2024",
+        "fallback_configs": ["ptsd2019"],
+        "publication": "PGC PTSD Working Group, Nature Genetics, 2024",
         "citation": (
-            "Nievergelt CM et al. International meta-analysis of PTSD "
-            "genome-wide association studies. Nature Communications, 2019."
+            "Nievergelt CM et al. Genome-wide association meta-analysis of "
+            "post-traumatic stress disorder. Nature Genetics, 2024."
         ),
         "display_name": "Post-traumatic stress disorder",
     },
@@ -115,6 +116,107 @@ COLUMN_CANDIDATES: dict[str, list[str]] = {
     "freq": ["Freq1", "FRQ", "EAF", "FRQ_A_35018", "MAF", "effect_allele_frequency"],
     "n": ["TotalN", "N", "Neff", "Neff_half", "Weight", "n"],
 }
+
+
+def _is_vcf_shard(table) -> bool:
+    """Detect if a parquet shard contains VCF-format data instead of tabular GWAS.
+
+    Some PGC datasets (e.g. ptsd2024) were converted from VCF format but the
+    conversion produced broken parquet files: the first column name is a VCF
+    header line (starts with '##') and the actual GWAS data is missing.
+    """
+    if not table.column_names:
+        return False
+    return table.column_names[0].startswith("##")
+
+
+def _parse_vcf_shard(table):
+    """Attempt to parse GWAS data from a VCF-format parquet shard.
+
+    VCF-format shards from broken HuggingFace conversions store VCF header
+    fragments in a single text column. This function extracts any parseable
+    VCF data lines and converts them to standard GWAS row dicts.
+
+    VCF INFO fields typically contain: BETA or Z (effect), P (p-value),
+    SE (standard error), etc. as semicolon-separated key=value pairs.
+
+    Returns a list of (row_dict, col_map) tuples, or empty list if the
+    shard contains only header metadata (which is the common case for
+    the broken ptsd2024 conversion).
+    """
+    vcf_col = table.column_names[0]
+    rows = [v.as_py() for v in table.column(vcf_col) if v.as_py() is not None]
+
+    # Check if any row looks like a VCF data line (tab-separated, starts with chr/number)
+    data_lines = []
+    header_line = None
+    for row in rows:
+        if not row:
+            continue
+        if row.startswith("#CHROM") or row.startswith("#chrom"):
+            header_line = row
+        elif not row.startswith("#") and "\t" in row:
+            data_lines.append(row)
+
+    if not data_lines:
+        return []
+
+    # Parse VCF header to get column names
+    if header_line:
+        vcf_columns = header_line.lstrip("#").split("\t")
+    else:
+        # Standard VCF columns
+        vcf_columns = ["CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO"]
+
+    col_map = {
+        "snp": "ID",
+        "chr": "CHROM",
+        "pos": "POS",
+        "a1": "ALT",
+        "a2": "REF",
+        "effect": "BETA",
+        "p": "P",
+        "se": "SE",
+    }
+
+    results = []
+    for line in data_lines:
+        fields = line.split("\t")
+        if len(fields) < 8:
+            continue
+
+        rec = {}
+        for i, col_name in enumerate(vcf_columns[:len(fields)]):
+            rec[col_name] = fields[i]
+
+        # Parse INFO field (key=value pairs separated by semicolons)
+        info_str = rec.get("INFO", "")
+        info_fields = {}
+        for kv in info_str.split(";"):
+            if "=" in kv:
+                k, v = kv.split("=", 1)
+                info_fields[k] = v
+
+        # Merge INFO fields into record for column detection
+        for k, v in info_fields.items():
+            if k not in rec:
+                rec[k] = v
+
+        # Try to find effect size (BETA or Z) and p-value from INFO
+        effect_val = info_fields.get("BETA") or info_fields.get("Z")
+        p_val = info_fields.get("P") or info_fields.get("PVAL")
+        se_val = info_fields.get("SE")
+
+        if effect_val:
+            rec["BETA"] = effect_val
+        if p_val:
+            rec["P"] = p_val
+        if se_val:
+            rec["SE"] = se_val
+
+        results.append((rec, col_map))
+
+    return results
 
 
 def detect_columns(available: list[str]) -> dict[str, str | None]:
@@ -188,9 +290,45 @@ def _read_via_pyarrow(dataset: str, config: str, threshold: float):
     resp.raise_for_status()
     shard_urls = resp.json()
 
-    # Skip shard 0 if it's metadata-only (cohort info, no GWAS columns)
+    # Probe shard 0 to detect format
     if shard_urls:
         probe = _fetch_table(shard_urls[0])
+
+        # Detect VCF-format shards (broken parquet conversion)
+        if _is_vcf_shard(probe):
+            print(f"  Detected VCF-format parquet shards (column: '{probe.column_names[0]}')")
+            # Try to parse VCF data from all shards
+            vcf_results = _parse_vcf_shard(probe)
+            if vcf_results:
+                print(f"  Parsed {len(vcf_results)} VCF data lines from shard 0")
+            else:
+                # Check remaining shards too
+                all_vcf_results = []
+                for url in shard_urls[1:]:
+                    t = _fetch_table(url)
+                    all_vcf_results.extend(_parse_vcf_shard(t))
+                if all_vcf_results:
+                    vcf_results = all_vcf_results
+                    print(f"  Parsed {len(vcf_results)} VCF data lines across all shards")
+
+            if not vcf_results:
+                raise RuntimeError(
+                    f"Config '{config}' uses VCF format but the HuggingFace parquet "
+                    f"conversion is broken (shards contain only VCF header fragments, "
+                    f"~{len(probe)} rows of metadata instead of GWAS data). "
+                    f"The upstream dataset needs to be re-converted. "
+                    f"Try an older config (e.g. ptsd2019) or check for updates at "
+                    f"https://huggingface.co/datasets/{dataset}"
+                )
+
+            # Filter VCF results by p-value threshold
+            for row, col_map in vcf_results:
+                p = _safe_float(row.get(col_map.get("p", "P")))
+                if p is not None and p < threshold:
+                    yield row, col_map
+            return
+
+        # Skip shard 0 if it's metadata-only (cohort info, no GWAS columns)
         if "p_value" not in probe.column_names and "P" not in probe.column_names:
             shard_urls = shard_urls[1:]
 
@@ -250,55 +388,79 @@ def ingest(trait: str, config: str | None, threshold: float, out_dir: Path) -> N
         sys.exit(1)
 
     meta = TRAITS[trait]
+    user_config = config  # None if not explicitly specified by user
     config = config or meta["default_config"]
 
-    print(f"▸ Loading {meta['dataset']} / {config} ...")
+    # Build list of configs to try: requested config first, then fallbacks
+    configs_to_try = [config]
+    if not user_config and "fallback_configs" in meta:
+        configs_to_try.extend(meta["fallback_configs"])
 
-    # Try datasets library first (fast path), fall back to per-shard pyarrow
-    # reads if schema unification fails.
     filtered: list[tuple[dict, dict[str, str | None]]] = []  # (row, col_map)
     cols: dict[str, str | None] = {}
-    use_fallback = False
+    actual_config = config
 
-    try:
-        ds = load_dataset(meta["dataset"], config, split="train", streaming=True)
-        first_row = next(iter(ds))
-        available_cols = list(first_row.keys())
-        print(f"  Columns: {available_cols}")
+    for try_config in configs_to_try:
+        print(f"▸ Loading {meta['dataset']} / {try_config} ...")
 
-        cols = detect_columns(available_cols)
-        missing = [k for k in ("snp", "chr", "pos", "a1", "a2", "effect", "p") if cols[k] is None]
-        if missing:
-            raise RuntimeError(f"missing columns: {missing}")
+        # Try datasets library first (fast path), fall back to per-shard pyarrow
+        # reads if schema unification fails.
+        filtered = []
+        cols = {}
+        use_fallback = False
 
-        p_col = cols["p"]
-        ds = load_dataset(meta["dataset"], config, split="train", streaming=True)
-        seen = 0
-        for row in ds:
-            seen += 1
-            if seen % 500_000 == 0:
-                print(f"  ... scanned {seen:,} rows, {len(filtered):,} hits so far")
+        try:
+            ds = load_dataset(meta["dataset"], try_config, split="train", streaming=True)
+            first_row = next(iter(ds))
+            available_cols = list(first_row.keys())
+            print(f"  Columns: {available_cols}")
+
+            cols = detect_columns(available_cols)
+            missing = [k for k in ("snp", "chr", "pos", "a1", "a2", "effect", "p") if cols[k] is None]
+            if missing:
+                raise RuntimeError(f"missing columns: {missing}")
+
+            p_col = cols["p"]
+            ds = load_dataset(meta["dataset"], try_config, split="train", streaming=True)
+            seen = 0
+            for row in ds:
+                seen += 1
+                if seen % 500_000 == 0:
+                    print(f"  ... scanned {seen:,} rows, {len(filtered):,} hits so far")
+                try:
+                    p = _safe_float(row.get(p_col))
+                    if p is not None and p < threshold:
+                        filtered.append((row, cols))
+                except Exception:
+                    continue
+            print(f"  Total scanned: {seen:,} rows, hits: {len(filtered):,}")
+        except Exception as e:
+            print(f"  ⚠️  datasets library failed ({type(e).__name__}: {str(e)[:120]})")
+            print(f"  ▸ Falling back to per-shard pyarrow reads...")
+            use_fallback = True
             try:
-                p = _safe_float(row.get(p_col))
-                if p is not None and p < threshold:
-                    filtered.append((row, cols))
-            except Exception:
-                continue
-        print(f"  Total scanned: {seen:,} rows, hits: {len(filtered):,}")
-    except Exception as e:
-        print(f"  ⚠️  datasets library failed ({type(e).__name__}: {str(e)[:120]})")
-        print(f"  ▸ Falling back to per-shard pyarrow reads...")
-        use_fallback = True
-        for row, col_map in _read_via_pyarrow(meta["dataset"], config, threshold):
-            filtered.append((row, col_map))
-        # Use the col_map from the most recent shard for effect scale detection
+                for row, col_map in _read_via_pyarrow(meta["dataset"], try_config, threshold):
+                    filtered.append((row, col_map))
+                # Use the col_map from the most recent shard for effect scale detection
+                if filtered:
+                    cols = filtered[-1][1]
+                print(f"  Hits: {len(filtered):,}")
+            except RuntimeError as vcf_err:
+                if "VCF format" in str(vcf_err) and try_config != configs_to_try[-1]:
+                    print(f"  ⚠️  {vcf_err}")
+                    print(f"  ▸ Trying fallback config...")
+                    continue
+                raise
+
         if filtered:
-            cols = filtered[-1][1]
-        print(f"  Hits: {len(filtered):,}")
+            actual_config = try_config
+            break
 
     if not filtered:
         print("ERROR: no hits collected. Try a different --config or --threshold.", file=sys.stderr)
         sys.exit(4)
+
+    config = actual_config
 
     # Detect whether effect column is on log-scale (BETA) or odds-ratio (OR) or Z-score.
     # All converted to a single convention where positive = risk allele.
