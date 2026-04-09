@@ -103,16 +103,16 @@ TRAITS: dict[str, dict] = {
 COLUMN_CANDIDATES: dict[str, list[str]] = {
     "snp": ["SNP", "SNPID", "rsid", "MarkerName", "ID"],
     "chr": ["CHR", "Chr", "chromosome", "chrom", "#CHROM"],
-    "pos": ["BP", "POS", "position"],
+    "pos": ["BP", "POS", "position", "base_pair_location"],
     "a1": ["A1", "Allele1", "effect_allele", "EA"],
     "a2": ["A2", "Allele2", "other_allele", "NEA"],
     # Z is included as a fallback effect — it's a signed Z-score, direction is correct
     # but magnitude is on a different scale than log(OR). The script tags this in metadata.
-    "effect": ["BETA", "Beta", "Effect", "OR", "log_OR", "b", "Z"],
-    "se": ["SE", "StdErr", "se"],
-    "p": ["P", "P.value", "P-value", "pvalue", "P_value", "P_VAL"],
-    "freq": ["Freq1", "FRQ", "EAF", "FRQ_A_35018", "MAF"],
-    "n": ["TotalN", "N", "Neff", "Neff_half", "Weight"],
+    "effect": ["BETA", "Beta", "beta", "Effect", "OR", "log_OR", "b", "Z"],
+    "se": ["SE", "StdErr", "se", "standard_error"],
+    "p": ["P", "P.value", "P-value", "pvalue", "P_value", "P_VAL", "p_value"],
+    "freq": ["Freq1", "FRQ", "EAF", "FRQ_A_35018", "MAF", "effect_allele_frequency"],
+    "n": ["TotalN", "N", "Neff", "Neff_half", "Weight", "n"],
 }
 
 
@@ -152,65 +152,77 @@ def _safe_int(val) -> int | None:
 
 
 def _read_via_pyarrow(dataset: str, config: str, threshold: float):
-    """Read each parquet shard individually with pyarrow, bypassing the datasets
-    library's schema-unification logic. Yields rows one shard at a time.
+    """Read parquet shards via HF parquet API, bypassing the datasets library's
+    schema-unification logic. Yields (row_dict, col_map) tuples.
 
-    This is necessary for PGC datasets where shard files have different columns
-    (e.g. some studies report OR, others Beta or Z; column counts differ between
-    sub-studies in the same config).
+    Downloads each shard via requests (handles HF redirects reliably) and
+    filters using pyarrow compute for speed.
     """
-    from huggingface_hub import HfApi, hf_hub_download
+    import io
     import pyarrow.parquet as pq
+    import pyarrow.compute as pc
+    import requests as _requests
 
-    api = HfApi()
-    all_files = api.list_repo_files(dataset, repo_type="dataset")
+    session = _requests.Session()
 
-    # Find parquet shards belonging to this config
-    candidates = [
-        f for f in all_files
-        if f.endswith(".parquet") and (f"/{config}/" in f or f.startswith(f"{config}/"))
-    ]
-    if not candidates:
-        # Fallback: any parquet file mentioning the config name
-        candidates = [f for f in all_files if f.endswith(".parquet") and config in f]
-    if not candidates:
-        raise RuntimeError(f"No parquet files found for config '{config}' in {dataset}")
+    def _fetch_table(url: str):
+        import time
+        for attempt in range(5):
+            r = session.get(url, timeout=120)
+            if r.status_code == 429:
+                wait = 2 ** attempt * 10  # 10, 20, 40, 80, 160 seconds
+                print(f"  ⏳ rate limited, waiting {wait}s (attempt {attempt+1}/5)...")
+                time.sleep(wait)
+                continue
+            r.raise_for_status()
+            return pq.read_table(io.BytesIO(r.content))
+        r.raise_for_status()  # raise on final failure
 
-    print(f"  Found {len(candidates)} parquet shard(s) for config '{config}'")
+    # Discover shard URLs via HF parquet API
+    parquet_api = f"https://huggingface.co/api/datasets/{dataset}/parquet/{config}/train"
+    resp = session.get(parquet_api, timeout=30)
+    resp.raise_for_status()
+    shard_urls = resp.json()
+
+    # Skip shard 0 if it's metadata-only (cohort info, no GWAS columns)
+    if shard_urls:
+        probe = _fetch_table(shard_urls[0])
+        if "p_value" not in probe.column_names and "P" not in probe.column_names:
+            shard_urls = shard_urls[1:]
+
+    print(f"  Found {len(shard_urls)} GWAS parquet shard(s) for config '{config}'")
 
     seen_total = 0
     hits_total = 0
-    schemas_seen: set[tuple] = set()
+    cols = None
 
-    for fpath in sorted(candidates):
-        local = hf_hub_download(dataset, fpath, repo_type="dataset")
-        table = pq.read_table(local)
-        cols_in_file = tuple(table.column_names)
-        if cols_in_file not in schemas_seen:
-            schemas_seen.add(cols_in_file)
-            print(f"  ├─ schema #{len(schemas_seen)}: {list(cols_in_file)}")
+    for idx, url in enumerate(shard_urls):
+        table = _fetch_table(url)
 
-        cols = detect_columns(list(cols_in_file))
-        missing = [k for k in ("snp", "chr", "pos", "a1", "a2", "effect", "p") if cols[k] is None]
-        if missing:
-            print(f"  │  skipping {fpath}: missing {missing}")
-            continue
+        if cols is None:
+            cols = detect_columns(list(table.column_names))
+            missing = [k for k in ("snp", "chr", "pos", "a1", "a2", "effect", "p") if cols[k] is None]
+            if missing:
+                raise RuntimeError(f"missing columns {missing} in {table.column_names}")
+            print(f"  Columns: {list(table.column_names)}")
+            print(f"  Column map: {cols}")
 
         p_col = cols["p"]
-        # Convert to dict-of-arrays for fast row access
-        df = table.to_pylist()
-        seen_total += len(df)
-        for row in df:
-            try:
-                p = _safe_float(row.get(p_col))
-                if p is not None and p < threshold:
-                    yield row, cols
-                    hits_total += 1
-            except Exception:
-                continue
-        print(f"  ├─ {fpath.split('/')[-1]}: scanned {len(df):,}, total hits so far {hits_total:,}")
+        # Filter using pyarrow compute — much faster than row-by-row Python
+        p_arr = table.column(p_col)
+        mask = pc.less(pc.cast(p_arr, "float64"), threshold)
+        filtered = table.filter(mask)
 
-    print(f"  Total scanned across shards: {seen_total:,} rows")
+        seen_total += len(table)
+        hits_total += len(filtered)
+
+        for row in filtered.to_pylist():
+            yield row, cols
+
+        if (idx + 1) % 200 == 0 or idx == len(shard_urls) - 1:
+            print(f"  ├─ shard {idx+1}/{len(shard_urls)}: scanned {seen_total:,}, hits {hits_total:,}")
+
+    print(f"  Total: {seen_total:,} rows scanned, {hits_total:,} hits")
 
 
 def ingest(trait: str, config: str | None, threshold: float, out_dir: Path) -> None:
