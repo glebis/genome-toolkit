@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -77,11 +78,11 @@ TRAITS: dict[str, dict] = {
     },
     "ptsd": {
         "dataset": "OpenMed/pgc-ptsd",
-        "default_config": "ptsd2024",
-        "publication": "PGC PTSD Working Group, 2024",
+        "default_config": "ptsd2019",
+        "publication": "PGC PTSD Working Group, 2019",
         "citation": (
-            "Psychiatric Genomics Consortium PTSD Working Group. "
-            "Genome-wide association study of PTSD. 2024."
+            "Nievergelt CM et al. International meta-analysis of PTSD "
+            "genome-wide association studies. Nature Communications, 2019."
         ),
         "display_name": "Post-traumatic stress disorder",
     },
@@ -164,14 +165,17 @@ def _read_via_pyarrow(dataset: str, config: str, threshold: float):
     import requests as _requests
 
     session = _requests.Session()
+    hf_token = os.environ.get("HF_TOKEN")
+    if hf_token:
+        session.headers["Authorization"] = f"Bearer {hf_token}"
 
     def _fetch_table(url: str):
         import time
-        for attempt in range(5):
+        for attempt in range(8):
             r = session.get(url, timeout=120)
             if r.status_code == 429:
-                wait = 2 ** attempt * 10  # 10, 20, 40, 80, 160 seconds
-                print(f"  ⏳ rate limited, waiting {wait}s (attempt {attempt+1}/5)...")
+                wait = min(2 ** attempt * 15, 600)  # 15, 30, 60, 120, 240, 480, 600, 600
+                print(f"  ⏳ rate limited, waiting {wait}s (attempt {attempt+1}/8)...")
                 time.sleep(wait)
                 continue
             r.raise_for_status()
@@ -194,20 +198,24 @@ def _read_via_pyarrow(dataset: str, config: str, threshold: float):
 
     seen_total = 0
     hits_total = 0
-    cols = None
+    schemas_seen: set[tuple] = set()
 
     for idx, url in enumerate(shard_urls):
         table = _fetch_table(url)
 
-        if cols is None:
-            cols = detect_columns(list(table.column_names))
-            missing = [k for k in ("snp", "chr", "pos", "a1", "a2", "effect", "p") if cols[k] is None]
-            if missing:
-                raise RuntimeError(f"missing columns {missing} in {table.column_names}")
-            print(f"  Columns: {list(table.column_names)}")
-            print(f"  Column map: {cols}")
+        # Detect columns per-shard — schemas can differ across sub-studies
+        shard_cols = detect_columns(list(table.column_names))
+        missing = [k for k in ("snp", "chr", "pos", "a1", "a2", "effect", "p") if shard_cols[k] is None]
+        if missing:
+            continue  # skip shards with incompatible schema
 
-        p_col = cols["p"]
+        col_key = tuple(table.column_names)
+        if col_key not in schemas_seen:
+            schemas_seen.add(col_key)
+            print(f"  Columns: {list(table.column_names)}")
+            print(f"  Column map: {shard_cols}")
+
+        p_col = shard_cols["p"]
         # Filter using pyarrow compute — much faster than row-by-row Python
         p_arr = table.column(p_col)
         mask = pc.less(pc.cast(p_arr, "float64"), threshold)
@@ -217,7 +225,7 @@ def _read_via_pyarrow(dataset: str, config: str, threshold: float):
         hits_total += len(filtered)
 
         for row in filtered.to_pylist():
-            yield row, cols
+            yield row, shard_cols
 
         if (idx + 1) % 200 == 0 or idx == len(shard_urls) - 1:
             print(f"  ├─ shard {idx+1}/{len(shard_urls)}: scanned {seen_total:,}, hits {hits_total:,}")
