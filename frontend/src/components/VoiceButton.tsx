@@ -1,5 +1,5 @@
 import { type CSSProperties, useCallback } from 'react'
-import type { VoiceState } from '../hooks/useVoice'
+import { type VoiceState } from '../hooks/useVoice'
 
 interface VoiceButtonProps {
   voiceEnabled: boolean

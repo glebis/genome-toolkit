@@ -173,6 +173,10 @@ interface Props {
   onSend: (text: string) => void
   onAction: (action: AgentAction) => void
   initialQuery?: string
+  voiceSupported?: boolean
+  voiceListening?: boolean
+  onStartListening?: () => void
+  onStopListening?: () => void
 }
 
 function messagesToMarkdown(messages: ChatMessage[]): string {
@@ -200,7 +204,7 @@ function downloadMarkdown(text: string, filename: string) {
   URL.revokeObjectURL(url)
 }
 
-export function CommandPalette({ open, onClose, messages, streaming, streamingText, status, suggestions, actions, onSend, onAction, initialQuery }: Props) {
+export function CommandPalette({ open, onClose, messages, streaming, streamingText, status, suggestions, actions, onSend, onAction, initialQuery, voiceSupported, voiceListening, onStartListening, onStopListening }: Props) {
   const [input, setInput] = useState('')
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -460,6 +464,41 @@ export function CommandPalette({ open, onClose, messages, streaming, streamingTe
             onChange={e => setInput(e.target.value)}
             disabled={streaming}
           />
+          {voiceSupported && !streaming && (
+            <button
+              type="button"
+              title={voiceListening ? 'Stop dictation' : 'Dictate'}
+              onClick={() => {
+                if (voiceListening) {
+                  onStopListening?.()
+                } else {
+                  onStartListening?.()
+                }
+              }}
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: '50%',
+                border: `1.5px solid ${voiceListening ? 'var(--sig-risk)' : 'var(--border)'}`,
+                background: voiceListening ? 'rgba(196, 82, 78, 0.08)' : 'transparent',
+                color: voiceListening ? 'var(--sig-risk)' : 'var(--text-tertiary)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 0,
+                flexShrink: 0,
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <rect x="9" y="2" width="6" height="12" rx="3" />
+                <path d="M5 10a7 7 0 0 0 14 0" />
+                <line x1="12" y1="18" x2="12" y2="22" />
+                <line x1="8" y1="22" x2="16" y2="22" />
+              </svg>
+            </button>
+          )}
           {streaming && (
             <span className="label" style={{ color: 'var(--primary)', whiteSpace: 'nowrap' }}>
               <span style={{ animation: 'blink 1s infinite' }}>{'// '}</span>

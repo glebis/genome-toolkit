@@ -414,6 +414,18 @@ function App() {
               setChecklistHighlight(true)
               setTimeout(() => setChecklistHighlight(false), 1500)
             }}
+            onToggleAction={checklist.toggleDone}
+            checklistIds={new Set(checklist.items.map(i => i.id))}
+            onAddActionToChecklist={(action) => {
+              checklist.addItem(
+                action.title,
+                action.geneSymbol,
+                action.type,
+                action.id,
+              )
+              setChecklistHighlight(true)
+              setTimeout(() => setChecklistHighlight(false), 1500)
+            }}
           />
         </main>
       ) : view === 'risk' ? (
@@ -485,6 +497,14 @@ function App() {
         actions={actions}
         onSend={send}
         onAction={handleAgentAction}
+        voiceSupported={voice.supported}
+        voiceListening={voice.listening}
+        onStartListening={() => {
+          voice.startListening((text) => {
+            send(text)
+          })
+        }}
+        onStopListening={voice.stopListening}
       />
 
       {/* Checklist Sidebar */}
