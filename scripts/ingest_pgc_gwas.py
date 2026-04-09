@@ -403,12 +403,53 @@ def ingest(trait: str, config: str | None, threshold: float, out_dir: Path) -> N
     for try_config in configs_to_try:
         print(f"▸ Loading {meta['dataset']} / {try_config} ...")
 
-        # Try datasets library first (fast path), fall back to per-shard pyarrow
-        # reads if schema unification fails.
         filtered = []
         cols = {}
         use_fallback = False
 
+        # Quick probe: check shard 0 via pyarrow to detect VCF-format data
+        # before committing to the slow datasets streaming path.
+        try:
+            import io
+            import pyarrow.parquet as pq
+            import requests as _requests
+
+            probe_session = _requests.Session()
+            hf_token = os.environ.get("HF_TOKEN")
+            if hf_token:
+                probe_session.headers["Authorization"] = f"Bearer {hf_token}"
+            probe_api = (
+                f"https://huggingface.co/api/datasets/{meta['dataset']}"
+                f"/parquet/{try_config}/train"
+            )
+            probe_resp = probe_session.get(probe_api, timeout=30)
+            probe_resp.raise_for_status()
+            probe_urls = probe_resp.json()
+            if probe_urls:
+                probe_r = probe_session.get(probe_urls[0], timeout=60)
+                probe_r.raise_for_status()
+                probe_table = pq.read_table(io.BytesIO(probe_r.content))
+                if _is_vcf_shard(probe_table):
+                    msg = (
+                        f"Config '{try_config}' uses VCF format but the HuggingFace "
+                        f"parquet conversion is broken (shards contain only VCF header "
+                        f"fragments, ~{len(probe_table)} rows of metadata instead of "
+                        f"GWAS data). The upstream dataset needs to be re-converted."
+                    )
+                    if try_config != configs_to_try[-1]:
+                        print(f"  ⚠️  {msg}")
+                        print(f"  ▸ Trying fallback config...")
+                        continue
+                    else:
+                        raise RuntimeError(
+                            f"{msg} Check for updates at "
+                            f"https://huggingface.co/datasets/{meta['dataset']}"
+                        )
+        except _requests.RequestException:
+            pass  # probe failed, proceed with normal path
+
+        # Try datasets library first (fast path), fall back to per-shard pyarrow
+        # reads if schema unification fails.
         try:
             ds = load_dataset(meta["dataset"], try_config, split="train", streaming=True)
             first_row = next(iter(ds))
@@ -441,7 +482,6 @@ def ingest(trait: str, config: str | None, threshold: float, out_dir: Path) -> N
             try:
                 for row, col_map in _read_via_pyarrow(meta["dataset"], try_config, threshold):
                     filtered.append((row, col_map))
-                # Use the col_map from the most recent shard for effect scale detection
                 if filtered:
                     cols = filtered[-1][1]
                 print(f"  Hits: {len(filtered):,}")
