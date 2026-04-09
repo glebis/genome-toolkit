@@ -3,6 +3,7 @@ import './styles/theme.css'
 import { useSNPs, type SNP } from './hooks/useSNPs'
 import { useChat, type UIAction, type AgentAction } from './hooks/useChat'
 import { useVoice } from './hooks/useVoice'
+import { useStarterPrompts } from './hooks/useStarterPrompts'
 import { SNPTable } from './components/SNPTable'
 import { CommandPalette } from './components/CommandPalette'
 import { VariantDrawer } from './components/VariantDrawer'
@@ -35,6 +36,7 @@ function App() {
   })
   const mentalHealth = useMentalHealthData()
   const checklist = useChecklist()
+  const starterPrompts = useStarterPrompts(view)
   const [checklistOpen, setChecklistOpen] = useState(false)
   const [checklistHighlight, setChecklistHighlight] = useState(false)
 
@@ -505,6 +507,9 @@ function App() {
           })
         }}
         onStopListening={voice.stopListening}
+        starterPrompts={starterPrompts.prompts}
+        starterCapabilities={starterPrompts.capabilities}
+        starterExplore={starterPrompts.explore}
       />
 
       {/* Checklist Sidebar */}
