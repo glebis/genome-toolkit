@@ -183,7 +183,7 @@ class GenomeDB:
                    json_extract(e_cv.data, '$.alt') as alt_allele,
                    json_extract(e_mv.data, '$.gene_name') as gene_name,
                    json_extract(e_mv.data, '$.clinvar_significance') as mv_significance,
-                   COALESCE(s.gene_symbol, gsm.gene_symbol,
+                   COALESCE(gsm.gene_symbol,
                             json_extract(e_mv.data, '$.gene_symbol')) as gene_symbol
             FROM snps s
             LEFT JOIN enrichments e_cv ON s.rsid = e_cv.rsid AND e_cv.source = 'clinvar'
