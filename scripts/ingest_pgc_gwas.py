@@ -42,14 +42,59 @@ TRAITS: dict[str, dict] = {
             "Genome-wide association study of anxiety disorders. "
             "Nature Genetics, 2026."
         ),
-        "display_name": "Anxiety disorders (case-control)",
+        "display_name": "Anxiety disorders",
     },
-    # Future traits — uncomment when ready:
-    # "depression": {"dataset": "OpenMed/pgc-mdd", "default_config": ...},
-    # "bipolar": {"dataset": "OpenMed/pgc-bipolar", ...},
-    # "adhd": {"dataset": "OpenMed/pgc-adhd", ...},
-    # "ptsd": {"dataset": "OpenMed/pgc-ptsd", ...},
-    # "schizophrenia": {"dataset": "OpenMed/pgc-schizophrenia", ...},
+    "depression": {
+        "dataset": "OpenMed/pgc-mdd",
+        "default_config": "mdd2025",
+        "publication": "PGC MDD Working Group, 2025",
+        "citation": (
+            "Psychiatric Genomics Consortium MDD Working Group. "
+            "Genome-wide association meta-analysis of major depressive disorder. "
+            "2025."
+        ),
+        "display_name": "Major depressive disorder",
+    },
+    "bipolar": {
+        "dataset": "OpenMed/pgc-bipolar",
+        "default_config": "bip2024",
+        "publication": "PGC Bipolar Working Group, 2024",
+        "citation": (
+            "Psychiatric Genomics Consortium Bipolar Disorder Working Group. "
+            "Genome-wide association study of bipolar disorder. 2024."
+        ),
+        "display_name": "Bipolar disorder",
+    },
+    "adhd": {
+        "dataset": "OpenMed/pgc-adhd",
+        "default_config": "adhd2022",
+        "publication": "PGC ADHD Working Group, 2022",
+        "citation": (
+            "Psychiatric Genomics Consortium ADHD Working Group. "
+            "Genome-wide association meta-analysis of ADHD. 2022."
+        ),
+        "display_name": "ADHD",
+    },
+    "ptsd": {
+        "dataset": "OpenMed/pgc-ptsd",
+        "default_config": "ptsd2024",
+        "publication": "PGC PTSD Working Group, 2024",
+        "citation": (
+            "Psychiatric Genomics Consortium PTSD Working Group. "
+            "Genome-wide association study of PTSD. 2024."
+        ),
+        "display_name": "Post-traumatic stress disorder",
+    },
+    "substance-use": {
+        "dataset": "OpenMed/pgc-substance-use",
+        "default_config": "SUD2023",
+        "publication": "PGC Substance Use Disorders Working Group, 2023",
+        "citation": (
+            "Psychiatric Genomics Consortium Substance Use Disorders Working Group. "
+            "Genome-wide association study of substance use disorders. 2023."
+        ),
+        "display_name": "Substance use disorders",
+    },
 }
 
 
@@ -57,15 +102,17 @@ TRAITS: dict[str, dict] = {
 # our canonical column names to a list of candidates to try.
 COLUMN_CANDIDATES: dict[str, list[str]] = {
     "snp": ["SNP", "SNPID", "rsid", "MarkerName", "ID"],
-    "chr": ["CHR", "chromosome", "chrom", "#CHROM"],
+    "chr": ["CHR", "Chr", "chromosome", "chrom", "#CHROM"],
     "pos": ["BP", "POS", "position"],
     "a1": ["A1", "Allele1", "effect_allele", "EA"],
     "a2": ["A2", "Allele2", "other_allele", "NEA"],
-    "effect": ["BETA", "Effect", "OR", "log_OR", "b"],
+    # Z is included as a fallback effect — it's a signed Z-score, direction is correct
+    # but magnitude is on a different scale than log(OR). The script tags this in metadata.
+    "effect": ["BETA", "Beta", "Effect", "OR", "log_OR", "b", "Z"],
     "se": ["SE", "StdErr", "se"],
     "p": ["P", "P.value", "P-value", "pvalue", "P_value", "P_VAL"],
     "freq": ["Freq1", "FRQ", "EAF", "FRQ_A_35018", "MAF"],
-    "n": ["TotalN", "N", "Neff", "Neff_half"],
+    "n": ["TotalN", "N", "Neff", "Neff_half", "Weight"],
 }
 
 
@@ -104,6 +151,68 @@ def _safe_int(val) -> int | None:
         return None
 
 
+def _read_via_pyarrow(dataset: str, config: str, threshold: float):
+    """Read each parquet shard individually with pyarrow, bypassing the datasets
+    library's schema-unification logic. Yields rows one shard at a time.
+
+    This is necessary for PGC datasets where shard files have different columns
+    (e.g. some studies report OR, others Beta or Z; column counts differ between
+    sub-studies in the same config).
+    """
+    from huggingface_hub import HfApi, hf_hub_download
+    import pyarrow.parquet as pq
+
+    api = HfApi()
+    all_files = api.list_repo_files(dataset, repo_type="dataset")
+
+    # Find parquet shards belonging to this config
+    candidates = [
+        f for f in all_files
+        if f.endswith(".parquet") and (f"/{config}/" in f or f.startswith(f"{config}/"))
+    ]
+    if not candidates:
+        # Fallback: any parquet file mentioning the config name
+        candidates = [f for f in all_files if f.endswith(".parquet") and config in f]
+    if not candidates:
+        raise RuntimeError(f"No parquet files found for config '{config}' in {dataset}")
+
+    print(f"  Found {len(candidates)} parquet shard(s) for config '{config}'")
+
+    seen_total = 0
+    hits_total = 0
+    schemas_seen: set[tuple] = set()
+
+    for fpath in sorted(candidates):
+        local = hf_hub_download(dataset, fpath, repo_type="dataset")
+        table = pq.read_table(local)
+        cols_in_file = tuple(table.column_names)
+        if cols_in_file not in schemas_seen:
+            schemas_seen.add(cols_in_file)
+            print(f"  ├─ schema #{len(schemas_seen)}: {list(cols_in_file)}")
+
+        cols = detect_columns(list(cols_in_file))
+        missing = [k for k in ("snp", "chr", "pos", "a1", "a2", "effect", "p") if cols[k] is None]
+        if missing:
+            print(f"  │  skipping {fpath}: missing {missing}")
+            continue
+
+        p_col = cols["p"]
+        # Convert to dict-of-arrays for fast row access
+        df = table.to_pylist()
+        seen_total += len(df)
+        for row in df:
+            try:
+                p = _safe_float(row.get(p_col))
+                if p is not None and p < threshold:
+                    yield row, cols
+                    hits_total += 1
+            except Exception:
+                continue
+        print(f"  ├─ {fpath.split('/')[-1]}: scanned {len(df):,}, total hits so far {hits_total:,}")
+
+    print(f"  Total scanned across shards: {seen_total:,} rows")
+
+
 def ingest(trait: str, config: str | None, threshold: float, out_dir: Path) -> None:
     if trait not in TRAITS:
         print(f"ERROR: unknown trait '{trait}'. Known: {list(TRAITS.keys())}", file=sys.stderr)
@@ -124,61 +233,102 @@ def ingest(trait: str, config: str | None, threshold: float, out_dir: Path) -> N
     config = config or meta["default_config"]
 
     print(f"▸ Loading {meta['dataset']} / {config} ...")
-    ds = load_dataset(meta["dataset"], config, split="train")
-    print(f"  Total rows: {len(ds):,}")
-    print(f"  Columns: {ds.column_names}")
 
-    cols = detect_columns(ds.column_names)
-    missing = [k for k in ("snp", "chr", "pos", "a1", "a2", "effect", "p") if cols[k] is None]
-    if missing:
-        print(f"ERROR: could not detect required columns: {missing}", file=sys.stderr)
-        print(f"  Available: {ds.column_names}", file=sys.stderr)
-        sys.exit(3)
+    # Try datasets library first (fast path), fall back to per-shard pyarrow
+    # reads if schema unification fails.
+    filtered: list[tuple[dict, dict[str, str | None]]] = []  # (row, col_map)
+    cols: dict[str, str | None] = {}
+    use_fallback = False
 
-    # Detect whether effect column is on log-scale (BETA) or odds-ratio scale (OR).
-    # We always store on log scale so downstream code has a single convention:
-    #   effect > 0  →  effect allele raises risk
-    #   effect < 0  →  effect allele is protective
-    effect_col_name = cols["effect"].upper()
+    try:
+        ds = load_dataset(meta["dataset"], config, split="train", streaming=True)
+        first_row = next(iter(ds))
+        available_cols = list(first_row.keys())
+        print(f"  Columns: {available_cols}")
+
+        cols = detect_columns(available_cols)
+        missing = [k for k in ("snp", "chr", "pos", "a1", "a2", "effect", "p") if cols[k] is None]
+        if missing:
+            raise RuntimeError(f"missing columns: {missing}")
+
+        p_col = cols["p"]
+        ds = load_dataset(meta["dataset"], config, split="train", streaming=True)
+        seen = 0
+        for row in ds:
+            seen += 1
+            if seen % 500_000 == 0:
+                print(f"  ... scanned {seen:,} rows, {len(filtered):,} hits so far")
+            try:
+                p = _safe_float(row.get(p_col))
+                if p is not None and p < threshold:
+                    filtered.append((row, cols))
+            except Exception:
+                continue
+        print(f"  Total scanned: {seen:,} rows, hits: {len(filtered):,}")
+    except Exception as e:
+        print(f"  ⚠️  datasets library failed ({type(e).__name__}: {str(e)[:120]})")
+        print(f"  ▸ Falling back to per-shard pyarrow reads...")
+        use_fallback = True
+        for row, col_map in _read_via_pyarrow(meta["dataset"], config, threshold):
+            filtered.append((row, col_map))
+        # Use the col_map from the most recent shard for effect scale detection
+        if filtered:
+            cols = filtered[-1][1]
+        print(f"  Hits: {len(filtered):,}")
+
+    if not filtered:
+        print("ERROR: no hits collected. Try a different --config or --threshold.", file=sys.stderr)
+        sys.exit(4)
+
+    # Detect whether effect column is on log-scale (BETA) or odds-ratio (OR) or Z-score.
+    # All converted to a single convention where positive = risk allele.
+    effect_col_name = (cols.get("effect") or "").upper()
     effect_is_or = effect_col_name in ("OR", "ODDS_RATIO")
-    print(f"  Column map: {cols}")
-    print(f"  Effect scale: {'OR (will convert to log(OR))' if effect_is_or else 'BETA (log scale)'}")
+    effect_is_z = effect_col_name == "Z"
+    if effect_is_or:
+        scale_label = "log_or"
+        scale_note = "OR (converted to log(OR))"
+    elif effect_is_z:
+        scale_label = "z_score"
+        scale_note = "Z-score (sign preserved, magnitude on Z scale not log(OR) scale)"
+    else:
+        scale_label = "beta"
+        scale_note = "BETA (log scale)"
+    print(f"  Effect scale: {scale_note}")
 
-    # Filter to significant hits (streaming row-by-row to keep memory low).
-    p_col = cols["p"]
-    print(f"▸ Filtering to p < {threshold} ...")
-    filtered = ds.filter(
-        lambda row: row[p_col] is not None and _safe_float(row[p_col]) is not None and _safe_float(row[p_col]) < threshold
-    )
-    print(f"  Hits: {len(filtered):,}")
-
-    # Convert to compact records.
+    # Convert to compact records. Each entry uses its own col_map (for the
+    # pyarrow fallback path where shards may have different schemas).
     import math
     hits: list[dict] = []
-    for row in filtered:
-        raw_effect = _safe_float(row[cols["effect"]])
-        if raw_effect is not None and effect_is_or:
-            # Convert odds ratio to log(OR). OR must be > 0; otherwise skip.
+    for row, row_cols in filtered:
+        eff_col = row_cols.get("effect")
+        if not eff_col:
+            continue
+        raw_effect = _safe_float(row.get(eff_col))
+        eff_is_or = (eff_col or "").upper() in ("OR", "ODDS_RATIO")
+
+        if raw_effect is not None and eff_is_or:
             if raw_effect <= 0:
                 raw_effect = None
             else:
                 raw_effect = math.log(raw_effect)
 
+        snp_val = row.get(row_cols["snp"])
         rec = {
-            "rsid": str(row[cols["snp"]]) if row[cols["snp"]] else None,
-            "chr": _safe_int(row[cols["chr"]]),
-            "pos": _safe_int(row[cols["pos"]]),
-            "effect_allele": (row[cols["a1"]] or "").upper() or None,
-            "other_allele": (row[cols["a2"]] or "").upper() or None,
+            "rsid": str(snp_val) if snp_val else None,
+            "chr": _safe_int(row.get(row_cols["chr"])),
+            "pos": _safe_int(row.get(row_cols["pos"])),
+            "effect_allele": (row.get(row_cols["a1"]) or "").upper() or None,
+            "other_allele": (row.get(row_cols["a2"]) or "").upper() or None,
             "effect": raw_effect,
-            "p_value": _safe_float(row[p_col]),
+            "p_value": _safe_float(row.get(row_cols["p"])),
         }
-        if cols["se"]:
-            rec["se"] = _safe_float(row[cols["se"]])
-        if cols["freq"]:
-            rec["freq"] = _safe_float(row[cols["freq"]])
-        if cols["n"]:
-            rec["n"] = _safe_int(row[cols["n"]])
+        if row_cols.get("se"):
+            rec["se"] = _safe_float(row.get(row_cols["se"]))
+        if row_cols.get("freq"):
+            rec["freq"] = _safe_float(row.get(row_cols["freq"]))
+        if row_cols.get("n"):
+            rec["n"] = _safe_int(row.get(row_cols["n"]))
 
         # Skip records with no rsid or unusable effect
         if not rec["rsid"] or rec["effect"] is None or rec["p_value"] is None:
@@ -197,8 +347,11 @@ def ingest(trait: str, config: str | None, threshold: float, out_dir: Path) -> N
         "citation": meta["citation"],
         "license": "CC BY 4.0",
         "threshold": threshold,
-        "effect_scale": "log_or" if effect_is_or else "beta",
-        "note": "Effect values are on log scale. Positive = effect allele raises risk.",
+        "effect_scale": scale_label,
+        "note": (
+            "Effect values: positive = effect allele raises risk, negative = protective. "
+            f"Scale: {scale_note}."
+        ),
         "n_hits": len(hits),
         "hits": hits,
     }
