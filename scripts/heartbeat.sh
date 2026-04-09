@@ -1,12 +1,17 @@
 #!/bin/bash
 # Genome Heartbeat — daily health + triage briefing
-cd /Users/glebkalinin/genome-toolkit
-export PYTHONPATH=/Users/glebkalinin/genome-toolkit
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+cd "$PROJECT_DIR"
+export PYTHONPATH="$PROJECT_DIR"
 
-RESULT=$(/opt/miniconda3/bin/python3 -c "
+: "${GENOME_VAULT_ROOT:?Set GENOME_VAULT_ROOT to your vault path}"
+
+RESULT=$(python3 -c "
 import sys
-sys.path.insert(0, '/Users/glebkalinin/genome-toolkit')
+sys.path.insert(0, '$PROJECT_DIR')
 from pathlib import Path
+import os
 from datetime import date
 from genome_toolkit.triage.domain.score import TriageBucket
 from genome_toolkit.triage.application.triage_use_case import RunTriageSession
@@ -15,7 +20,7 @@ from genome_toolkit.triage.infrastructure.vault.findings_parser import VaultFind
 from genome_toolkit.triage.infrastructure.scripts.lab_adapter import VaultLabSignalRepository
 from genome_toolkit.triage.infrastructure.persistence.session_store import MarkdownSessionRepository
 
-vault = Path('/Users/glebkalinin/Brains/genome')
+vault = Path(os.environ['GENOME_VAULT_ROOT'])
 report = RunTriageSession(
     VaultTaskRepository(vault), VaultFindingsRepository(vault),
     VaultLabSignalRepository(vault), MarkdownSessionRepository(vault)
@@ -47,7 +52,7 @@ MSG="$TOTAL items | $DO_NOW urgent | $THIS_WEEK this week | $OVERDUE overdue"
 osascript -e "display notification \"$MSG\" with title \"Genome Daily\" sound name \"Ping\""
 
 # Assessment check
-LAST_GAD=$(ls -t /Users/glebkalinin/Brains/genome/Assessments/*GAD-7* 2>/dev/null | head -1)
+LAST_GAD=$(ls -t "${GENOME_VAULT_ROOT}/Assessments"/*GAD-7* 2>/dev/null | head -1)
 if [ -n "$LAST_GAD" ]; then
     DAYS=$((( $(date +%s) - $(stat -f %m "$LAST_GAD") ) / 86400 ))
     if [ $DAYS -gt 14 ]; then
@@ -55,4 +60,6 @@ if [ -n "$LAST_GAD" ]; then
     fi
 fi
 
-echo "$(date '+%Y-%m-%d %H:%M'): $MSG" >> /tmp/genome-heartbeat.log
+LOG_DIR="${GENOME_VAULT_ROOT}/data"
+mkdir -p "$LOG_DIR"
+echo "$(date '+%Y-%m-%d %H:%M'): $MSG" >> "${LOG_DIR}/heartbeat.log"
