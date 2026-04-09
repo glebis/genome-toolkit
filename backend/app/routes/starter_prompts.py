@@ -13,12 +13,13 @@ router = APIRouter(prefix="/api")
 # ---------------------------------------------------------------------------
 # Config paths
 # ---------------------------------------------------------------------------
-_PROJECT_ROOT = Path(__file__).resolve().parents[4]  # genome-toolkit/
+_PROJECT_ROOT = Path(__file__).resolve().parents[3]  # genome-toolkit/
 _GWAS_DIR = _PROJECT_ROOT / "config" / "gwas"
 _PGX_YAML = _PROJECT_ROOT / "config" / "pgx-drugs.yaml"
 
 _MENTAL_HEALTH_TRAITS = {"depression", "anxiety", "bipolar", "schizophrenia", "ptsd", "adhd"}
 _MENTAL_HEALTH_SYSTEMS = {"serotonin", "dopamine", "gaba", "hpa axis", "glutamate", "neuroplasticity"}
+_TIER_ORDER = {"E1": 0, "E2": 1, "E3": 2, "E4": 3, "E5": 4}
 
 
 # ---------------------------------------------------------------------------
@@ -114,7 +115,7 @@ async def _prompts_mental_health(vault_path: str) -> list[dict]:
                 if not systems_lower.intersection(_MENTAL_HEALTH_SYSTEMS):
                     continue
                 tier = fm.get("evidence_tier", "E9")
-                if str(tier) < str(top_tier):
+                if _TIER_ORDER.get(str(tier), 9) < _TIER_ORDER.get(top_tier, 9):
                     top_tier = str(tier)
                     top_gene = fm.get("gene_symbol") or md.stem
 
@@ -195,7 +196,7 @@ async def _prompts_pgx(vault_path: str) -> list[dict]:
         })
 
     prompts.append({
-        "text": f"Show me a summary of all {total_drug_cards} drug cards relevant to my genotype",
+        "text": f"Show me a summary of all {total_drug_cards} drug cards relevant to my genotype" if total_drug_cards > 0 else "Show me a summary of my drug interaction profile",
         "subtitle": "Full pharmacogenomic profile across all enzymes",
         "priority": 2,
     })
@@ -260,15 +261,13 @@ async def _prompts_addiction(vault_path: str) -> list[dict]:
 
 
 async def _prompts_risk() -> list[dict]:
-    gwas_count = len(list(_GWAS_DIR.glob("*-hits.json")))
-    # Exclude clumped files from display count
     non_clumped = [f for f in _GWAS_DIR.glob("*-hits.json") if "clumped" not in f.name]
     trait_count = len(non_clumped)
 
     prompts = [
         {
             "text": f"Across {trait_count} risk traits in my genome, where do I sit in the population distribution?",
-            "subtitle": f"{gwas_count} GWAS hit files loaded from PGC and OpenMed",
+            "subtitle": f"GWAS data loaded from PGC and OpenMed across {trait_count} traits",
             "priority": 1,
         },
         {
