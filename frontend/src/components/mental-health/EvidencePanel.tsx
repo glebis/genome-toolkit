@@ -26,7 +26,7 @@ function SectionHeader({ title, count, expanded, onClick }: {
         padding: '10px 0',
         cursor: 'pointer',
         fontFamily: 'var(--font-mono)',
-        fontSize: 11,
+        fontSize: 'var(--font-size-sm)',
         fontWeight: 600,
         textTransform: 'uppercase',
         letterSpacing: '0.1em',
@@ -34,10 +34,10 @@ function SectionHeader({ title, count, expanded, onClick }: {
         textAlign: 'left',
       }}
     >
-      <span style={{ fontSize: 10, width: 12 }}>{expanded ? '▾' : '▸'}</span>
+      <span style={{ fontSize: 'var(--font-size-xs)', width: 12 }}>{expanded ? '▾' : '▸'}</span>
       {title}
       <span style={{
-        fontSize: 10,
+        fontSize: 'var(--font-size-xs)',
         color: 'var(--text-secondary)',
         fontWeight: 400,
       }}>
@@ -55,7 +55,7 @@ function ExternalLink({ href, label }: { href: string; label: string }) {
       rel="noopener"
       title={`${label} (opens in new window)`}
       style={{
-        fontSize: 10,
+        fontSize: 'var(--font-size-xs)',
         color: 'var(--primary)',
         textDecoration: 'underline',
         fontFamily: 'var(--font-mono)',
@@ -97,7 +97,7 @@ function PublicationRow({ pub, gene, onDiscuss }: {
             background: 'none',
             border: 'none',
             cursor: 'pointer',
-            fontSize: 9,
+            fontSize: 'var(--font-size-xs)',
             color: 'var(--text-tertiary)',
             padding: '2px 0',
             flexShrink: 0,
@@ -108,7 +108,7 @@ function PublicationRow({ pub, gene, onDiscuss }: {
         </button>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
-            fontSize: 12,
+            fontSize: 'var(--font-size-md)',
             color: 'var(--text)',
             lineHeight: 1.4,
             cursor: 'pointer',
@@ -116,7 +116,7 @@ function PublicationRow({ pub, gene, onDiscuss }: {
             {pub.title}
           </div>
           <div style={{
-            fontSize: 10,
+            fontSize: 'var(--font-size-xs)',
             color: 'var(--text-secondary)',
             marginTop: 2,
             display: 'flex',
@@ -153,7 +153,7 @@ function PublicationRow({ pub, gene, onDiscuss }: {
             borderRadius: 4,
             padding: '3px 8px',
             cursor: 'pointer',
-            fontSize: 10,
+            fontSize: 'var(--font-size-xs)',
             color: 'var(--primary)',
             fontFamily: 'var(--font-mono)',
             flexShrink: 0,
@@ -165,7 +165,7 @@ function PublicationRow({ pub, gene, onDiscuss }: {
       </div>
       {expanded && pub.abstract && (
         <div style={{
-          fontSize: 11,
+          fontSize: 'var(--font-size-sm)',
           color: 'var(--text-secondary)',
           lineHeight: 1.6,
           marginTop: 8,
@@ -211,7 +211,7 @@ export function EvidencePanel({ gene, onDiscuss }: EvidencePanelProps) {
     return (
       <div style={{
         padding: '16px 0',
-        fontSize: 11,
+        fontSize: 'var(--font-size-sm)',
         color: 'var(--text-tertiary)',
         fontFamily: 'var(--font-mono)',
         letterSpacing: '0.1em',
@@ -229,7 +229,7 @@ export function EvidencePanel({ gene, onDiscuss }: EvidencePanelProps) {
   return (
     <div style={{ marginBottom: 20 }}>
       <div style={{
-        fontSize: 11,
+        fontSize: 'var(--font-size-sm)',
         fontWeight: 600,
         textTransform: 'uppercase',
         letterSpacing: '0.1em',
@@ -246,7 +246,7 @@ export function EvidencePanel({ gene, onDiscuss }: EvidencePanelProps) {
 
       {totalItems === 0 ? (
         <div style={{
-          fontSize: 11,
+          fontSize: 'var(--font-size-sm)',
           color: 'var(--text-tertiary)',
           fontFamily: 'var(--font-mono)',
           padding: '12px 0',
@@ -320,7 +320,7 @@ export function EvidencePanel({ gene, onDiscuss }: EvidencePanelProps) {
                   gap: 12,
                   padding: '6px 0',
                   borderBottom: '1px dashed var(--border-dashed)',
-                  fontSize: 11,
+                  fontSize: 'var(--font-size-sm)',
                   alignItems: 'baseline',
                 }}>
                   <span style={{
@@ -345,7 +345,7 @@ export function EvidencePanel({ gene, onDiscuss }: EvidencePanelProps) {
                     {ann.condition}
                   </span>
                   <span style={{
-                    fontSize: 9,
+                    fontSize: 'var(--font-size-xs)',
                     color: 'var(--text-tertiary)',
                     textTransform: 'uppercase',
                     flexShrink: 0,
@@ -381,7 +381,7 @@ export function EvidencePanel({ gene, onDiscuss }: EvidencePanelProps) {
                   gap: 12,
                   padding: '6px 0',
                   borderBottom: '1px dashed var(--border-dashed)',
-                  fontSize: 11,
+                  fontSize: 'var(--font-size-sm)',
                   alignItems: 'baseline',
                 }}>
                   <a
@@ -409,7 +409,7 @@ export function EvidencePanel({ gene, onDiscuss }: EvidencePanelProps) {
                   {entry.repute && (
                     <span style={{
                       color: entry.repute === 'Good' ? 'var(--sig-benefit)' : 'var(--sig-risk)',
-                      fontSize: 10,
+                      fontSize: 'var(--font-size-xs)',
                       flexShrink: 0,
                     }}>
                       {entry.repute}
@@ -448,7 +448,7 @@ export function EvidencePanel({ gene, onDiscuss }: EvidencePanelProps) {
                   gap: 12,
                   padding: '6px 0',
                   borderBottom: '1px dashed var(--border-dashed)',
-                  fontSize: 11,
+                  fontSize: 'var(--font-size-sm)',
                 }}>
                   <a
                     href={pw.id.startsWith('hsa')

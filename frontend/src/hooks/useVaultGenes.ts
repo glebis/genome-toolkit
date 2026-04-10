@@ -36,6 +36,8 @@ export function useVaultGenes(): UseVaultGenesReturn {
       return
     }
 
+    let cancelled = false
+
     if (!cachePromise) {
       cachePromise = fetch('/api/vault/genes')
         .then((res) => {
@@ -54,13 +56,17 @@ export function useVaultGenes(): UseVaultGenesReturn {
 
     cachePromise
       .then((g) => {
+        if (cancelled) return
         setGenes(g)
         setLoading(false)
       })
       .catch((err) => {
+        if (cancelled) return
         setError(err instanceof Error ? err.message : 'Failed to load vault genes')
         setLoading(false)
       })
+
+    return () => { cancelled = true }
   }, [])
 
   return { genes, loading, error }

@@ -8,6 +8,14 @@ export const EVIDENCE_LABELS: Record<EvidenceTier, string> = {
   E5: 'THEORETICAL',
 }
 
+export const EVIDENCE_COLORS: Record<EvidenceTier, string> = {
+  E1: 'var(--evidence-e1)',
+  E2: 'var(--evidence-e2)',
+  E3: 'var(--evidence-e3)',
+  E4: 'var(--evidence-e4)',
+  E5: 'var(--evidence-e5)',
+}
+
 export type GeneStatus = 'actionable' | 'monitor' | 'optimal' | 'neutral'
 
 export const STATUS_COLORS: Record<GeneStatus, string> = {

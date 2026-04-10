@@ -36,19 +36,25 @@ export function useSubstancesData(): UseSubstancesDataReturn {
   const [substances, setSubstances] = useState<SubstanceCard[]>([])
 
   useEffect(() => {
-    fetch('/api/config/substances')
+    const controller = new AbortController()
+
+    fetch('/api/config/substances', { signal: controller.signal })
       .then((res) => {
         if (!res.ok) throw new Error(`Substances config API: ${res.status}`)
         return res.json()
       })
       .then((data) => {
+        if (controller.signal.aborted) return
         setConfigSubstances(data.substances ?? data)
         setConfigLoading(false)
       })
       .catch((err) => {
+        if (err.name === 'AbortError') return
         console.error('[useSubstancesData] Config fetch failed:', err)
         setConfigLoading(false)
       })
+
+    return () => { controller.abort() }
   }, [])
 
   useEffect(() => {

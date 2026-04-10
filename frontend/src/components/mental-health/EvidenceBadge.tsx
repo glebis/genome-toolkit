@@ -1,5 +1,5 @@
 import type { EvidenceTier, GeneStatus } from '../../types/genomics'
-import { EVIDENCE_LABELS, STATUS_COLORS } from '../../types/genomics'
+import { EVIDENCE_LABELS, EVIDENCE_COLORS } from '../../types/genomics'
 
 interface EvidenceBadgeProps {
   tier: EvidenceTier
@@ -7,8 +7,8 @@ interface EvidenceBadgeProps {
   studyCount?: number
 }
 
-export function EvidenceBadge({ tier, status = 'neutral', studyCount }: EvidenceBadgeProps) {
-  const bgColor = STATUS_COLORS[status]
+export function EvidenceBadge({ tier, studyCount }: EvidenceBadgeProps) {
+  const color = EVIDENCE_COLORS[tier]
 
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
@@ -20,7 +20,7 @@ export function EvidenceBadge({ tier, status = 'neutral', studyCount }: Evidence
           borderRadius: 3,
           letterSpacing: '0.1em',
           color: 'var(--bg-raised)',
-          background: bgColor,
+          background: color,
           fontFamily: 'var(--font-mono)',
         }}
       >
@@ -30,8 +30,8 @@ export function EvidenceBadge({ tier, status = 'neutral', studyCount }: Evidence
         <span
           style={{
             fontSize: 'var(--font-size-xs)',
-            color: 'var(--primary)',
-            border: '1px solid var(--primary)',
+            color,
+            border: `1px solid ${color}`,
             padding: '1px 5px',
             borderRadius: 2,
             fontFamily: 'var(--font-mono)',

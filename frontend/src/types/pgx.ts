@@ -5,7 +5,7 @@ export const METABOLIZER_COLORS: Record<MetabolizerStatus, string> = {
   poor: 'var(--sig-risk)',
   intermediate: 'var(--sig-reduced)',
   normal: 'var(--sig-benefit)',
-  ultrarapid: '#b84a4a',
+  ultrarapid: 'var(--sig-danger)',
 }
 
 export const METABOLIZER_LABELS: Record<MetabolizerStatus, string> = {

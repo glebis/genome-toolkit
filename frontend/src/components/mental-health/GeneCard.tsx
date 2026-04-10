@@ -12,7 +12,10 @@ export function GeneCard({ gene, onClick }: GeneCardProps) {
 
   return (
     <div
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
       onClick={() => onClick?.(gene)}
+      onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && onClick) { e.preventDefault(); onClick(gene); } }}
       style={{
         background: 'var(--bg-raised)',
         border: `1.5px solid ${borderColor}`,

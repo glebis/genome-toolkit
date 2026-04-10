@@ -41,7 +41,7 @@ export function ActionCard({ action, onToggleDone, inChecklist, onAddToChecklist
           <div
             onClick={() => setExpanded(prev => !prev)}
             style={{
-              fontSize: 12,
+              fontSize: 'var(--font-size-md)',
               fontWeight: 600,
               marginBottom: 4,
               cursor: action.detail ? 'pointer' : 'default',
@@ -111,7 +111,7 @@ export function ActionCard({ action, onToggleDone, inChecklist, onAddToChecklist
           title={inChecklist ? (action.done ? 'In checklist (done)' : 'In checklist (click to toggle done)') : 'Add to checklist'}
           style={{
             fontFamily: 'var(--font-mono)',
-            fontSize: 8,
+            fontSize: 'var(--font-size-xs)',
             fontWeight: 500,
             textTransform: 'uppercase',
             letterSpacing: '0.08em',

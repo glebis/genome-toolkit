@@ -167,7 +167,7 @@ export function GenomeGlyph({ genotypes, size = 80, label }: GenomeGlyphProps) {
       </svg>
       {label && (
         <span style={{
-          fontSize: 8,
+          fontSize: 'var(--font-size-xs)',
           color: 'var(--text-tertiary)',
           letterSpacing: '0.1em',
           textTransform: 'uppercase',

@@ -16,7 +16,7 @@ export function MetabolizerBar({ enzyme }: MetabolizerBarProps) {
     <div style={{ marginBottom: 14 }}>
       <div style={{
         display: 'flex', justifyContent: 'space-between',
-        fontSize: 9, color: 'var(--text-tertiary)', marginBottom: 4,
+        fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)', marginBottom: 4,
         letterSpacing: '0.08em', textTransform: 'uppercase',
       }}>
         {scaleLabels.map(l => <span key={l}>{l}</span>)}
@@ -38,7 +38,7 @@ export function MetabolizerBar({ enzyme }: MetabolizerBarProps) {
           background: color, border: '2px solid var(--bg-raised)',
         }} />
       </div>
-      <div style={{ fontSize: 11, fontWeight: 500, marginTop: 8, color }}>
+      <div style={{ fontSize: 'var(--font-size-sm)', fontWeight: 500, marginTop: 8, color }}>
         {statusLabel(enzyme.status, enzyme.geneType)}
       </div>
     </div>

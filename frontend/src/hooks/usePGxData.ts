@@ -62,19 +62,25 @@ export function usePGxData(): UsePGxDataReturn {
   const [sections, setSections] = useState<PGxEnzymeSection[]>([])
 
   useEffect(() => {
-    fetch('/api/config/pgx-drugs')
+    const controller = new AbortController()
+
+    fetch('/api/config/pgx-drugs', { signal: controller.signal })
       .then((res) => {
         if (!res.ok) throw new Error(`PGx config API: ${res.status}`)
         return res.json()
       })
       .then((data) => {
+        if (controller.signal.aborted) return
         setConfig(data.enzymes ?? data)
         setConfigLoading(false)
       })
       .catch((err) => {
+        if (err.name === 'AbortError') return
         console.error('[usePGxData] Config fetch failed:', err)
         setConfigLoading(false)
       })
+
+    return () => { controller.abort() }
   }, [])
 
   useEffect(() => {

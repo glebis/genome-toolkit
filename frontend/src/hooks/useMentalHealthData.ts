@@ -177,13 +177,16 @@ export function useMentalHealthData(): UseMentalHealthDataReturn {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    const controller = new AbortController()
+
     // Single API call — server does all parsing and grouping
-    fetch('/api/mental-health/dashboard')
+    fetch('/api/mental-health/dashboard', { signal: controller.signal })
       .then(r => {
         if (!r.ok) throw new Error(`Dashboard API: ${r.status}`)
         return r.json()
       })
       .then(data => {
+        if (controller.signal.aborted) return
         if (data?.sections?.length > 0) {
           console.log(`[genome-toolkit] Dashboard: loaded ${data.totalGenes} genes, ${data.totalActions} actions from vault`)
           setSections(data.sections)
@@ -200,9 +203,14 @@ export function useMentalHealthData(): UseMentalHealthDataReturn {
         }
       })
       .catch(err => {
+        if (err.name === 'AbortError') return
         console.error('[genome-toolkit] Dashboard API failed:', err.message)
       })
-      .finally(() => setLoading(false))
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false)
+      })
+
+    return () => { controller.abort() }
   }, [])
 
   const totalGenes = sections.reduce((sum, s) => sum + s.genes.length, 0)

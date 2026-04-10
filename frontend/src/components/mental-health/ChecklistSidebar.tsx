@@ -59,7 +59,7 @@ export function ChecklistSidebar({
 
   const chipStyle = (active: boolean) => ({
     fontFamily: 'var(--font-mono)',
-    fontSize: 8,
+    fontSize: 'var(--font-size-xs)',
     fontWeight: active ? 600 : 500,
     textTransform: 'uppercase' as const,
     letterSpacing: '0.08em',
@@ -72,7 +72,7 @@ export function ChecklistSidebar({
 
   const filterStyle = (active: boolean) => ({
     fontFamily: 'var(--font-mono)',
-    fontSize: 8,
+    fontSize: 'var(--font-size-xs)',
     fontWeight: active ? 600 : 500,
     textTransform: 'uppercase' as const,
     letterSpacing: '0.1em',
@@ -85,7 +85,7 @@ export function ChecklistSidebar({
 
   return (
     <div className="sidebar-drawer" style={{
-      width: 420,
+      width: 'min(420px, calc(100vw - 24px))',
       background: 'var(--bg-raised)',
       borderLeft: '1px solid var(--border)',
       display: 'flex',
@@ -99,10 +99,10 @@ export function ChecklistSidebar({
     }}>
       {/* Header */}
       <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ fontSize: 14, fontWeight: 600, letterSpacing: '0.08em' }}>Action Checklist</span>
+        <span style={{ fontSize: 'var(--font-size-lg)', fontWeight: 600, letterSpacing: '0.08em' }}>Action Checklist</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>{totalCount} items / {doneCount} done</span>
-          <button onClick={onClose} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-secondary)', cursor: 'pointer', border: '1px solid var(--border)', background: 'none', padding: '4px 10px', borderRadius: 4 }}>
+          <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)' }}>{totalCount} items / {doneCount} done</span>
+          <button onClick={onClose} style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', cursor: 'pointer', border: '1px solid var(--border)', background: 'none', padding: '4px 10px', borderRadius: 4 }}>
             ESC
           </button>
         </div>
@@ -137,20 +137,20 @@ export function ChecklistSidebar({
       {/* Items list */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '8px 20px 16px' }}>
         {Object.keys(grouped).length === 0 ? (
-          <div style={{ padding: '40px 0', textAlign: 'center', fontSize: 11, color: 'var(--text-tertiary)' }}>
+          <div style={{ padding: '40px 0', textAlign: 'center', fontSize: 'var(--font-size-sm)', color: 'var(--text-tertiary)' }}>
             No items yet. Add actions from gene cards or type below.
           </div>
         ) : (
           Object.entries(grouped).map(([group, groupItems]) => (
             <div key={group}>
               <div style={{
-                fontSize: 9, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.12em',
+                fontSize: 'var(--font-size-xs)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.12em',
                 margin: '14px 0 6px', paddingBottom: 4, borderBottom: '1px dashed var(--border-dashed)',
                 display: 'flex', justifyContent: 'space-between',
                 color: groupBy === 'gene' ? 'var(--primary)' : (TYPE_COLORS[group] || 'var(--text-secondary)'),
               }}>
                 <span>{group}</span>
-                <span style={{ fontWeight: 400, color: 'var(--text-tertiary)', fontSize: 8 }}>{groupItems.length}</span>
+                <span style={{ fontWeight: 400, color: 'var(--text-tertiary)', fontSize: 'var(--font-size-xs)',}}>{groupItems.length}</span>
               </div>
               {groupItems.map(item => (
                 <div
@@ -179,7 +179,7 @@ export function ChecklistSidebar({
                       width: 14, height: 14, border: `1.5px solid ${item.done ? 'var(--sig-benefit)' : 'var(--border-strong)'}`,
                       borderRadius: 3, flexShrink: 0, marginTop: 2,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 9, background: item.done ? 'var(--sig-benefit)' : 'transparent',
+                      fontSize: 'var(--font-size-xs)', background: item.done ? 'var(--sig-benefit)' : 'transparent',
                       color: 'var(--bg-raised)',
                     }}
                   >
@@ -189,16 +189,16 @@ export function ChecklistSidebar({
                   {/* Body */}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{
-                      fontSize: 10, fontWeight: 500, lineHeight: 1.4,
+                      fontSize: 'var(--font-size-xs)', fontWeight: 500, lineHeight: 1.4,
                       textDecoration: item.done ? 'line-through' : 'none',
                       color: item.done ? 'var(--text-secondary)' : 'var(--text)',
                     }}>
                       {item.title}
                     </div>
-                    <div style={{ fontSize: 8, color: 'var(--text-secondary)', marginTop: 2, display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+                    <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)', marginTop: 2, display: 'flex', gap: 5, flexWrap: 'wrap' }}>
                       {item.gene_symbol !== 'custom' && <span style={{ color: 'var(--primary)' }}>{item.gene_symbol}</span>}
                       {item.practical_category && (
-                        <span style={{ padding: '1px 4px', borderRadius: 2, fontSize: 7, textTransform: 'uppercase', letterSpacing: '0.06em', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
+                        <span style={{ padding: '1px 4px', borderRadius: 2, fontSize: 'var(--font-size-xs)', textTransform: 'uppercase', letterSpacing: '0.06em', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
                           {item.practical_category}
                         </span>
                       )}
@@ -209,7 +209,7 @@ export function ChecklistSidebar({
                   {/* Delete button / confirmation */}
                   {deletingId === item.id ? (
                     <div style={{
-                      position: 'absolute', right: 6, top: 6, fontSize: 8, color: 'var(--accent)',
+                      position: 'absolute', right: 6, top: 6, fontSize: 'var(--font-size-xs)', color: 'var(--accent)',
                       display: 'flex', gap: 6, alignItems: 'center',
                       background: 'var(--bg-raised)', padding: '2px 6px', borderRadius: 3,
                       border: '1px solid var(--accent)',
@@ -224,7 +224,7 @@ export function ChecklistSidebar({
                       onClick={() => setDeletingId(item.id)}
                       style={{
                         position: 'absolute', right: 6, top: 6, opacity: 0,
-                        fontSize: 8, color: 'var(--text-tertiary)', cursor: 'pointer',
+                        fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)', cursor: 'pointer',
                         border: '1px solid var(--border)', borderRadius: 3, padding: '1px 5px',
                         transition: 'opacity 0.1s',
                       }}
@@ -247,7 +247,7 @@ export function ChecklistSidebar({
           onKeyDown={(e) => { if (e.key === 'Enter') handleAdd() }}
           placeholder="+ Add action item..."
           style={{
-            width: '100%', fontFamily: 'var(--font-mono)', fontSize: 10,
+            width: '100%', fontFamily: 'var(--font-mono)', fontSize: 'var(--font-size-xs)',
             padding: '7px 10px', border: '1px solid var(--border)',
             background: 'var(--bg)', color: 'var(--text)', borderRadius: 4, outline: 'none',
             boxSizing: 'border-box',
@@ -261,10 +261,10 @@ export function ChecklistSidebar({
           onClick={() => setActionsOpen(prev => !prev)}
           style={{ padding: '10px 20px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, userSelect: 'none' }}
         >
-          <span style={{ fontSize: 8, color: 'var(--text-tertiary)', display: 'inline-block', transform: actionsOpen ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }}>
+          <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)', display: 'inline-block', transform: actionsOpen ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }}>
             {'\u25B6'}
           </span>
-          <span style={{ fontSize: 9, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-secondary)' }}>Actions</span>
+          <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-secondary)' }}>Actions</span>
         </div>
         {actionsOpen && (
           <div style={{ padding: '0 20px 14px' }}>
@@ -281,13 +281,13 @@ export function ChecklistSidebar({
                   display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', cursor: 'pointer',
                 }}
               >
-                <span style={{ fontSize: 10, color: actionItem.color }}>{actionItem.label}</span>
-                <span style={{ fontSize: 8, color: 'var(--text-tertiary)' }}>{actionItem.hint}</span>
+                <span style={{ fontSize: 'var(--font-size-xs)', color: actionItem.color }}>{actionItem.label}</span>
+                <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)' }}>{actionItem.hint}</span>
               </div>
             ))}
             <div style={{ padding: '8px 0', display: 'flex', gap: 16 }}>
-              <span onClick={() => onExport('pdf')} style={{ fontSize: 9, color: 'var(--text-secondary)', cursor: 'pointer', textDecoration: 'underline' }}>Export PDF</span>
-              <span onClick={() => onExport('md')} style={{ fontSize: 9, color: 'var(--text-secondary)', cursor: 'pointer', textDecoration: 'underline' }}>Export Markdown</span>
+              <span onClick={() => onExport('pdf')} style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)', cursor: 'pointer', textDecoration: 'underline' }}>Export PDF</span>
+              <span onClick={() => onExport('md')} style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)', cursor: 'pointer', textDecoration: 'underline' }}>Export Markdown</span>
             </div>
           </div>
         )}

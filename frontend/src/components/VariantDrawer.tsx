@@ -75,7 +75,7 @@ export function VariantDrawer({ snp, onClose, onAskAI, onAddToChecklist }: Props
         top: 0,
         right: 0,
         bottom: 0,
-        width: 420,
+        width: 'min(420px, calc(100vw - 24px))',
         background: 'var(--bg-raised)',
         borderLeft: '1px solid var(--border-strong)',
         zIndex: 900,

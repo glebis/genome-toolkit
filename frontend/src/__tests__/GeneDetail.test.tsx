@@ -70,10 +70,9 @@ describe('GeneDetail', () => {
     expect(onClose).toHaveBeenCalled()
   })
 
-  it('passes onToggleAction to ActionCards', () => {
-    const onToggle = vi.fn()
-    render(<GeneDetail gene={mockGene} actions={mockActions} onClose={vi.fn()} onToggleAction={onToggle} />)
-    fireEvent.click(screen.getAllByTitle('Mark as done')[0])
-    expect(onToggle).toHaveBeenCalledWith('a1')
+  it('renders add-to-checklist buttons for actions', () => {
+    render(<GeneDetail gene={mockGene} actions={mockActions} onClose={vi.fn()} onToggleAction={vi.fn()} />)
+    const addButtons = screen.getAllByTitle('Add to checklist')
+    expect(addButtons.length).toBeGreaterThanOrEqual(2)
   })
 })

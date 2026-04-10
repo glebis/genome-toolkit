@@ -220,7 +220,15 @@ export function SNPTable({ data, loading, totalVariants, onRowClick, onPageChang
                 return (
                 <tr
                   key={row.id}
+                  tabIndex={0}
+                  role="button"
                   onClick={(e) => handleRowClick(row.original, i, e)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      onRowClick?.(row.original)
+                    }
+                  }}
                   style={{
                     cursor: 'pointer',
                     background: baseBg,

@@ -14,17 +14,27 @@
   --accent-strong: #a8573a;
 
   --text: #3a3a38;
-  --text-secondary: #7a7a76;
-  --text-tertiary: #a0a09a;
+  --text-secondary: #5e5e5a;
+  --text-tertiary: #7a7a76;
 
   --border: #c4c0b8;
   --border-strong: #9a968e;
   --border-dashed: #b8b4ac;
 
   --sig-risk: #c4524e;
+  --sig-danger: #b84a4a;
+  --sig-danger-bg: #faf5f5;
+  --sig-danger-border: #d4a0a0;
   --sig-benefit: #5a8a5e;
-  --sig-reduced: #c49a4e;
+  --sig-reduced: #956a2a;
+  --sig-monitor: #956a2a;
   --sig-neutral: #7a7a76;
+
+  --evidence-e1: #2d6a4f;
+  --evidence-e2: #40916c;
+  --evidence-e3: #956a2a;
+  --evidence-e4: #9a8478;
+  --evidence-e5: #7a7a76;
 
   --space-xs: 4px;
   --space-sm: 8px;
@@ -194,6 +204,83 @@ body {
 .chat-markdown--lg blockquote { padding-left: 16px; font-size: 14px; }
 .chat-markdown--lg code { font-size: var(--font-size-sm); padding: 2px 6px; }
 
+/* ── Easing ────────────────────────────────────────────────────────────────── */
+:root {
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── Mortality rows ───────────────────────────────────────────────────────── */
+.mortality-row {
+  transition: background 0.12s;
+}
+.mortality-row:hover:not(.mortality-row--expanded),
+.mortality-row:focus-visible:not(.mortality-row--expanded) {
+  background: var(--bg-inset) !important;
+}
+.mortality-row:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+/* Expand/collapse animation via CSS grid trick */
+.expand-wrapper {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 350ms var(--ease-out-quart);
+}
+.expand-wrapper--open {
+  grid-template-rows: 1fr;
+}
+.expand-wrapper > div {
+  overflow: hidden;
+}
+
+/* Chevron rotation */
+.expand-chevron {
+  display: inline-block;
+  transition: transform 250ms var(--ease-out-quart);
+}
+.expand-chevron--open {
+  transform: rotate(90deg);
+}
+
+/* Risk bar grow animation */
+@keyframes bar-grow {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+.risk-bar {
+  transform-origin: left center;
+  animation: bar-grow 600ms var(--ease-out-expo) both;
+}
+
+/* Gene card stagger entrance */
+@keyframes card-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.gene-card-enter {
+  animation: card-enter 300ms var(--ease-out-quart) both;
+}
+
+/* Action add button feedback */
+.btn-add-action {
+  transition: transform 150ms var(--ease-out-quart), opacity 150ms;
+}
+.btn-add-action:active:not(:disabled) {
+  transform: scale(0.9);
+}
+
+/* ── Reduced motion ───────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .expand-wrapper { transition-duration: 0.01ms !important; }
+  .expand-chevron { transition-duration: 0.01ms !important; }
+  .risk-bar { animation-duration: 0.01ms !important; }
+  .gene-card-enter { animation-duration: 0.01ms !important; }
+  .btn-add-action { transition-duration: 0.01ms !important; }
+}
+
 /* ── Responsive ────────────────────────────────────────────────────────────── */
 
 /* Tablet and below */
@@ -210,11 +297,17 @@ body {
   :root {
     --space-lg: 16px;
     --space-xl: 20px;
+
+    /* Readable font sizes on mobile (WCAG / Apple HIG) */
+    --font-size-xs: 12px;   /* was 10px */
+    --font-size-sm: 13px;   /* was 11px */
+    --font-size-md: 15px;   /* was 13px */
+    --font-size-2xl: 24px;  /* was 28px — tighter on mobile */
   }
 
   /* Nav bar: scroll horizontally */
   .nav-buttons { overflow-x: auto; -webkit-overflow-scrolling: touch; gap: 4px !important; flex-wrap: nowrap !important; }
-  .nav-buttons .btn { white-space: nowrap; flex-shrink: 0; font-size: 8px !important; padding: 4px 8px !important; }
+  .nav-buttons .btn { white-space: nowrap; flex-shrink: 0; font-size: var(--font-size-xs) !important; padding: 4px 8px !important; }
 
   /* Hero headers: stack glyph above text */
   .hero-header { flex-direction: column !important; gap: 12px !important; padding: 24px 16px 20px !important; }
@@ -239,6 +332,50 @@ body {
 
   /* Substance cards: full width */
   .substance-card { min-width: 0 !important; }
+
+  /* ── Risk landscape mobile ─────────────────────────────────── */
+
+  /* Expanded detail: remove left indent, reduce padding */
+  .expanded-detail { margin-left: 0 !important; padding: 14px 16px !important; }
+
+  /* Mortality rows: taller touch target */
+  .mortality-row { padding: 12px 0 !important; }
+
+  /* Detail row: stack on narrow screens */
+  .mortality-detail-row { flex-wrap: wrap !important; }
+
+  /* Footer: stack */
+  .risk-footer { flex-direction: column !important; gap: 4px !important; padding: 8px 16px !important; }
+
+  /* Bar legend: smaller gap */
+  .bar-legend { gap: 8px 14px !important; }
+
+  /* ── Cross-section mobile ──────────────────────────────────── */
+
+  /* GeneDetail: single column grid */
+  .gene-detail-grid { grid-template-columns: 1fr !important; }
+
+  /* GeneDetail: reduce padding */
+  .gene-detail { padding: 16px !important; }
+
+  /* Touch targets: buttons need 44px min height */
+  .pill-btn { padding: 8px 12px !important; min-height: 36px !important; }
+  .btn-close { padding: 8px !important; min-width: 36px !important; min-height: 36px !important; }
+  .btn-action { padding: 8px 14px !important; min-height: 36px !important; }
+  .btn-add-action { min-width: 36px !important; min-height: 28px !important; }
+
+  /* Filter chips: wrap on mobile */
+  .filter-chips { flex-wrap: wrap !important; }
+  .filter-bar { flex-wrap: wrap !important; gap: 4px !important; }
+
+  /* Substance cards: stack vertically */
+  .substance-cards { flex-direction: column !important; }
+
+  /* Info callout: tighter padding */
+  .info-callout { padding: 12px 14px !important; margin-bottom: 16px !important; }
+
+  /* Enzyme sections: tighter on mobile */
+  .enzyme-section { margin-bottom: 20px !important; }
 }
 
 /* Small mobile */
@@ -246,6 +383,21 @@ body {
   .hero-header { padding: 16px 12px !important; }
   .section-content { padding: 12px !important; }
   .command-palette-inner { border-radius: 0 !important; }
+
+  /* Risk: tighter expanded detail */
+  .expanded-detail { padding: 12px !important; }
+
+  /* Rank number: narrower */
+  .mortality-row > div:first-child { width: 28px !important; min-width: 28px !important; }
+
+  /* Footer: smaller text */
+  .risk-footer { font-size: var(--font-size-xs) !important; }
+
+  /* GeneDetail: even tighter */
+  .gene-detail { padding: 12px !important; }
+
+  /* Info callout: compact */
+  .info-callout { gap: 8px !important; }
 }
 
 /* ── Print styles ──────────────────────────────────────────────────────────── */

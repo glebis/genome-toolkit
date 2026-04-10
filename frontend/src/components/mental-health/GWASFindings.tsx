@@ -82,7 +82,7 @@ export function GWASFindings({ trait, onDiscuss }: GWASFindingsProps) {
         padding: '14px 16px',
         border: '1px dashed var(--border-dashed)',
         borderRadius: 4,
-        fontSize: 10,
+        fontSize: 'var(--font-size-xs)',
         color: 'var(--text-secondary)',
         lineHeight: 1.6,
       }}>
@@ -100,7 +100,7 @@ export function GWASFindings({ trait, onDiscuss }: GWASFindingsProps) {
         padding: '14px 16px',
         border: '1px dashed var(--border-dashed)',
         borderRadius: 4,
-        fontSize: 10,
+        fontSize: 'var(--font-size-xs)',
         color: 'var(--text-secondary)',
       }}>
         No matching SNPs found in your genome for {trait} GWAS hits
@@ -132,7 +132,7 @@ export function GWASFindings({ trait, onDiscuss }: GWASFindingsProps) {
       }}>
         <div>
           <div style={{
-            fontSize: 11,
+            fontSize: 'var(--font-size-sm)',
             fontWeight: 600,
             textTransform: 'uppercase',
             letterSpacing: '0.1em',
@@ -140,13 +140,13 @@ export function GWASFindings({ trait, onDiscuss }: GWASFindingsProps) {
           }}>
             Polygenic findings — {data.display_name ?? data.trait}
           </div>
-          <div style={{ fontSize: 9, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+          <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
             {data.matched_hits} of {data.total_hits} genome-wide significant SNPs found in your genome ·
             p &lt; {data.threshold.toExponential(0)}
           </div>
         </div>
         <div style={{
-          fontSize: 8,
+          fontSize: 'var(--font-size-xs)',
           background: 'var(--primary)',
           color: 'var(--bg-raised)',
           padding: '3px 8px',
@@ -164,11 +164,11 @@ export function GWASFindings({ trait, onDiscuss }: GWASFindingsProps) {
           padding: '14px 18px',
           borderBottom: '1px solid var(--border)',
           background: 'var(--bg-inset)',
-          fontSize: 10,
+          fontSize: 'var(--font-size-xs)',
           lineHeight: 1.7,
           color: 'var(--text)',
         }}>
-          <div style={{ fontSize: 10, fontWeight: 600, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-secondary)' }}>
+          <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 600, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-secondary)' }}>
             What you're looking at
           </div>
           <div style={{ marginBottom: 10 }}>
@@ -183,7 +183,7 @@ export function GWASFindings({ trait, onDiscuss }: GWASFindingsProps) {
             your tally. The midpoint marker on the bar above represents what an average person would carry by chance.
           </div>
 
-          <div style={{ fontSize: 10, fontWeight: 600, marginTop: 14, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-secondary)' }}>
+          <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 600, marginTop: 14, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-secondary)' }}>
             Important caveats
           </div>
           <ul style={{ margin: 0, paddingLeft: 18, marginBottom: 10 }}>
@@ -194,9 +194,9 @@ export function GWASFindings({ trait, onDiscuss }: GWASFindingsProps) {
             <li><strong>This GWAS was mostly European ancestry.</strong> Effect estimates may not transfer perfectly to other populations.</li>
           </ul>
 
-          <div style={{ fontSize: 9, color: 'var(--text-secondary)', borderTop: '1px dashed var(--border-dashed)', paddingTop: 8, marginTop: 8 }}>
+          <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)', borderTop: '1px dashed var(--border-dashed)', paddingTop: 8, marginTop: 8 }}>
             <div><strong>Source:</strong> {data.publication}</div>
-            <div><strong>Dataset:</strong> <code style={{ fontSize: 9 }}>{data.source}</code> / {data.config}</div>
+            <div><strong>Dataset:</strong> <code style={{ fontSize: 'var(--font-size-xs)',}}>{data.source}</code> / {data.config}</div>
             <div><strong>License:</strong> {data.license}</div>
             <div><strong>Citation:</strong> {data.citation}</div>
           </div>
@@ -213,7 +213,7 @@ export function GWASFindings({ trait, onDiscuss }: GWASFindingsProps) {
         return (
           <div style={{ padding: '16px 18px', borderBottom: '1px solid var(--border)' }}>
             <div style={{
-              fontSize: 12,
+              fontSize: 'var(--font-size-md)',
               fontWeight: 600,
               color: bandColor,
               marginBottom: 8,
@@ -255,17 +255,17 @@ export function GWASFindings({ trait, onDiscuss }: GWASFindingsProps) {
                   background: 'var(--text-tertiary)',
                 }} />
               </div>
-              <div style={{ fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-mono)', minWidth: 56, textAlign: 'right' }}>
+              <div style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600, fontFamily: 'var(--font-mono)', minWidth: 56, textAlign: 'right' }}>
                 {data.risk_allele_total}/{data.risk_allele_max}
               </div>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 8, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>
               <span>fewer risk alleles</span>
               <span>average</span>
               <span>more risk alleles</span>
             </div>
 
-            <div style={{ fontSize: 10, lineHeight: 1.7, color: 'var(--text)' }}>
+            <div style={{ fontSize: 'var(--font-size-xs)', lineHeight: 1.7, color: 'var(--text)' }}>
               {interp.meaning}
             </div>
 
@@ -276,7 +276,7 @@ export function GWASFindings({ trait, onDiscuss }: GWASFindingsProps) {
                   onClick={() => onDiscuss(buildDiscussionPrompt(data))}
                   style={{
                     fontFamily: 'var(--font-mono)',
-                    fontSize: 9,
+                    fontSize: 'var(--font-size-xs)',
                     fontWeight: 600,
                     textTransform: 'uppercase',
                     letterSpacing: '0.1em',
@@ -294,7 +294,7 @@ export function GWASFindings({ trait, onDiscuss }: GWASFindingsProps) {
                   onClick={() => setShowAbout((v) => !v)}
                   style={{
                     fontFamily: 'var(--font-mono)',
-                    fontSize: 9,
+                    fontSize: 'var(--font-size-xs)',
                     fontWeight: 500,
                     textTransform: 'uppercase',
                     letterSpacing: '0.1em',
@@ -333,7 +333,7 @@ export function GWASFindings({ trait, onDiscuss }: GWASFindingsProps) {
               background: 'none',
               border: '1px solid var(--border)',
               padding: '4px 12px',
-              fontSize: 9,
+              fontSize: 'var(--font-size-xs)',
               fontFamily: 'var(--font-mono)',
               textTransform: 'uppercase',
               letterSpacing: '0.1em',
@@ -367,7 +367,7 @@ function GWASRow({ match }: { match: GWASMatch }) {
       alignItems: 'center',
       padding: '6px 18px',
       borderBottom: '1px dashed var(--border-dashed)',
-      fontSize: 10,
+      fontSize: 'var(--font-size-xs)',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
         <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
@@ -375,7 +375,7 @@ function GWASRow({ match }: { match: GWASMatch }) {
         </span>
         {match.gene_symbol && (
           <span style={{
-            fontSize: 8,
+            fontSize: 'var(--font-size-xs)',
             border: '1px solid var(--border)',
             padding: '1px 5px',
             borderRadius: 2,
@@ -386,12 +386,12 @@ function GWASRow({ match }: { match: GWASMatch }) {
             {match.gene_symbol}
           </span>
         )}
-        <span style={{ color: 'var(--text-tertiary)', fontSize: 9 }}>
+        <span style={{ color: 'var(--text-tertiary)', fontSize: 'var(--font-size-xs)',}}>
           chr{match.chr}:{match.pos}
         </span>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: 9 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: 'var(--font-size-xs)',}}>
         <span style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
           {match.user_genotype}
         </span>

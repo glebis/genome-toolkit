@@ -46,17 +46,17 @@ describe('ActionCard', () => {
     expect(screen.getByText('supplement')).toBeInTheDocument()
   })
 
-  it('calls onToggleDone when checkbox clicked', () => {
+  it('calls onToggleDone when in-checklist button clicked', () => {
     const onToggle = vi.fn()
-    render(<ActionCard action={mockAction} onToggleDone={onToggle} />)
-    fireEvent.click(screen.getByTitle('Mark as done'))
+    render(<ActionCard action={mockAction} onToggleDone={onToggle} inChecklist={true} />)
+    fireEvent.click(screen.getByTitle('In checklist (click to toggle done)'))
     expect(onToggle).toHaveBeenCalledWith('mthfr-methylfolate')
   })
 
   it('shows done state visually', () => {
     const doneAction = { ...mockAction, done: true }
-    render(<ActionCard action={doneAction} onToggleDone={vi.fn()} />)
-    // The checkbox should show a checkmark or filled state
-    expect(screen.getByTitle('Completed')).toBeInTheDocument()
+    render(<ActionCard action={doneAction} onToggleDone={vi.fn()} inChecklist={true} />)
+    expect(screen.getByTitle('In checklist (done)')).toBeInTheDocument()
+    expect(screen.getByText(/Done/)).toBeInTheDocument()
   })
 })

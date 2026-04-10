@@ -4,7 +4,7 @@ const IMPACT_STYLES: Record<string, { borderColor: string; statusColor: string; 
   ok: { borderColor: 'var(--sig-benefit)', statusColor: 'var(--sig-benefit)' },
   adjust: { borderColor: 'var(--sig-reduced)', statusColor: 'var(--sig-reduced)' },
   warn: { borderColor: 'var(--sig-risk)', statusColor: 'var(--sig-risk)' },
-  danger: { borderColor: '#b84a4a', statusColor: '#b84a4a', bg: '#faf5f5' },
+  danger: { borderColor: 'var(--sig-danger)', statusColor: 'var(--sig-danger)', bg: 'var(--sig-danger-bg)' },
 }
 
 interface DrugCardProps {
@@ -24,29 +24,29 @@ export function DrugCard({ drug, onAddToChecklist, added }: DrugCardProps) {
       padding: '14px 18px',
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
-        <span style={{ fontSize: 12, fontWeight: 600 }}>{drug.drugClass}</span>
-        <span style={{ fontSize: 9, fontWeight: 500, color: style.statusColor }}>
+        <span style={{ fontSize: 'var(--font-size-md)', fontWeight: 600 }}>{drug.drugClass}</span>
+        <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 500, color: style.statusColor }}>
           {drug.statusText}
         </span>
       </div>
-      <div style={{ fontSize: 10, color: 'var(--text)', lineHeight: 1.6 }}>
+      <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text)', lineHeight: 1.6 }}>
         {drug.description}
       </div>
-      <div style={{ fontSize: 9, color: 'var(--text-secondary)', marginTop: 6 }}>
+      <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)', marginTop: 6 }}>
         {drug.category === 'substance' ? 'Affects: ' : 'Drugs affected: '}{drug.drugList}
       </div>
       {drug.dangerNote && (
         <div style={{
           marginTop: 10, padding: '10px 14px',
-          background: '#faf5f5', border: '1px solid #d4a0a0', borderRadius: 4,
+          background: 'var(--sig-danger-bg)', border: '1px solid var(--sig-danger-border)', borderRadius: 4,
         }}>
-          <div style={{ fontSize: 9, fontWeight: 600, color: '#b84a4a', marginBottom: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 600, color: 'var(--sig-danger)', marginBottom: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span>{drug.category === 'substance' ? 'Interaction warning' : 'Discuss with prescriber'}</span>
             {onAddToChecklist && (
               <button
                 className="btn"
                 style={{
-                  fontSize: '9px',
+                  fontSize: 'var(--font-size-xs)',
                   padding: '1px 6px',
                   flexShrink: 0,
                   opacity: added ? 0.4 : 0.6,
@@ -67,7 +67,7 @@ export function DrugCard({ drug, onAddToChecklist, added }: DrugCardProps) {
               </button>
             )}
           </div>
-          <div style={{ fontSize: 9, color: 'var(--text)', lineHeight: 1.6 }}>
+          <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text)', lineHeight: 1.6 }}>
             {drug.dangerNote}
           </div>
         </div>

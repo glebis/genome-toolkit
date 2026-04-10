@@ -29,6 +29,65 @@ function determineRiskStatus(matchedGenes: VaultGene[]): RiskStatus {
   return 'optimal'
 }
 
+function buildNarrative(cause: string, matchedGenes: VaultGene[], actionCount: number): string | undefined {
+  if (matchedGenes.length === 0) return undefined
+
+  const actionable = matchedGenes.filter(
+    (g) => g.personal_status === 'risk' || g.personal_status === 'actionable',
+  )
+  const monitors = matchedGenes.filter(
+    (g) => g.personal_status === 'intermediate' || g.personal_status === 'monitor',
+  )
+  const optimal = matchedGenes.filter(
+    (g) => g.personal_status !== 'risk' && g.personal_status !== 'actionable' &&
+           g.personal_status !== 'intermediate' && g.personal_status !== 'monitor',
+  )
+
+  const parts: string[] = []
+
+  // Opening: gene count + cause context
+  parts.push(
+    `${matchedGenes.length} gene${matchedGenes.length !== 1 ? 's' : ''} analyzed for ${cause.toLowerCase()} risk.`,
+  )
+
+  // Actionable genes — call out by name with brief why
+  if (actionable.length > 0) {
+    const summaries = actionable.map((g) => {
+      const variant = g.personal_variants?.[0]?.genotype
+      const variantStr = variant ? ` (${variant})` : ''
+      return `${g.symbol}${variantStr}`
+    })
+    parts.push(
+      `${summaries.join(', ')} ${actionable.length === 1 ? 'requires' : 'require'} attention.`,
+    )
+  }
+
+  // Monitor genes
+  if (monitors.length > 0) {
+    const names = monitors.map((g) => g.symbol).join(', ')
+    parts.push(`${names} — worth monitoring.`)
+  }
+
+  // Optimal genes — brief reassurance
+  if (optimal.length > 0 && optimal.length < matchedGenes.length) {
+    const names = optimal.map((g) => g.symbol).join(', ')
+    parts.push(
+      optimal.length === 1
+        ? `${names} shows no elevated risk.`
+        : `${names} show no elevated risk.`,
+    )
+  } else if (optimal.length === matchedGenes.length) {
+    parts.push('No elevated risk variants detected across all analyzed genes.')
+  }
+
+  // Actions available
+  if (actionCount > 0) {
+    parts.push(`${actionCount} action${actionCount !== 1 ? 's' : ''} available.`)
+  }
+
+  return parts.join(' ')
+}
+
 function computePersonalBarPct(matchedGenes: VaultGene[], populationBarPct: number): number {
   if (matchedGenes.length === 0) return Math.round(populationBarPct * 0.3)
   const actionableCount = matchedGenes.filter(
@@ -147,10 +206,7 @@ export function useRiskData(): UseRiskDataReturn {
                 ? 'Optimal — no elevated risk variants'
                 : 'No genetic data available'
 
-        const narrative =
-          matchedGenes.length > 0
-            ? matchedGenes.map((g) => g.description).filter(Boolean).join(' ')
-            : undefined
+        const narrative = buildNarrative(c.cause, matchedGenes, actionMinis.length)
 
         built.push({
           rank: c.rank,

@@ -29,7 +29,7 @@ export function GeneDetail({
   onAddToChecklist,
 }: GeneDetailProps) {
   return (
-    <div style={{
+    <div className="gene-detail" style={{
       background: 'var(--bg-raised)',
       borderRadius: 8,
       padding: '24px',
@@ -53,14 +53,14 @@ export function GeneDetail({
               {gene.symbol}
             </span>
             <span style={{
-              fontSize: 14,
+              fontSize: 'var(--font-size-lg)',
               color: 'var(--text-secondary)',
               fontFamily: 'var(--font-mono)',
             }}>
               {gene.variant}
             </span>
             <span style={{
-              fontSize: 12,
+              fontSize: 'var(--font-size-md)',
               color: 'var(--text-secondary)',
               fontFamily: 'var(--font-mono)',
             }}>
@@ -69,7 +69,7 @@ export function GeneDetail({
           </div>
           {gene.chromosome && gene.position !== undefined && (
             <div style={{
-              fontSize: 11,
+              fontSize: 'var(--font-size-sm)',
               color: 'var(--text-secondary)',
               fontFamily: 'var(--font-mono)',
               marginTop: 4,
@@ -82,6 +82,7 @@ export function GeneDetail({
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
           <EvidenceBadge tier={gene.evidenceTier} status={gene.status} studyCount={gene.studyCount} />
           <button
+            className="btn-close"
             onClick={onClose}
             style={{
               background: 'none',
@@ -89,7 +90,7 @@ export function GeneDetail({
               borderRadius: 4,
               padding: '4px 10px',
               cursor: 'pointer',
-              fontSize: 12,
+              fontSize: 'var(--font-size-md)',
               color: 'var(--text-secondary)',
             }}
           >
@@ -99,7 +100,7 @@ export function GeneDetail({
       </div>
 
       {/* Genotype + Population panels */}
-      <div style={{
+      <div className="gene-detail-grid" style={{
         display: 'grid',
         gridTemplateColumns: '1fr 1fr',
         gap: 16,
@@ -113,7 +114,7 @@ export function GeneDetail({
           padding: '16px 20px',
         }}>
           <div style={{
-            fontSize: 11,
+            fontSize: 'var(--font-size-sm)',
             fontWeight: 600,
             textTransform: 'uppercase',
             letterSpacing: '0.1em',
@@ -141,7 +142,7 @@ export function GeneDetail({
           padding: '16px 20px',
         }}>
           <div style={{
-            fontSize: 11,
+            fontSize: 'var(--font-size-sm)',
             fontWeight: 600,
             textTransform: 'uppercase',
             letterSpacing: '0.1em',
@@ -152,7 +153,7 @@ export function GeneDetail({
           </div>
           {populationInfo ? (
             <div style={{
-              fontSize: 13,
+              fontSize: 'var(--font-size-md)',
               color: 'var(--text)',
               lineHeight: 1.5,
             }}>
@@ -160,7 +161,7 @@ export function GeneDetail({
             </div>
           ) : (
             <div style={{
-              fontSize: 13,
+              fontSize: 'var(--font-size-md)',
               color: 'var(--text-secondary)',
               fontStyle: 'italic',
             }}>
@@ -181,7 +182,7 @@ export function GeneDetail({
           padding: '14px 16px',
         }}>
           <div
-            style={{ fontSize: 13, lineHeight: 1.7, color: 'var(--text)' }}
+            style={{ fontSize: 'var(--font-size-md)', lineHeight: 1.7, color: 'var(--text)' }}
             dangerouslySetInnerHTML={{ __html: explanation }}
           />
         </div>
@@ -191,7 +192,7 @@ export function GeneDetail({
       {actions.length > 0 && (
         <div style={{ marginBottom: 20 }}>
           <div style={{
-            fontSize: 11,
+            fontSize: 'var(--font-size-sm)',
             fontWeight: 600,
             textTransform: 'uppercase',
             letterSpacing: '0.1em',
@@ -218,7 +219,7 @@ export function GeneDetail({
       {interactions && interactions.length > 0 && (
         <div style={{ marginBottom: 20 }}>
           <div style={{
-            fontSize: 11,
+            fontSize: 'var(--font-size-sm)',
             fontWeight: 600,
             textTransform: 'uppercase',
             letterSpacing: '0.1em',
@@ -238,7 +239,7 @@ export function GeneDetail({
                 }}
               >
                 <div style={{
-                  fontSize: 12,
+                  fontSize: 'var(--font-size-md)',
                   fontWeight: 600,
                   fontFamily: 'var(--font-mono)',
                   color: 'var(--primary)',
@@ -247,7 +248,7 @@ export function GeneDetail({
                   {interaction.genes}
                 </div>
                 <div style={{
-                  fontSize: 12,
+                  fontSize: 'var(--font-size-md)',
                   color: 'var(--text-secondary)',
                   lineHeight: 1.5,
                 }}>
@@ -270,43 +271,43 @@ export function GeneDetail({
         gap: 10,
       }}>
         <div style={{
-          fontSize: 11,
+          fontSize: 'var(--font-size-sm)',
           color: 'var(--text-secondary)',
           display: 'flex',
           alignItems: 'center',
           gap: 12,
         }}>
           <span>{gene.studyCount} sources</span>
-          <span
-            onClick={() => {
-              const query = encodeURIComponent(`${gene.symbol} ${gene.variant} genetics`)
-              window.open(`https://pubmed.ncbi.nlm.nih.gov/?term=${query}`, '_blank', 'noopener')
-            }}
+          <a
+            href={`https://pubmed.ncbi.nlm.nih.gov/?term=${encodeURIComponent(`${gene.symbol} ${gene.variant} genetics`)}`}
+            target="_blank"
+            rel="noopener"
             style={{
               color: 'var(--primary)',
               textDecoration: 'underline',
-              fontSize: 11,
+              fontSize: 'var(--font-size-sm)',
               cursor: 'pointer',
             }}
           >
             View references on PubMed
-          </span>
-          <span
-            onClick={() => {
-              window.open(`https://www.snpedia.com/index.php/${gene.rsid}`, '_blank', 'noopener')
-            }}
+          </a>
+          <a
+            href={`https://www.snpedia.com/index.php/${gene.rsid}`}
+            target="_blank"
+            rel="noopener"
             style={{
               color: 'var(--primary)',
               textDecoration: 'underline',
-              fontSize: 11,
+              fontSize: 'var(--font-size-sm)',
               cursor: 'pointer',
             }}
           >
             SNPedia
-          </span>
+          </a>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button
+            className="btn-action"
             onClick={() => printPage('doctor')}
             style={{
               background: 'none',
@@ -314,13 +315,14 @@ export function GeneDetail({
               borderRadius: 4,
               padding: '5px 12px',
               cursor: 'pointer',
-              fontSize: 11,
+              fontSize: 'var(--font-size-sm)',
               color: 'var(--text-secondary)',
             }}
           >
             Print for doctor
           </button>
           <button
+            className="btn-action"
             onClick={() => {
               const md = geneToMarkdown(gene, actions)
               downloadFile(md, `${gene.symbol}-${new Date().toISOString().slice(0, 10)}.md`)
@@ -331,7 +333,7 @@ export function GeneDetail({
               borderRadius: 4,
               padding: '5px 12px',
               cursor: 'pointer',
-              fontSize: 11,
+              fontSize: 'var(--font-size-sm)',
               color: 'var(--text-secondary)',
             }}
           >
