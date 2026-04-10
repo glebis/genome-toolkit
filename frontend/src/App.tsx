@@ -22,6 +22,8 @@ import {
   mentalHealthToMarkdown,
   checklistToMarkdown,
 } from './lib/export'
+import { buildPageContext } from './lib/pageContext'
+import type { PageContextData } from './lib/pageContext'
 
 function App() {
   const { result, filters, loading, updateFilters, debouncedUpdateFilters, setPage, resetFilters, activeFilterCount } = useSNPs()
@@ -118,15 +120,38 @@ function App() {
 
   const { messages, streaming, streamingText, status, suggestions, actions, send: rawSend } = useChat(handleUIAction)
 
+  // Build page context from current view + hook data
+  const getPageContext = useCallback((): string => {
+    const data: PageContextData = {
+      mentalHealth: {
+        sections: mentalHealth.sections,
+        totalGenes: mentalHealth.totalGenes,
+        totalActions: mentalHealth.totalActions,
+      },
+      checklist: {
+        pendingCount: checklist.pendingCount,
+        doneCount: checklist.doneCount,
+        items: checklist.items,
+      },
+      snps: {
+        result,
+        filters,
+        selectedSNP,
+      },
+    }
+    return buildPageContext(view, data)
+  }, [view, mentalHealth, checklist, result, filters, selectedSNP])
+
   // Wrap send to prefix [VOICE] when voice mode active
   // The prefix tells the agent to call voice_summary but is stripped from display
   const send = useCallback((text: string) => {
+    const ctx = getPageContext()
     if (voice.voiceEnabled) {
-      rawSend('[VOICE] ' + text)
+      rawSend('[VOICE] ' + text, ctx)
     } else {
-      rawSend(text)
+      rawSend(text, ctx)
     }
-  }, [rawSend, voice.voiceEnabled])
+  }, [rawSend, voice.voiceEnabled, getPageContext])
 
   const handleExport = useCallback((format: 'pdf' | 'md' | 'doctor' | 'prescriber' | string) => {
     if (format === 'doctor' || format === 'prescriber' || format === 'pdf') {
