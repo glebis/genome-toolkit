@@ -481,7 +481,7 @@ export function CommandPalette({ open, onClose, messages, streaming, streamingTe
               <div style={{ fontSize: 'var(--font-size-md)', lineHeight: 1.7 }}
                    className="chat-markdown chat-markdown--lg">
                 {renderAssistantContent(streamingText, onSend)}
-                <span style={{ animation: 'blink 1s infinite', color: 'var(--primary)' }}>_</span>
+                <span style={{ animation: 'blink 0.7s step-end infinite', color: 'var(--primary)', fontSize: '1.1em' }}>█</span>
               </div>
             </div>
           )}

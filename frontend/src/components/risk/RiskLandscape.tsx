@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useRiskData } from '../../hooks/useRiskData'
-import { GenomeGlyph } from '../GenomeGlyph'
+import { HeroHeader, StatBox, ExportBar, InfoCallout, LoadingLabel } from '../common'
 import { printPage, downloadFile, riskLandscapeToMarkdown } from '../../lib/export'
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -75,10 +75,11 @@ function getSummaryStats(causes: MortalityCause[]) {
 
 // ── Sub-components ─────────────────────────────────────────────────────────
 
-function GeneMiniCard({ gene }: { gene: GeneMini }) {
+function GeneMiniCard({ gene, index = 0 }: { gene: GeneMini; index?: number }) {
   const borderColor = STATUS_COLORS[gene.status]
   return (
     <div
+      className="gene-card-enter"
       style={{
         background: 'var(--bg)',
         borderLeft: `3px solid ${borderColor}`,
@@ -86,6 +87,7 @@ function GeneMiniCard({ gene }: { gene: GeneMini }) {
         padding: '10px 14px',
         flex: '1 1 180px',
         minWidth: 160,
+        animationDelay: `${index * 80}ms`,
       }}
     >
       <div
@@ -107,7 +109,7 @@ function GeneMiniCard({ gene }: { gene: GeneMini }) {
         </span>
         <span
           style={{
-            fontSize: 7,
+            fontSize: 'var(--font-size-xs)',
             fontWeight: 500,
             padding: '2px 5px',
             borderRadius: 3,
@@ -157,18 +159,21 @@ function ActionMiniCard({ action, added, onAdd }: { action: ActionMini; added?: 
     >
       {onAdd && (
         <button
-          className="btn"
+          className="btn btn-add-action"
+          aria-label={added ? 'Added to checklist' : 'Add to checklist'}
           style={{
-            fontSize: '9px',
-            padding: '1px 6px',
+            fontSize: 'var(--font-size-xs)',
+            padding: '6px 10px',
+            minWidth: 36,
+            minHeight: 28,
             flexShrink: 0,
             opacity: added ? 0.4 : 0.6,
             color: added ? 'var(--sig-benefit)' : 'var(--primary)',
             borderColor: added ? 'var(--sig-benefit)' : 'var(--border)',
             cursor: added ? 'default' : 'pointer',
             position: 'absolute',
-            top: 10,
-            right: 10,
+            top: 6,
+            right: 6,
           }}
           disabled={added}
           onClick={(e) => { e.stopPropagation(); onAdd(); }}
@@ -205,25 +210,26 @@ function ActionMiniCard({ action, added, onAdd }: { action: ActionMini; added?: 
 function ExpandedDetail({ cause, addedSet, onAddToChecklist }: { cause: MortalityCause; addedSet?: Set<string>; onAddToChecklist?: (title: string, causeName: string) => void }) {
   return (
     <div
+      className="expanded-detail"
       style={{
         background: 'var(--bg-raised)',
         border: '1.5px solid var(--border)',
         borderTop: 'none',
         borderRadius: '0 0 6px 6px',
         padding: '18px 20px',
-        marginLeft: 36,
+        marginLeft: 0,
         marginBottom: 4,
       }}
     >
-      {cause.narrative && !(cause.genes?.length === 1 && cause.genes[0].description === cause.narrative) && (
+      {cause.narrative && (
         <div
           style={{
             fontSize: 'var(--font-size-sm)',
             lineHeight: 1.7,
             marginBottom: 16,
-            borderLeft: '3px solid var(--primary)',
+            borderLeft: `3px solid ${STATUS_COLORS[cause.status]}`,
             paddingLeft: 14,
-            color: 'var(--text)',
+            color: 'var(--text-secondary)',
           }}
         >
           {cause.narrative}
@@ -240,8 +246,8 @@ function ExpandedDetail({ cause, addedSet, onAddToChecklist }: { cause: Mortalit
             marginBottom: 12,
           }}
         >
-          {cause.genes.map((gene) => (
-            <GeneMiniCard key={gene.symbol} gene={gene} />
+          {cause.genes.map((gene, i) => (
+            <GeneMiniCard key={gene.symbol} gene={gene} index={i} />
           ))}
         </div>
       )}
@@ -265,10 +271,11 @@ function ExpandedDetail({ cause, addedSet, onAddToChecklist }: { cause: Mortalit
   )
 }
 
-function PersonalBar({ status, widthPct }: { status: RiskStatus; widthPct: number }) {
+function PersonalBar({ status, widthPct, delay = 0 }: { status: RiskStatus; widthPct: number; delay?: number }) {
   const isNoData = status === 'nodata'
   return (
     <div
+      className="risk-bar"
       style={{
         height: 14,
         width: `${widthPct}%`,
@@ -276,6 +283,7 @@ function PersonalBar({ status, widthPct }: { status: RiskStatus; widthPct: numbe
         background: isNoData ? 'var(--border)' : STATUS_COLORS[status],
         opacity: isNoData ? 0.3 : 0.75,
         border: isNoData ? '1px dashed var(--border-strong)' : undefined,
+        animationDelay: `${delay + 100}ms`,
       }}
     />
   )
@@ -300,7 +308,18 @@ function MortalityRow({
   return (
     <>
       <div
+        className={`mortality-row ${isExpanded ? 'mortality-row--expanded' : ''}`}
         onClick={hasDetail ? onToggle : undefined}
+        onKeyDown={hasDetail ? (e: React.KeyboardEvent) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            onToggle()
+          }
+        } : undefined}
+        role={hasDetail ? 'button' : undefined}
+        tabIndex={hasDetail ? 0 : undefined}
+        aria-expanded={hasDetail ? isExpanded : undefined}
+        aria-label={`${cause.cause}, ${cause.pct}% of deaths, ${cause.statusText}`}
         style={{
           display: 'flex',
           alignItems: 'stretch',
@@ -312,17 +331,6 @@ function MortalityRow({
           borderBottom: isExpanded ? 'none' : undefined,
           marginLeft: 0,
           padding: '8px 0',
-          transition: 'background 0.12s',
-        }}
-        onMouseEnter={(e) => {
-          if (hasDetail && !isExpanded) {
-            e.currentTarget.style.background = 'var(--bg-inset)'
-          }
-        }}
-        onMouseLeave={(e) => {
-          if (!isExpanded) {
-            e.currentTarget.style.background = 'transparent'
-          }
         }}
       >
         {/* Rank */}
@@ -361,25 +369,29 @@ function MortalityRow({
 
           {/* Population bar */}
           <div
+            className="risk-bar"
             style={{
               height: 8,
               width: `${cause.populationBarPct}%`,
               background: 'var(--border)',
               borderRadius: 2,
+              animationDelay: `${cause.rank * 60}ms`,
             }}
           />
 
           {/* Personal bar */}
-          <PersonalBar status={cause.status} widthPct={cause.personalBarPct} />
+          <PersonalBar status={cause.status} widthPct={cause.personalBarPct} delay={cause.rank * 60} />
 
           {/* Detail row */}
           <div
+            className="mortality-detail-row"
             style={{
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'baseline',
               fontSize: 'var(--font-size-xs)',
               color: 'var(--text-secondary)',
+              gap: 8,
             }}
           >
             <span>{cause.genesText}</span>
@@ -394,14 +406,23 @@ function MortalityRow({
             >
               {cause.statusText}
               {hasDetail && (
-                <span style={{ fontSize: 10 }}>{isExpanded ? '▾' : '▸'}</span>
+                <span
+                  className={`expand-chevron ${isExpanded ? 'expand-chevron--open' : ''}`}
+                  style={{ fontSize: 10 }}
+                >▸</span>
               )}
             </span>
           </div>
         </div>
       </div>
 
-      {isExpanded && hasDetail && <ExpandedDetail cause={cause} addedSet={addedSet} onAddToChecklist={onAddToChecklist} />}
+      {hasDetail && (
+        <div className={`expand-wrapper ${isExpanded ? 'expand-wrapper--open' : ''}`} style={{ marginTop: -12 }}>
+          <div>
+            <ExpandedDetail cause={cause} addedSet={addedSet} onAddToChecklist={onAddToChecklist} />
+          </div>
+        </div>
+      )}
     </>
   )
 }
@@ -419,6 +440,7 @@ function BarLegend() {
 
   return (
     <div
+      className="bar-legend"
       style={{
         display: 'flex',
         flexWrap: 'wrap',
@@ -468,7 +490,7 @@ export function RiskLandscape({ onExport, onAddToChecklist }: RiskLandscapeProps
     onAddToChecklist(title, cause)
   } : undefined
 
-  if (loading) return <div className="label">LOADING_DATA...</div>
+  if (loading) return <LoadingLabel />
 
   const stats = getSummaryStats(CAUSES)
 
@@ -491,107 +513,29 @@ export function RiskLandscape({ onExport, onAddToChecklist }: RiskLandscapeProps
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
       {/* Hero */}
-      <div
-        className="hero-header"
-        style={{
-          padding: '40px 24px 32px',
-          borderBottom: '1px solid var(--border)',
-          display: 'flex',
-          gap: 24,
-          alignItems: 'flex-start',
-        }}
+      <HeroHeader
+        title="Mortality &amp; Risk Landscape"
+        description="The top causes of mortality for your demographic, overlaid with your personal genetic factors. Knowledge is power — knowing where to focus attention lets you take informed action."
+        genotypes={CAUSES.flatMap(c => (c.genes || []).map(g => g.variant))}
+        glyphLabel="risk profile"
       >
-        <GenomeGlyph
-          genotypes={CAUSES.flatMap(c => (c.genes || []).map(g => g.variant))}
-          size={100}
-          label="risk profile"
-        />
-        <div style={{ flex: 1 }}>
-        <div
-          style={{
-            fontSize: 28,
-            fontWeight: 600,
-            letterSpacing: '0.08em',
-            fontFamily: 'var(--font-mono)',
-            marginBottom: 10,
-          }}
-        >
-          Mortality &amp; Risk Landscape
-        </div>
-        <div
-          style={{
-            fontSize: 'var(--font-size-sm)',
-            color: 'var(--text-secondary)',
-            lineHeight: 1.7,
-            maxWidth: 760,
-            fontFamily: 'var(--font-mono)',
-          }}
-        >
-          The top causes of mortality for your demographic, overlaid with your personal genetic factors.
-          Knowledge is power — knowing where to focus attention lets you take informed action.
-        </div>
-
-        {/* Stats */}
         <div className="stats-row" style={{ display: 'flex', gap: 24, marginTop: 20, flexWrap: 'wrap' }}>
-          {[
-            { value: stats.actionable, label: 'Actionable areas', color: 'var(--sig-risk)' },
-            { value: stats.monitor, label: 'Monitor', color: 'var(--sig-monitor)' },
-            { value: stats.optimal, label: 'Optimal / no risk', color: 'var(--sig-benefit)' },
-            { value: stats.nodata, label: 'No data', color: 'var(--text-tertiary)' },
-          ].map(({ value, label, color }) => (
-            <div key={label}>
-              <div style={{ fontSize: 20, fontWeight: 600, color, fontFamily: 'var(--font-mono)' }}>{value}</div>
-              <div
-                style={{
-                  fontSize: 'var(--font-size-xs)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.12em',
-                  color: 'var(--text-secondary)',
-                  marginTop: 2,
-                  fontFamily: 'var(--font-mono)',
-                }}
-              >
-                {label}
-              </div>
-            </div>
-          ))}
+          <StatBox value={stats.actionable} label="Actionable areas" color="var(--sig-risk)" />
+          <StatBox value={stats.monitor} label="Monitor" color="var(--sig-monitor)" />
+          <StatBox value={stats.optimal} label="Optimal / no risk" color="var(--sig-benefit)" />
+          <StatBox value={stats.nodata} label="No data" color="var(--text-tertiary)" />
         </div>
-        </div>{/* end flex wrapper */}
-      </div>
+      </HeroHeader>
 
       {/* Main content */}
       <div className="section-content" style={{ padding: '28px 24px', flex: 1 }}>
         {/* Context block */}
-        <div
-          style={{
-            background: 'var(--bg-raised)',
-            border: '1.5px solid var(--primary)',
-            borderRadius: 6,
-            padding: '16px 18px',
-            marginBottom: 28,
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: 12,
-          }}
-        >
-          <span
-            style={{
-              fontSize: 'var(--font-size-md)',
-              color: 'var(--primary)',
-              flexShrink: 0,
-              fontWeight: 600,
-              fontFamily: 'var(--font-mono)',
-            }}
-          >
-            i
-          </span>
-          <div style={{ fontSize: 11, lineHeight: 1.7, fontFamily: 'var(--font-mono)' }}>
-            Population bars show how common each cause of death is for{' '}
-            <strong>males, 30–44, European ancestry</strong> (based on your profile). Your personal
-            bar shows where you have relevant genetic variants. Having variants does not predict
-            outcomes — it shows where awareness and prevention can make a difference.
-          </div>
-        </div>
+        <InfoCallout>
+          Population bars show how common each cause of death is for{' '}
+          <strong>males, 30–44, European ancestry</strong> (based on your profile). Your personal
+          bar shows where you have relevant genetic variants. Having variants does not predict
+          outcomes — it shows where awareness and prevention can make a difference.
+        </InfoCallout>
 
         {/* Bar legend */}
         <BarLegend />
@@ -611,48 +555,12 @@ export function RiskLandscape({ onExport, onAddToChecklist }: RiskLandscapeProps
         </div>
 
         {/* Export buttons */}
-        <div
-          className="export-buttons"
-          style={{
-            display: 'flex',
-            justifyContent: 'flex-end',
-            gap: 6,
-            paddingTop: 12,
-            borderTop: '1px dashed var(--border-dashed)',
-          }}
-        >
-          {(
-            [
-              { format: 'pdf', label: 'Export PDF', accent: false },
-              { format: 'md', label: 'Export MD', accent: false },
-              { format: 'doctor', label: 'Print for doctor', accent: true },
-            ] as const
-          ).map(({ format, label, accent }) => (
-            <button
-              key={format}
-              onClick={() => handleExport(format)}
-              style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: 'var(--font-size-xs)',
-                fontWeight: 500,
-                textTransform: 'uppercase',
-                letterSpacing: '0.1em',
-                padding: '4px 10px',
-                border: `1px solid ${accent ? 'var(--accent)' : 'var(--border-strong)'}`,
-                background: 'transparent',
-                color: accent ? 'var(--accent)' : 'var(--text-secondary)',
-                cursor: 'pointer',
-                borderRadius: 2,
-              }}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        <ExportBar onExport={handleExport} />
       </div>
 
       {/* Footer */}
       <div
+        className="risk-footer"
         style={{
           padding: '8px 24px',
           borderTop: '1px dashed var(--border-dashed)',
