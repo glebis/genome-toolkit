@@ -6,7 +6,7 @@ import re
 from pathlib import Path
 from typing import Iterator
 
-from .base import GenomeProvider, ProviderMetadata, QcStats, SnpRecord
+from .base import GenomeProvider, ProviderMetadata, QcStats, SnpRecord, read_header_lines
 
 VALID_ALLELES = set("ACGT")
 
@@ -62,7 +62,9 @@ class GenericVCF(GenomeProvider):
 
     def parse(self, filepath: Path) -> tuple[Iterator[SnpRecord], QcStats]:
         stats = QcStats()
-        records = list(self._parse_iter(filepath, stats))
+        header_lines = read_header_lines(filepath)
+        meta = self.metadata(filepath, header_lines)
+        records = list(self._parse_iter(filepath, stats, assembly=meta.assembly))
         return iter(records), stats
 
     def _open_vcf(self, filepath: Path):
@@ -82,7 +84,13 @@ class GenericVCF(GenomeProvider):
                     return None
         return None
 
-    def _parse_iter(self, filepath: Path, stats: QcStats) -> Iterator[SnpRecord]:
+    def _parse_iter(
+        self, filepath: Path, stats: QcStats, assembly: str = "unknown"
+    ) -> Iterator[SnpRecord]:
+        do_liftover = assembly == "GRCh38"
+        if do_liftover:
+            from lib.liftover import lift_grch38_to_grch37
+
         with self._open_vcf(filepath) as f:
             for line in f:
                 if line.startswith("#"):
@@ -172,6 +180,15 @@ class GenericVCF(GenomeProvider):
                 except ValueError:
                     stats.malformed_lines += 1
                     continue
+
+                if do_liftover:
+                    lifted = lift_grch38_to_grch37(chrom, pos)
+                    if lifted is None:
+                        stats.details["liftover_failed"] = (
+                            stats.details.get("liftover_failed", 0) + 1
+                        )
+                        continue
+                    pos = lifted
 
                 stats.passed_qc += 1
                 yield SnpRecord(

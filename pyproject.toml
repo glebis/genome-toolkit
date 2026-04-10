@@ -41,6 +41,9 @@ gwas = [
     "datasets>=3.0.0",
     "pyarrow>=15.0.0",
 ]
+import = [
+    "pyliftover>=0.4",
+]
 
 [build-system]
 requires = ["setuptools>=68.0"]
