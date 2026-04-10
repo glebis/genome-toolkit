@@ -55,6 +55,7 @@ class ConsensusResult:
     info_flags: list[ValidationFlag]
     agent_agreement: float         # 0.0-1.0: fraction of agents that passed
     requires_human_review: bool
+    warnings: list[str] = field(default_factory=list)  # human-readable warning messages
 
 
 @dataclass
@@ -92,6 +93,42 @@ def get_gate_config(config: dict, validation_type: str) -> dict:
     })
 
 
+def _is_within_effect_size_tolerance(flag: ValidationFlag, tolerance: float) -> bool:
+    """Return True if a flag's effect size discrepancy is within the tolerance.
+
+    Looks for a numeric 'delta' stored in flag.evidence as 'delta=<value>' or
+    falls back to False (conservative: treat unknown deltas as out of tolerance).
+    The tolerance is a fractional value, e.g. 0.2 means 20%.
+    """
+    if flag.evidence is None:
+        return False
+    for part in flag.evidence.split():
+        if part.startswith("delta="):
+            try:
+                delta = float(part[len("delta="):])
+                return abs(delta) <= tolerance
+            except ValueError:
+                pass
+    return False
+
+
+def _is_within_evidence_tier_tolerance(flag: ValidationFlag, tolerance: int) -> bool:
+    """Return True if a flag's evidence tier discrepancy is within the tolerance.
+
+    Looks for 'tier_diff=<value>' in flag.evidence.
+    """
+    if flag.evidence is None:
+        return False
+    for part in flag.evidence.split():
+        if part.startswith("tier_diff="):
+            try:
+                diff = int(part[len("tier_diff="):])
+                return abs(diff) <= tolerance
+            except ValueError:
+                pass
+    return False
+
+
 def compute_consensus(
     agent_results: dict[str, AgentResult],
     gate: dict,
@@ -101,21 +138,111 @@ def compute_consensus(
 
     Logic:
     - Collect all flags from all agents
-    - Check if any blocking flags match gate's block_on list
+    - Check warn_on types from gate config; promote matching BLOCK flags to WARN
+      and generate human-readable warning messages
+    - Apply effect_size_tolerance: BLOCK flags for 'effect_size_mismatch' whose
+      delta is within tolerance are demoted to WARN
+    - Apply evidence_tier_tolerance: BLOCK flags for 'wrong_evidence_tier' whose
+      tier_diff is within tolerance are demoted to WARN
+    - Check if any remaining blocking flags match gate's block_on list
     - Check if enough agents passed (>= required_agents)
-    - Apply tolerance rules for effect sizes and evidence tiers
     """
-    all_flags = []
+    all_flags: list[ValidationFlag] = []
     for result in agent_results.values():
         all_flags.extend(result.flags)
 
-    blocking = [f for f in all_flags if f.severity == Severity.BLOCK]
-    warnings = [f for f in all_flags if f.severity == Severity.WARN]
-    infos = [f for f in all_flags if f.severity == Severity.INFO]
+    # Tolerance thresholds from consensus config
+    effect_size_tolerance: float = consensus_config.get("effect_size_tolerance", 0.2)
+    evidence_tier_tolerance: int = int(consensus_config.get("evidence_tier_tolerance", 1))
 
-    # Check gate's block_on list
-    block_on_types = set(gate.get("block_on", []))
-    actual_blocks = [f for f in blocking if f.issue in block_on_types]
+    # Gate lists
+    block_on_types: set[str] = set(gate.get("block_on", []))
+    warn_on_types: set[str] = set(gate.get("warn_on", []))
+
+    # Classify flags, applying tolerance rules and warn_on promotion
+    final_blocking: list[ValidationFlag] = []
+    final_warnings: list[ValidationFlag] = []
+    final_infos: list[ValidationFlag] = []
+    human_warnings: list[str] = []
+
+    for f in all_flags:
+        if f.severity == Severity.BLOCK:
+            # Apply effect_size_tolerance: demote to WARN if within tolerance
+            if (
+                f.issue == "effect_size_mismatch"
+                and "effect_size_mismatch" in block_on_types
+                and _is_within_effect_size_tolerance(f, effect_size_tolerance)
+            ):
+                demoted = ValidationFlag(
+                    severity=Severity.WARN,
+                    agent=f.agent,
+                    claim=f.claim,
+                    issue=f.issue,
+                    suggestion=f.suggestion,
+                    evidence=f.evidence,
+                    file_path=f.file_path,
+                )
+                final_warnings.append(demoted)
+                human_warnings.append(
+                    f"[{f.agent}] effect_size_mismatch within {effect_size_tolerance:.0%} "
+                    f"tolerance — demoted to warning: {f.claim}"
+                )
+                continue
+
+            # Apply evidence_tier_tolerance: demote to WARN if within tolerance
+            if (
+                f.issue == "wrong_evidence_tier"
+                and "wrong_evidence_tier" in block_on_types
+                and _is_within_evidence_tier_tolerance(f, evidence_tier_tolerance)
+            ):
+                demoted = ValidationFlag(
+                    severity=Severity.WARN,
+                    agent=f.agent,
+                    claim=f.claim,
+                    issue=f.issue,
+                    suggestion=f.suggestion,
+                    evidence=f.evidence,
+                    file_path=f.file_path,
+                )
+                final_warnings.append(demoted)
+                human_warnings.append(
+                    f"[{f.agent}] wrong_evidence_tier within {evidence_tier_tolerance}-tier "
+                    f"tolerance — demoted to warning: {f.claim}"
+                )
+                continue
+
+            # warn_on: if a BLOCK flag's issue is listed in warn_on, demote it
+            if f.issue in warn_on_types:
+                demoted = ValidationFlag(
+                    severity=Severity.WARN,
+                    agent=f.agent,
+                    claim=f.claim,
+                    issue=f.issue,
+                    suggestion=f.suggestion,
+                    evidence=f.evidence,
+                    file_path=f.file_path,
+                )
+                final_warnings.append(demoted)
+                human_warnings.append(
+                    f"[{f.agent}] warn_on type '{f.issue}' flagged: {f.claim}"
+                )
+                continue
+
+            final_blocking.append(f)
+
+        elif f.severity == Severity.WARN:
+            # Emit a human warning message for warn_on types
+            if f.issue in warn_on_types:
+                human_warnings.append(
+                    f"[{f.agent}] warn_on type '{f.issue}' flagged: {f.claim}"
+                )
+            final_warnings.append(f)
+
+        else:
+            final_infos.append(f)
+
+    # Remaining blocking flags that are in block_on list
+    actual_blocks = [f for f in final_blocking if f.issue in block_on_types]
 
     # Count passing agents
     passing = sum(1 for r in agent_results.values() if r.status == "pass")
@@ -133,11 +260,12 @@ def compute_consensus(
 
     return ConsensusResult(
         passed=passed,
-        blocking_flags=blocking,
-        warning_flags=warnings,
-        info_flags=infos,
+        blocking_flags=final_blocking,
+        warning_flags=final_warnings,
+        info_flags=final_infos,
         agent_agreement=agreement,
         requires_human_review=requires_human,
+        warnings=human_warnings,
     )
 
 
