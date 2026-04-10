@@ -58,6 +58,48 @@ cp ~/Downloads/23andme_raw.txt $GENOME_VAULT_ROOT/data/raw/
 # 4. Open your vault in Obsidian and start exploring
 ```
 
+## Web Application
+
+A full-stack web interface for exploring your genome data interactively.
+
+### Views
+
+| View | Description |
+|------|-------------|
+| **SNP Browser** | Paginated, filterable table of 3.4M+ variants with ClinVar annotations |
+| **Mental Health** | GWAS-powered psychiatric genetics dashboard with gene cards and evidence panels |
+| **PGx / Drugs** | Pharmacogenomic profile — metabolizer status, drug cards, interaction warnings |
+| **Addiction** | Harm-reduction-oriented substance sensitivity analysis |
+| **Risk Landscape** | Top mortality causes overlaid with personal genetic risk factors |
+
+### Ask AI (Cmd+K)
+
+AI chat powered by Claude Agent SDK with 11 MCP tools for querying your genome:
+
+- **Personalized starter prompts** — context-aware suggestions based on current view and your data (e.g., "Which drugs should I discuss with my doctor?" when on PGx tab with CYP2D6 poor metabolizer status)
+- **Vault integration** — reads your Obsidian gene notes, systems, phenotypes, and protocols
+- **Interactive responses** — clickable gene names, wikilinks, action buttons (add to checklist, show gene, show variant)
+- **Voice mode** — dictation input + TTS output with gene name spelling
+- **Suggested actions** — AI can add items to your checklist, filter the SNP table, or open relevant links
+
+### Running
+
+```bash
+# Backend (FastAPI)
+uvicorn backend.app.main:app --port 8000
+
+# Frontend (Vite + React)
+cd frontend && npm run dev
+
+# Open http://localhost:5173
+```
+
+### Tech Stack
+
+- **Backend**: FastAPI, aiosqlite, Claude Agent SDK, SOPS-encrypted secrets
+- **Frontend**: React 18, TypeScript, Vite, 306 tests (Vitest)
+- **Data**: SQLite (genome.db), Obsidian vault, GWAS configs (PGC), PGx configs (CPIC)
+
 ## Skills
 
 | Skill | Trigger | Purpose |
@@ -231,16 +273,21 @@ python -m pytest tests/ -v
 
 ```
 genome-toolkit/
-  config/            # YAML configuration (goals, evidence tiers, providers, agents)
-  scripts/           # Python pipeline
-    genome_init.py   # Universal import orchestrator
-    vault_query.py   # SQL-like vault frontmatter queries
-    lib/             # Core library (config, db, vault_parser, providers, multi_agent)
-    analytics/       # Analysis scripts [WIP: migrating from prototype]
-    data/migrations/ # Versioned SQL migrations
-  skills/            # Claude Code skill definitions (7 skills)
-  vault-template/    # Obsidian vault starter (Dashboard, templates, guides)
-  tests/             # pytest test suite (98 tests)
+  backend/           # FastAPI backend
+    app/
+      routes/        # API endpoints (snps, chat, vault, gwas, pgx, starter-prompts)
+      agent/         # Claude Agent SDK orchestration + MCP tools
+      db/            # Async SQLite wrappers (genome.db, users.db)
+  frontend/          # React + TypeScript + Vite
+    src/
+      components/    # UI components (common/, mental-health/, pgx/, addiction/, risk/)
+      hooks/         # Data hooks (useSNPs, useChat, usePGxData, useStarterPrompts, ...)
+      __tests__/     # 306 tests (Vitest)
+  config/            # YAML/JSON configuration (goals, evidence tiers, GWAS, PGx drugs)
+  scripts/           # Python pipeline (import, vault_query, migrations)
+  skills/            # Claude Code skill definitions
+  vault-template/    # Obsidian vault starter
+  tests/             # Python test suite (98 tests)
 ```
 
 ### Architecture
@@ -255,6 +302,17 @@ The toolkit follows a **separation of concerns**:
 
 ### Roadmap
 
+**Done:**
+- [x] Web application with 5 interactive views (SNPs, Mental Health, PGx, Addiction, Risk)
+- [x] Ask AI chat with Claude Agent SDK + 11 MCP tools
+- [x] Personalized starter prompts with backend-driven data + caching
+- [x] Voice dictation and TTS
+- [x] GWAS integration (PGC data for 6 psychiatric traits)
+- [x] Checklist system with AI-suggested actions
+- [x] Common component library (HeroHeader, StatBox, ExportBar, etc.)
+- [x] 306 frontend tests
+
+**In progress:**
 - [ ] Migrate analysis scripts from prototype vault (PRS, enrichment, PubMed, vault audit)
 - [ ] Add skill reference files (gene templates, genetic predictions)
 - [ ] Implement individual validator wrappers (codex_validator.py, etc.)
