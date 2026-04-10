@@ -311,12 +311,19 @@ The toolkit follows a **separation of concerns**:
 - [x] Checklist system with AI-suggested actions
 - [x] Common component library (HeroHeader, StatBox, ExportBar, etc.)
 - [x] 306 frontend tests
+- [x] Analysis scripts (PRS, enrichment, PubMed monitor, gap audit)
+- [x] Skill reference files (gene templates, genetic predictions)
+- [x] Gzip support for all DTC parsers
+- [x] Integration tests for genome_init.py end-to-end
 
-**Planned:**
-- Migrate analysis scripts from prototype vault (PRS, enrichment, PubMed, vault audit)
-- GRCh38 liftover support in import pipeline
-- Add gzip support to DTC parsers
-- Integration tests for genome_init.py end-to-end
+**Open issues:**
+- [Wire provider_formats.yaml into detection logic](https://github.com/glebis/genome-toolkit/issues/2)
+- [Implement validator wrappers for multi-agent consensus](https://github.com/glebis/genome-toolkit/issues/3)
+- [Implement warn_on and tolerance thresholds](https://github.com/glebis/genome-toolkit/issues/4)
+- [Normalize genes.rsids to JSON arrays](https://github.com/glebis/genome-toolkit/issues/5)
+- [GRCh38 liftover support](https://github.com/glebis/genome-toolkit/issues/6)
+- [Smoke tests for skill-referenced files](https://github.com/glebis/genome-toolkit/issues/7)
+- [Vault migration script](https://github.com/glebis/genome-toolkit/issues/8)
 
 ## Disclaimer
 
