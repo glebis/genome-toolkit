@@ -312,18 +312,11 @@ The toolkit follows a **separation of concerns**:
 - [x] Common component library (HeroHeader, StatBox, ExportBar, etc.)
 - [x] 306 frontend tests
 
-**In progress:**
-- [ ] Migrate analysis scripts from prototype vault (PRS, enrichment, PubMed, vault audit)
-- [ ] Add skill reference files (gene templates, genetic predictions)
-- [ ] Implement individual validator wrappers (codex_validator.py, etc.)
-- [ ] Wire `provider_formats.yaml` into detection logic (currently code-driven)
-- [ ] Implement `warn_on` and tolerance thresholds in multi-agent consensus
-- [ ] Add gzip support to DTC parsers (23andMe/Ancestry/MyHeritage distribute .txt.gz)
-- [ ] Add existing vault migration script
-- [ ] Normalize `genes.rsids` column to JSON arrays
-- [ ] GRCh38 liftover support in import pipeline
-- [ ] Integration tests for genome_init.py end-to-end
-- [ ] Smoke tests validating skill-referenced files exist
+**Planned:**
+- Migrate analysis scripts from prototype vault (PRS, enrichment, PubMed, vault audit)
+- GRCh38 liftover support in import pipeline
+- Add gzip support to DTC parsers
+- Integration tests for genome_init.py end-to-end
 
 ## Disclaimer
 
