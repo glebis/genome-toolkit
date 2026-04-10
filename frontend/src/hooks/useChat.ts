@@ -63,7 +63,7 @@ export function useChat(onUIAction?: (action: UIAction) => void) {
     }
   }, [])
 
-  const send = useCallback(async (text: string) => {
+  const send = useCallback(async (text: string, pageContext?: string) => {
     if (!sessionId || streaming) return
 
     setMessages(prev => [...prev, { role: 'user', content: text }])
@@ -78,7 +78,7 @@ export function useChat(onUIAction?: (action: UIAction) => void) {
 
     let accumulated = ''
     try {
-      for await (const event of streamChat(sessionId, text, abort.signal)) {
+      for await (const event of streamChat(sessionId, text, abort.signal, pageContext)) {
         if (event.event === 'text_delta') {
           accumulated += event.data.content as string
           setStreamingText(accumulated)

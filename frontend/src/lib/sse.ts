@@ -7,11 +7,16 @@ export async function* streamChat(
   sessionId: string,
   message: string,
   signal?: AbortSignal,
+  pageContext?: string,
 ): AsyncGenerator<SSEEvent> {
   const resp = await fetch('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ session_id: sessionId, message }),
+    body: JSON.stringify({
+      session_id: sessionId,
+      message,
+      ...(pageContext ? { page_context: pageContext } : {}),
+    }),
     signal,
   })
 
