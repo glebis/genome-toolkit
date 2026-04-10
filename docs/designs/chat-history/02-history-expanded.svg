@@ -1,0 +1,115 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="560" viewBox="0 0 640 560">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&amp;display=swap');
+      text { font-family: 'IBM Plex Mono', monospace; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="640" height="560" rx="8" fill="#f0ece5" stroke="#9a968e" stroke-width="1.5"/>
+
+  <!-- Header -->
+  <rect x="0" y="0" width="640" height="44" rx="8" fill="#e8e4dc"/>
+  <rect x="0" y="36" width="640" height="8" fill="#e8e4dc"/>
+  <line x1="0" y1="44" x2="640" y2="44" stroke="#c4c0b8" stroke-width="1"/>
+
+  <text x="20" y="28" font-size="11" font-weight="600" letter-spacing="0.15em" fill="#5b7ea1">GENOME_AI</text>
+  <text x="120" y="28" font-size="11" font-weight="400" fill="#7a7a76">//</text>
+  <text x="138" y="28" font-size="10" font-weight="500" letter-spacing="0.15em" fill="#7a7a76">COMMAND_INTERFACE</text>
+
+  <!-- Header buttons -->
+  <rect x="430" y="10" width="56" height="24" rx="3" fill="none" stroke="#c4724e" stroke-width="1"/>
+  <text x="440" y="26" font-size="9" font-weight="600" letter-spacing="0.1em" fill="#c4724e">+NEW</text>
+
+  <!-- H button active state -->
+  <rect x="494" y="10" width="32" height="24" rx="3" fill="#5b7ea1" stroke="#5b7ea1" stroke-width="1"/>
+  <text x="505" y="26" font-size="10" font-weight="600" fill="#f0ece5">H</text>
+
+  <rect x="534" y="10" width="44" height="24" rx="3" fill="none" stroke="#9a968e" stroke-width="1"/>
+  <text x="543" y="26" font-size="9" font-weight="500" letter-spacing="0.1em" fill="#5e5e5a">ESC</text>
+
+  <!-- Search bar -->
+  <rect x="20" y="54" width="600" height="32" rx="3" fill="#e8e4dc" stroke="#c4c0b8" stroke-width="1"/>
+  <text x="32" y="74" font-size="9" font-weight="500" letter-spacing="0.15em" fill="#7a7a76">SEARCH_THREADS:</text>
+  <rect x="160" y="60" width="420" height="20" rx="2" fill="#f0ece5" stroke="#b8b4ac" stroke-width="0.5"/>
+  <text x="590" y="74" font-size="9" fill="#9a968e">x</text>
+
+  <line x1="20" y1="96" x2="620" y2="96" stroke="#b8b4ac" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <!-- TODAY group -->
+  <text x="20" y="116" font-size="8" font-weight="600" letter-spacing="0.2em" fill="#c4724e">TODAY</text>
+
+  <rect x="20" y="124" width="600" height="40" rx="3" fill="#e8e4dc" stroke="#c4c0b8" stroke-width="0.5"/>
+  <rect x="20" y="124" width="3" height="40" rx="1" fill="#5b7ea1"/>
+  <text x="32" y="140" font-size="10" fill="#5b7ea1">></text>
+  <text x="44" y="140" font-size="11" font-weight="500" fill="#3a3a38">CYP2D6 metabolism and fluoxetine</text>
+  <text x="44" y="156" font-size="9" font-weight="300" fill="#7a7a76">"What medications should I watch out for..."</text>
+  <text x="560" y="140" font-size="9" fill="#7a7a76">14:32</text>
+
+  <!-- View context badge -->
+  <rect x="460" y="148" width="40" height="14" rx="2" fill="none" stroke="#b8b4ac" stroke-width="0.5"/>
+  <text x="468" y="158" font-size="7" font-weight="500" letter-spacing="0.1em" fill="#7a7a76">PGX</text>
+
+  <!-- YESTERDAY group -->
+  <text x="20" y="188" font-size="8" font-weight="600" letter-spacing="0.2em" fill="#c4724e">YESTERDAY</text>
+
+  <rect x="20" y="196" width="600" height="40" rx="3" fill="none"/>
+  <text x="32" y="212" font-size="10" fill="#7a7a76">></text>
+  <text x="44" y="212" font-size="11" font-weight="400" fill="#3a3a38">MTHFR variants and folate pathway</text>
+  <text x="44" y="228" font-size="9" font-weight="300" fill="#7a7a76">"Tell me about my MTHFR C677T status..."</text>
+  <text x="560" y="212" font-size="9" fill="#7a7a76">09:15</text>
+
+  <rect x="460" y="220" width="76" height="14" rx="2" fill="none" stroke="#b8b4ac" stroke-width="0.5"/>
+  <text x="466" y="230" font-size="7" font-weight="500" letter-spacing="0.1em" fill="#7a7a76">MENTAL_HEALTH</text>
+
+  <!-- THIS WEEK group -->
+  <text x="20" y="260" font-size="8" font-weight="600" letter-spacing="0.2em" fill="#c4724e">THIS WEEK</text>
+
+  <rect x="20" y="268" width="600" height="36" rx="3" fill="none"/>
+  <text x="32" y="290" font-size="10" fill="#7a7a76">></text>
+  <text x="44" y="290" font-size="11" font-weight="400" fill="#3a3a38">Addiction risk SNPs overview</text>
+  <text x="560" y="290" font-size="9" fill="#7a7a76">Mon</text>
+  <rect x="460" y="282" width="68" height="14" rx="2" fill="none" stroke="#b8b4ac" stroke-width="0.5"/>
+  <text x="467" y="292" font-size="7" font-weight="500" letter-spacing="0.1em" fill="#7a7a76">ADDICTION</text>
+
+  <rect x="20" y="310" width="600" height="36" rx="3" fill="none"/>
+  <text x="32" y="332" font-size="10" fill="#7a7a76">></text>
+  <text x="44" y="332" font-size="11" font-weight="400" fill="#3a3a38">DRD2 and dopamine pathways</text>
+  <text x="560" y="332" font-size="9" fill="#7a7a76">Mon</text>
+
+  <!-- OLDER group -->
+  <text x="20" y="370" font-size="8" font-weight="600" letter-spacing="0.2em" fill="#c4724e">OLDER</text>
+
+  <rect x="20" y="378" width="600" height="30" rx="3" fill="none"/>
+  <text x="32" y="397" font-size="10" fill="#7a7a76">></text>
+  <text x="44" y="397" font-size="11" font-weight="400" fill="#5e5e5a">Serotonin transporter analysis</text>
+  <text x="548" y="397" font-size="9" fill="#7a7a76">Apr 3</text>
+
+  <rect x="20" y="412" width="600" height="30" rx="3" fill="none"/>
+  <text x="32" y="431" font-size="10" fill="#7a7a76">></text>
+  <text x="44" y="431" font-size="11" font-weight="400" fill="#5e5e5a">BDNF Val66Met interpretation</text>
+  <text x="548" y="431" font-size="9" fill="#7a7a76">Apr 1</text>
+
+  <rect x="20" y="446" width="600" height="30" rx="3" fill="none"/>
+  <text x="32" y="465" font-size="10" fill="#7a7a76">></text>
+  <text x="44" y="465" font-size="11" font-weight="400" fill="#5e5e5a">Full pharmacogenomics report</text>
+  <text x="540" y="465" font-size="9" fill="#7a7a76">Mar 28</text>
+
+  <!-- End marker -->
+  <line x1="100" y1="488" x2="280" y2="488" stroke="#b8b4ac" stroke-width="0.5" stroke-dasharray="3,3"/>
+  <text x="290" y="491" font-size="8" font-weight="400" fill="#9a968e">END OF HISTORY (7 threads)</text>
+  <line x1="480" y1="488" x2="620" y2="488" stroke="#b8b4ac" stroke-width="0.5" stroke-dasharray="3,3"/>
+
+  <!-- Input bar -->
+  <line x1="0" y1="510" x2="640" y2="510" stroke="#c4c0b8" stroke-width="1"/>
+  <rect x="0" y="510" width="640" height="50" fill="#e8e4dc"/>
+  <rect x="0" y="552" width="640" height="8" rx="8" fill="#e8e4dc"/>
+  <text x="20" y="536" font-size="10" font-weight="400" fill="#5b7ea1">></text>
+  <text x="36" y="536" font-size="11" font-weight="400" letter-spacing="0.08em" fill="#7a7a76">ASK_ABOUT_YOUR_GENOME...</text>
+  <rect x="580" y="520" width="40" height="24" rx="3" fill="none" stroke="#c4c0b8" stroke-width="1"/>
+  <text x="591" y="536" font-size="9" font-weight="400" fill="#7a7a76">mic</text>
+
+  <!-- Annotation -->
+  <text x="320" y="504" font-size="8" font-weight="400" fill="#9a968e" text-anchor="middle">02 / HISTORY EXPANDED — GROUPED BY TIME</text>
+</svg>

@@ -1,0 +1,199 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="700" viewBox="0 0 960 700">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&amp;display=swap');
+      text { font-family: 'IBM Plex Mono', monospace; }
+    </style>
+  </defs>
+
+  <!-- Title -->
+  <text x="480" y="24" font-size="10" font-weight="600" letter-spacing="0.2em" fill="#5e5e5a" text-anchor="middle">06 / STATE TRANSITIONS — EXPAND / COLLAPSE FLOW</text>
+  <line x1="40" y1="34" x2="920" y2="34" stroke="#b8b4ac" stroke-width="0.5" stroke-dasharray="4,3"/>
+
+  <!-- ============================================ -->
+  <!-- STATE 1: FULL PALETTE (centered) -->
+  <!-- ============================================ -->
+  <text x="40" y="60" font-size="9" font-weight="600" letter-spacing="0.2em" fill="#c4724e">STATE 1: EXPANDED (DEFAULT)</text>
+
+  <!-- Dim background -->
+  <rect x="40" y="70" width="400" height="250" rx="4" fill="#c4c0b8" opacity="0.3"/>
+
+  <!-- Centered palette -->
+  <rect x="80" y="90" width="320" height="210" rx="4" fill="#f0ece5" stroke="#5b7ea1" stroke-width="1"/>
+
+  <!-- Palette header -->
+  <rect x="80" y="90" width="320" height="24" rx="4" fill="#e8e4dc"/>
+  <rect x="80" y="110" width="320" height="4" fill="#e8e4dc"/>
+  <line x1="80" y1="114" x2="400" y2="114" stroke="#c4c0b8" stroke-width="0.5"/>
+  <text x="92" y="106" font-size="7" font-weight="600" letter-spacing="0.1em" fill="#c4724e">GENOME_AI</text>
+
+  <!-- Collapse button (new) -->
+  <rect x="338" y="94" width="52" height="16" rx="2" fill="none" stroke="#5b7ea1" stroke-width="0.5"/>
+  <text x="344" y="105" font-size="6" font-weight="500" letter-spacing="0.05em" fill="#5b7ea1">COLLAPSE ></text>
+
+  <!-- Message area -->
+  <rect x="90" y="120" width="300" height="24" rx="2" fill="#e8e4dc"/>
+  <text x="98" y="136" font-size="7" font-weight="400" fill="#3a3a38">Show me CYP2D6 variants...</text>
+
+  <rect x="90" y="150" width="300" height="50" rx="2" fill="#f0ece5" stroke="#c4c0b8" stroke-width="0.3"/>
+  <text x="98" y="166" font-size="7" font-weight="400" fill="#3a3a38">Filtering table to CYP2D6...</text>
+  <text x="98" y="180" font-size="7" font-weight="400" fill="#3a3a38">Found 23 variants with 3</text>
+  <text x="98" y="194" font-size="7" font-weight="400" fill="#3a3a38">clinically significant.</text>
+
+  <!-- Note: table is hidden -->
+  <text x="240" y="232" font-size="7" font-weight="400" fill="#9a968e" text-anchor="middle">Table hidden behind overlay</text>
+
+  <!-- Input -->
+  <line x1="80" y1="276" x2="400" y2="276" stroke="#c4c0b8" stroke-width="0.5"/>
+  <rect x="90" y="282" width="300" height="14" rx="2" fill="#e8e4dc" stroke="#c4c0b8" stroke-width="0.3"/>
+  <text x="98" y="292" font-size="7" fill="#7a7a76">Follow up...</text>
+
+  <!-- ============================================ -->
+  <!-- ARROW 1 → 2 -->
+  <!-- ============================================ -->
+  <line x1="450" y1="200" x2="500" y2="200" stroke="#5b7ea1" stroke-width="1.5" marker-end="url(#arrowBlue)"/>
+  <defs>
+    <marker id="arrowBlue" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="#5b7ea1"/>
+    </marker>
+    <marker id="arrowAccent" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="#c4724e"/>
+    </marker>
+  </defs>
+  <text x="475" y="192" font-size="7" font-weight="500" fill="#5b7ea1" text-anchor="middle">click</text>
+  <text x="475" y="212" font-size="6" font-weight="400" fill="#7a7a76" text-anchor="middle">COLLAPSE</text>
+
+  <!-- ============================================ -->
+  <!-- STATE 2: COLLAPSED (right sidebar) -->
+  <!-- ============================================ -->
+  <text x="510" y="60" font-size="9" font-weight="600" letter-spacing="0.2em" fill="#c4724e">STATE 2: COLLAPSED (SIDEBAR)</text>
+
+  <!-- Full app visible -->
+  <rect x="510" y="70" width="410" height="250" rx="4" fill="#e8e4dc" stroke="#c4c0b8" stroke-width="0.5"/>
+
+  <!-- Mini table visible -->
+  <rect x="510" y="70" width="280" height="24" fill="#dedad2"/>
+  <text x="522" y="86" font-size="6" font-weight="600" letter-spacing="0.1em" fill="#5e5e5a">RSID</text>
+  <text x="580" y="86" font-size="6" font-weight="600" letter-spacing="0.1em" fill="#5e5e5a">GENE</text>
+  <text x="640" y="86" font-size="6" font-weight="600" letter-spacing="0.1em" fill="#5e5e5a">GENOTYPE</text>
+  <text x="710" y="86" font-size="6" font-weight="600" letter-spacing="0.1em" fill="#5e5e5a">SIG</text>
+
+  <rect x="510" y="94" width="280" height="18" fill="#f0ece5"/>
+  <rect x="510" y="94" width="2" height="18" fill="#5b7ea1"/>
+  <text x="522" y="107" font-size="7" fill="#3a3a38">rs3892097</text>
+  <text x="580" y="107" font-size="7" fill="#5b7ea1">CYP2D6</text>
+  <text x="640" y="107" font-size="7" fill="#c4724e">CT</text>
+  <text x="710" y="107" font-size="7" fill="#c4524e">Path.</text>
+
+  <rect x="510" y="112" width="280" height="18" fill="#e8e4dc"/>
+  <text x="522" y="125" font-size="7" fill="#3a3a38">rs16947</text>
+  <text x="580" y="125" font-size="7" fill="#5b7ea1">CYP2D6</text>
+  <text x="640" y="125" font-size="7" fill="#c4724e">AG</text>
+  <text x="710" y="125" font-size="7" fill="#956a2a">L.path</text>
+
+  <rect x="510" y="130" width="280" height="18" fill="#f0ece5"/>
+  <text x="522" y="143" font-size="7" fill="#3a3a38">rs1065852</text>
+  <text x="580" y="143" font-size="7" fill="#5b7ea1">CYP2D6</text>
+  <text x="640" y="143" font-size="7" fill="#3a3a38">CC</text>
+  <text x="710" y="143" font-size="7" fill="#956a2a">L.path</text>
+
+  <text x="650" y="168" font-size="6" fill="#7a7a76" text-anchor="middle">...more rows visible</text>
+
+  <!-- Collapsed sidebar -->
+  <rect x="790" y="70" width="130" height="250" fill="#f0ece5" stroke="#5b7ea1" stroke-width="1"/>
+
+  <!-- Expand handle -->
+  <rect x="790" y="70" width="12" height="250" fill="#e8e4dc"/>
+  <rect x="790" y="70" width="1.5" height="250" fill="#5b7ea1"/>
+  <text x="796" y="200" font-size="8" fill="#5b7ea1">&lt;</text>
+
+  <!-- Sidebar header -->
+  <rect x="790" y="70" width="130" height="22" fill="#e8e4dc"/>
+  <text x="808" y="84" font-size="6" font-weight="600" letter-spacing="0.1em" fill="#c4724e">GENOME_AI</text>
+
+  <!-- Expand button -->
+  <rect x="878" y="74" width="36" height="14" rx="2" fill="none" stroke="#5b7ea1" stroke-width="0.5"/>
+  <text x="882" y="84" font-size="5" font-weight="500" fill="#5b7ea1">EXPAND</text>
+
+  <!-- Streaming indicator -->
+  <circle cx="808" cy="100" r="3" fill="#c4724e" opacity="0.8">
+    <animate attributeName="opacity" values="0.3;1;0.3" dur="1.2s" repeatCount="indefinite"/>
+  </circle>
+  <text x="816" y="103" font-size="6" font-weight="500" fill="#c4724e">FILTERING...</text>
+
+  <!-- Compact messages -->
+  <rect x="800" y="110" width="115" height="30" rx="2" fill="#e8e4dc"/>
+  <text x="806" y="122" font-size="6" fill="#3a3a38">Show me CYP2D6</text>
+  <text x="806" y="132" font-size="6" fill="#3a3a38">variants...</text>
+
+  <rect x="800" y="144" width="115" height="50" rx="2" fill="#f0ece5" stroke="#c4c0b8" stroke-width="0.3"/>
+  <text x="806" y="156" font-size="6" fill="#3a3a38">Filtering to CYP2D6</text>
+  <text x="806" y="166" font-size="6" fill="#3a3a38">Found 23 variants</text>
+  <text x="806" y="176" font-size="6" fill="#c4724e">Poor metabolizer</text>
+  <text x="806" y="186" font-size="6" fill="#c4724e">status confirmed.</text>
+
+  <!-- Compact input -->
+  <line x1="790" y1="298" x2="920" y2="298" stroke="#c4c0b8" stroke-width="0.5"/>
+  <rect x="800" y="304" width="106" height="12" rx="1" fill="#e8e4dc" stroke="#c4c0b8" stroke-width="0.3"/>
+  <text x="806" y="313" font-size="6" fill="#7a7a76">Follow up...</text>
+
+  <!-- ============================================ -->
+  <!-- TRIGGER CONDITIONS -->
+  <!-- ============================================ -->
+  <text x="40" y="360" font-size="9" font-weight="600" letter-spacing="0.2em" fill="#c4724e">AUTO-COLLAPSE TRIGGERS</text>
+  <line x1="40" y1="368" x2="920" y2="368" stroke="#b8b4ac" stroke-width="0.5" stroke-dasharray="4,3"/>
+
+  <rect x="40" y="380" width="880" height="140" rx="4" fill="#f0ece5" stroke="#c4c0b8" stroke-width="0.5"/>
+
+  <!-- Trigger 1 -->
+  <circle cx="64" cy="406" r="8" fill="none" stroke="#5b7ea1" stroke-width="1"/>
+  <text x="60" y="410" font-size="8" font-weight="600" fill="#5b7ea1">1</text>
+  <text x="82" y="402" font-size="9" font-weight="500" fill="#3a3a38">UI Action: filter_table</text>
+  <text x="82" y="416" font-size="8" font-weight="400" fill="#7a7a76">When agent sends a filter_table action, auto-collapse to show table updating</text>
+
+  <!-- Trigger 2 -->
+  <circle cx="64" cy="446" r="8" fill="none" stroke="#5b7ea1" stroke-width="1"/>
+  <text x="60" y="450" font-size="8" font-weight="600" fill="#5b7ea1">2</text>
+  <text x="82" y="442" font-size="9" font-weight="500" fill="#3a3a38">Manual: User clicks COLLAPSE button</text>
+  <text x="82" y="456" font-size="8" font-weight="400" fill="#7a7a76">User can collapse/expand at any time via button or keyboard shortcut</text>
+
+  <!-- Trigger 3 -->
+  <circle cx="64" cy="486" r="8" fill="none" stroke="#5b7ea1" stroke-width="1"/>
+  <text x="60" y="490" font-size="8" font-weight="600" fill="#5b7ea1">3</text>
+  <text x="82" y="482" font-size="9" font-weight="500" fill="#3a3a38">Re-expand: User clicks EXPAND or presses Cmd+K again</text>
+  <text x="82" y="496" font-size="8" font-weight="400" fill="#7a7a76">Returns to full centered palette. ESC still closes entirely.</text>
+
+  <!-- Keyboard shortcuts -->
+  <text x="560" y="402" font-size="8" font-weight="500" fill="#5b7ea1">Cmd+K</text>
+  <text x="620" y="402" font-size="8" fill="#7a7a76">Toggle open / close</text>
+  <text x="560" y="422" font-size="8" font-weight="500" fill="#5b7ea1">Cmd+\</text>
+  <text x="620" y="422" font-size="8" fill="#7a7a76">Toggle collapse / expand</text>
+  <text x="560" y="442" font-size="8" font-weight="500" fill="#5b7ea1">ESC</text>
+  <text x="620" y="442" font-size="8" fill="#7a7a76">Close palette entirely</text>
+
+  <!-- ============================================ -->
+  <!-- BEHAVIOR NOTES -->
+  <!-- ============================================ -->
+  <text x="40" y="550" font-size="9" font-weight="600" letter-spacing="0.2em" fill="#c4724e">BEHAVIOR NOTES</text>
+  <line x1="40" y1="558" x2="920" y2="558" stroke="#b8b4ac" stroke-width="0.5" stroke-dasharray="4,3"/>
+
+  <rect x="40" y="566" width="880" height="120" rx="4" fill="#f0ece5" stroke="#c4c0b8" stroke-width="0.5"/>
+
+  <text x="60" y="586" font-size="9" fill="#5e5e5a">*</text>
+  <text x="74" y="586" font-size="9" font-weight="400" fill="#3a3a38">Collapsed width: 270px fixed. Main content shifts left to accommodate.</text>
+
+  <text x="60" y="606" font-size="9" fill="#5e5e5a">*</text>
+  <text x="74" y="606" font-size="9" font-weight="400" fill="#3a3a38">No overlay/dimming in collapsed mode — table is fully interactive.</text>
+
+  <text x="60" y="626" font-size="9" fill="#5e5e5a">*</text>
+  <text x="74" y="626" font-size="9" font-weight="400" fill="#3a3a38">Transition: CSS transition 200ms ease-out for smooth collapse/expand.</text>
+
+  <text x="60" y="646" font-size="9" fill="#5e5e5a">*</text>
+  <text x="74" y="646" font-size="9" font-weight="400" fill="#3a3a38">Auto-collapse only on filter_table action. Other actions keep full palette.</text>
+
+  <text x="60" y="666" font-size="9" fill="#5e5e5a">*</text>
+  <text x="74" y="666" font-size="9" font-weight="400" fill="#3a3a38">Input stays functional in collapsed mode — user can continue the conversation.</text>
+
+  <text x="60" y="686" font-size="9" fill="#5e5e5a">*</text>
+  <text x="74" y="686" font-size="9" font-weight="400" fill="#3a3a38">Applied filters shown as badges in sidebar for at-a-glance context.</text>
+</svg>

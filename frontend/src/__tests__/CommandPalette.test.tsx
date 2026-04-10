@@ -70,3 +70,104 @@ describe('CommandPalette EmptyState', () => {
     expect(screen.queryByText('EXPLORE')).toBeNull()
   })
 })
+
+describe('CommandPalette Collapsed Mode', () => {
+  const collapsedProps = {
+    ...baseProps,
+    collapsed: true,
+    onToggleCollapse: vi.fn(),
+  }
+
+  it('renders EXPAND button when collapsed', () => {
+    render(<CommandPalette {...collapsedProps} />)
+    expect(screen.getByText('EXPAND')).toBeTruthy()
+  })
+
+  it('renders COLLAPSE button when expanded', () => {
+    render(<CommandPalette {...baseProps} collapsed={false} onToggleCollapse={vi.fn()} />)
+    expect(screen.getByText('COLLAPSE')).toBeTruthy()
+  })
+
+  it('calls onToggleCollapse when EXPAND is clicked', () => {
+    const onToggle = vi.fn()
+    render(<CommandPalette {...collapsedProps} onToggleCollapse={onToggle} />)
+    fireEvent.click(screen.getByText('EXPAND'))
+    expect(onToggle).toHaveBeenCalledOnce()
+  })
+
+  it('hides empty state when collapsed', () => {
+    render(<CommandPalette {...collapsedProps} />)
+    expect(screen.queryByText('WHAT I CAN DO')).toBeNull()
+    expect(screen.queryByText('SUGGESTED FOR YOU')).toBeNull()
+    expect(screen.queryByText('EXPLORE')).toBeNull()
+  })
+
+  it('shows compact labels (YOU/AI) when collapsed with messages', () => {
+    render(
+      <CommandPalette
+        {...collapsedProps}
+        messages={[
+          { role: 'user', content: 'Show CYP2D6' },
+          { role: 'assistant', content: 'Found 23 variants' },
+        ]}
+      />
+    )
+    expect(screen.getByText('YOU')).toBeTruthy()
+    expect(screen.getByText('AI')).toBeTruthy()
+    expect(screen.queryByText('INPUT //')).toBeNull()
+    expect(screen.queryByText('OUTPUT //')).toBeNull()
+  })
+
+  it('shows full labels (INPUT/OUTPUT) when expanded with messages', () => {
+    render(
+      <CommandPalette
+        {...baseProps}
+        collapsed={false}
+        messages={[
+          { role: 'user', content: 'Show CYP2D6' },
+          { role: 'assistant', content: 'Found 23 variants' },
+        ]}
+      />
+    )
+    expect(screen.getByText('INPUT //')).toBeTruthy()
+    expect(screen.getByText('OUTPUT //')).toBeTruthy()
+  })
+
+  it('hides COPY buttons on messages when collapsed', () => {
+    render(
+      <CommandPalette
+        {...collapsedProps}
+        messages={[
+          { role: 'user', content: 'Hello' },
+          { role: 'assistant', content: 'World' },
+        ]}
+      />
+    )
+    expect(screen.queryByText('COPY')).toBeNull()
+    expect(screen.queryByText('COPY_ALL')).toBeNull()
+  })
+
+  it('shows streaming status bar when collapsed and streaming', () => {
+    render(
+      <CommandPalette
+        {...collapsedProps}
+        streaming={true}
+        streamingText="Filtering..."
+        status="FILTERING"
+      />
+    )
+    // Status appears in both the collapsed status bar and the input area
+    expect(screen.getAllByText('FILTERING').length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('uses transparent background when collapsed (no overlay)', () => {
+    const { container } = render(<CommandPalette {...collapsedProps} />)
+    const backdrop = container.firstChild as HTMLElement
+    expect(backdrop.style.background).toBe('transparent')
+  })
+
+  it('does not render when open is false', () => {
+    const { container } = render(<CommandPalette {...collapsedProps} open={false} />)
+    expect(container.innerHTML).toBe('')
+  })
+})

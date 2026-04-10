@@ -81,6 +81,7 @@ AI chat powered by Claude Agent SDK with 11 MCP tools for querying your genome:
 - **Interactive responses** — clickable gene names, wikilinks, action buttons (add to checklist, show gene, show variant)
 - **Voice mode** — dictation input + TTS output with gene name spelling
 - **Suggested actions** — AI can add items to your checklist, filter the SNP table, or open relevant links
+- **Collapsible sidebar mode** — when the AI filters the SNP table, the chat palette auto-collapses to a right sidebar so you can see the table updating in real time. Toggle with `Cmd+\`, expand back with `Cmd+K`
 
 ### Running
 
@@ -97,7 +98,7 @@ cd frontend && npm run dev
 ### Tech Stack
 
 - **Backend**: FastAPI, aiosqlite, Claude Agent SDK, SOPS-encrypted secrets
-- **Frontend**: React 18, TypeScript, Vite, 306 tests (Vitest)
+- **Frontend**: React 18, TypeScript, Vite, 355 tests (Vitest)
 - **Data**: SQLite (genome.db), Obsidian vault, GWAS configs (PGC), PGx configs (CPIC)
 
 ## Skills
@@ -282,7 +283,7 @@ genome-toolkit/
     src/
       components/    # UI components (common/, mental-health/, pgx/, addiction/, risk/)
       hooks/         # Data hooks (useSNPs, useChat, usePGxData, useStarterPrompts, ...)
-      __tests__/     # 306 tests (Vitest)
+      __tests__/     # 355 tests (Vitest)
   config/            # YAML/JSON configuration (goals, evidence tiers, GWAS, PGx drugs)
   scripts/           # Python pipeline (import, vault_query, migrations)
   skills/            # Claude Code skill definitions
@@ -310,6 +311,7 @@ The toolkit follows a **separation of concerns**:
 - [x] GWAS integration (PGC data for 6 psychiatric traits)
 - [x] Checklist system with AI-suggested actions
 - [x] Common component library (HeroHeader, StatBox, ExportBar, etc.)
+- [x] Collapsible AI palette (auto-collapse on table filtering, Cmd+\\)
 - [x] 306 frontend tests
 - [x] Analysis scripts (PRS, enrichment, PubMed monitor, gap audit)
 - [x] Skill reference files (gene templates, genetic predictions)

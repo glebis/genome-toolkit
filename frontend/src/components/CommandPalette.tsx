@@ -181,6 +181,8 @@ interface Props {
   starterPrompts?: StarterPrompt[]
   starterCapabilities?: string[]
   starterExplore?: string[]
+  collapsed?: boolean
+  onToggleCollapse?: () => void
 }
 
 function messagesToMarkdown(messages: ChatMessage[]): string {
@@ -208,7 +210,7 @@ function downloadMarkdown(text: string, filename: string) {
   URL.revokeObjectURL(url)
 }
 
-export function CommandPalette({ open, onClose, messages, streaming, streamingText, status, suggestions, actions, onSend, onAction, initialQuery, voiceSupported, voiceListening, onStartListening, onStopListening, starterPrompts, starterCapabilities, starterExplore }: Props) {
+export function CommandPalette({ open, onClose, messages, streaming, streamingText, status, suggestions, actions, onSend, onAction, initialQuery, voiceSupported, voiceListening, onStartListening, onStopListening, starterPrompts, starterCapabilities, starterExplore, collapsed, onToggleCollapse }: Props) {
   const [input, setInput] = useState('')
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -264,22 +266,27 @@ export function CommandPalette({ open, onClose, messages, streaming, streamingTe
       style={{
         position: 'fixed',
         inset: 0,
-        background: 'rgba(58, 58, 56, 0.55)',
+        background: collapsed ? 'transparent' : 'rgba(58, 58, 56, 0.55)',
         display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
+        alignItems: collapsed ? 'stretch' : 'center',
+        justifyContent: collapsed ? 'flex-end' : 'center',
         zIndex: 1000,
+        pointerEvents: collapsed ? 'none' : 'auto',
+        transition: 'background 0.2s ease-out',
       }}
-      onClick={e => { if (e.target === e.currentTarget) onClose() }}
+      onClick={e => { if (!collapsed && e.target === e.currentTarget) onClose() }}
     >
       <div className="command-palette-inner" style={{
-        width: '100%',
-        maxWidth: 860,
+        width: collapsed ? 280 : '100%',
+        maxWidth: collapsed ? 280 : 860,
         background: 'var(--bg-raised)',
         border: '1px solid var(--primary)',
-        height: '85vh',
+        height: collapsed ? '100%' : '85vh',
         display: 'flex',
         flexDirection: 'column',
+        pointerEvents: 'auto',
+        transition: 'width 0.2s ease-out, max-width 0.2s ease-out',
+        borderLeft: collapsed ? '3px solid var(--primary)' : '1px solid var(--primary)',
       }}>
         {/* Header */}
         <div style={{
@@ -289,9 +296,11 @@ export function CommandPalette({ open, onClose, messages, streaming, streamingTe
           justifyContent: 'space-between',
           alignItems: 'center',
         }}>
-          <span className="label label--accent">GENOME_AI // COMMAND_INTERFACE</span>
+          <span className="label label--accent" style={{ fontSize: collapsed ? '8px' : undefined }}>
+            {collapsed ? 'GENOME_AI' : 'GENOME_AI // COMMAND_INTERFACE'}
+          </span>
           <div style={{ display: 'flex', gap: 'var(--space-sm)', alignItems: 'center' }}>
-            {messages.length > 0 && (
+            {!collapsed && messages.length > 0 && (
               <>
                 <button
                   className="btn"
@@ -309,15 +318,47 @@ export function CommandPalette({ open, onClose, messages, streaming, streamingTe
                 </button>
               </>
             )}
+            {onToggleCollapse && (
+              <button
+                className="btn"
+                style={{ fontSize: '9px', padding: '2px 6px' }}
+                onClick={onToggleCollapse}
+                title={collapsed ? 'Expand (Cmd+\\)' : 'Collapse (Cmd+\\)'}
+              >
+                {collapsed ? 'EXPAND' : 'COLLAPSE'}
+              </button>
+            )}
             <button
               className="btn"
               style={{ fontSize: '9px', padding: '2px 6px' }}
               onClick={onClose}
             >
-              ESC // CLOSE
+              {collapsed ? 'X' : 'ESC // CLOSE'}
             </button>
           </div>
         </div>
+
+        {/* Streaming status bar (collapsed only) */}
+        {collapsed && streaming && (
+          <div style={{
+            padding: '6px var(--space-md)',
+            borderBottom: '1px solid var(--border)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 'var(--space-sm)',
+            background: 'var(--bg)',
+          }}>
+            <span style={{
+              width: 6, height: 6, borderRadius: '50%',
+              background: 'var(--accent)',
+              animation: 'blink 1.2s ease-in-out infinite',
+              flexShrink: 0,
+            }} />
+            <span className="label" style={{ color: 'var(--accent)', fontSize: '8px' }}>
+              {status || 'PROCESSING'}
+            </span>
+          </div>
+        )}
 
         {/* Messages */}
         <div
@@ -326,10 +367,10 @@ export function CommandPalette({ open, onClose, messages, streaming, streamingTe
             flex: 1,
             minHeight: 0,
             overflowY: 'auto',
-            padding: 'var(--space-lg) var(--space-xl)',
+            padding: collapsed ? 'var(--space-sm) var(--space-md)' : 'var(--space-lg) var(--space-xl)',
           }}
         >
-          {messages.length === 0 && !streaming && (
+          {messages.length === 0 && !streaming && !collapsed && (
             <div style={{ padding: 'var(--space-xl)', height: '100%', overflowY: 'auto' }}>
               {starterCapabilities && starterCapabilities.length > 0 && (
                 <div style={{ marginBottom: 'var(--space-lg)' }}>
@@ -443,12 +484,15 @@ export function CommandPalette({ open, onClose, messages, streaming, streamingTe
             </div>
           )}
           {messages.map((msg, i) => (
-            <div key={i} style={{ marginBottom: 'var(--space-xl)', position: 'relative' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-sm)' }}>
-                <span className="label" style={{ color: msg.role === 'user' ? 'var(--accent)' : 'var(--primary)' }}>
-                  {msg.role === 'user' ? 'INPUT //' : 'OUTPUT //'}
+            <div key={i} style={{ marginBottom: collapsed ? 'var(--space-sm)' : 'var(--space-xl)', position: 'relative' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: collapsed ? '2px' : 'var(--space-sm)' }}>
+                <span className="label" style={{
+                  color: msg.role === 'user' ? 'var(--accent)' : 'var(--primary)',
+                  fontSize: collapsed ? '8px' : undefined,
+                }}>
+                  {msg.role === 'user' ? (collapsed ? 'YOU' : 'INPUT //') : (collapsed ? 'AI' : 'OUTPUT //')}
                 </span>
-                {msg.role === 'assistant' && (
+                {msg.role === 'assistant' && !collapsed && (
                   <button
                     className="btn"
                     style={{
@@ -465,21 +509,33 @@ export function CommandPalette({ open, onClose, messages, streaming, streamingTe
                   </button>
                 )}
               </div>
-              <div style={{ fontSize: 'var(--font-size-md)', lineHeight: 1.7 }}
-                   className={msg.role === 'assistant' ? 'chat-markdown chat-markdown--lg' : undefined}>
+              <div style={{
+                fontSize: collapsed ? 'var(--font-size-sm)' : 'var(--font-size-md)',
+                lineHeight: collapsed ? 1.5 : 1.7,
+              }}
+                   className={msg.role === 'assistant' ? (collapsed ? 'chat-markdown' : 'chat-markdown chat-markdown--lg') : undefined}>
                 {msg.role === 'assistant'
                   ? renderAssistantContent(msg.content, onSend)
-                  : <span style={{ fontSize: 'var(--font-size-lg)', color: 'var(--text)' }}>
+                  : <span style={{ fontSize: collapsed ? 'var(--font-size-sm)' : 'var(--font-size-lg)', color: 'var(--text)' }}>
                       {msg.content.startsWith('[VOICE] ') ? msg.content.slice(8) : msg.content}
                     </span>}
               </div>
             </div>
           ))}
           {streaming && streamingText && (
-            <div style={{ marginBottom: 'var(--space-xl)' }}>
-              <span className="label label--primary" style={{ marginBottom: 'var(--space-sm)', display: 'inline-block' }}>OUTPUT //</span>
-              <div style={{ fontSize: 'var(--font-size-md)', lineHeight: 1.7 }}
-                   className="chat-markdown chat-markdown--lg">
+            <div style={{ marginBottom: collapsed ? 'var(--space-sm)' : 'var(--space-xl)' }}>
+              <span className="label label--primary" style={{
+                marginBottom: collapsed ? '2px' : 'var(--space-sm)',
+                display: 'inline-block',
+                fontSize: collapsed ? '8px' : undefined,
+              }}>
+                {collapsed ? 'AI' : 'OUTPUT //'}
+              </span>
+              <div style={{
+                fontSize: collapsed ? 'var(--font-size-sm)' : 'var(--font-size-md)',
+                lineHeight: collapsed ? 1.5 : 1.7,
+              }}
+                   className={collapsed ? 'chat-markdown' : 'chat-markdown chat-markdown--lg'}>
                 {renderAssistantContent(streamingText, onSend)}
                 <span style={{ animation: 'blink 0.7s step-end infinite', color: 'var(--primary)', fontSize: '1.1em' }}>█</span>
               </div>
@@ -490,21 +546,21 @@ export function CommandPalette({ open, onClose, messages, streaming, streamingTe
         {/* Actions + Suggested responses */}
         {(actions.length > 0 || suggestions.length > 0) && !streaming && (
           <div style={{
-            padding: 'var(--space-md) var(--space-xl)',
+            padding: collapsed ? 'var(--space-sm) var(--space-md)' : 'var(--space-md) var(--space-xl)',
             borderTop: '1px dashed var(--border-dashed)',
             display: 'flex',
             flexDirection: 'column',
-            gap: 'var(--space-sm)',
+            gap: collapsed ? '4px' : 'var(--space-sm)',
           }}>
             {actions.length > 0 && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-sm)' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: collapsed ? '4px' : 'var(--space-sm)' }}>
                 {actions.map((a, i) => (
                   <button
                     key={i}
                     className="btn"
                     style={{
-                      fontSize: 'var(--font-size-sm)',
-                      padding: '6px 14px',
+                      fontSize: collapsed ? '9px' : 'var(--font-size-sm)',
+                      padding: collapsed ? '4px 8px' : '6px 14px',
                       color: 'var(--bg-raised)',
                       background: 'var(--primary)',
                       borderColor: 'var(--primary)',
@@ -514,26 +570,26 @@ export function CommandPalette({ open, onClose, messages, streaming, streamingTe
                     }}
                     onClick={() => onAction(a)}
                   >
-                    <span style={{
+                    {!collapsed && <span style={{
                       fontWeight: 700,
                       fontSize: '10px',
                       opacity: 0.7,
                       fontFamily: 'var(--font-mono)',
-                    }}>{ACTION_ICONS[a.type] || '>'}</span>
+                    }}>{ACTION_ICONS[a.type] || '>'}</span>}
                     {a.label}
                   </button>
                 ))}
               </div>
             )}
             {suggestions.length > 0 && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-sm)' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: collapsed ? '4px' : 'var(--space-sm)' }}>
                 {suggestions.map((s, i) => (
                   <button
                     key={i}
                     className="btn"
                     style={{
-                      fontSize: 'var(--font-size-sm)',
-                      padding: '6px 14px',
+                      fontSize: collapsed ? '9px' : 'var(--font-size-sm)',
+                      padding: collapsed ? '4px 8px' : '6px 14px',
                       color: 'var(--primary)',
                       borderColor: 'var(--primary-dim)',
                     }}
@@ -551,17 +607,22 @@ export function CommandPalette({ open, onClose, messages, streaming, streamingTe
         <form onSubmit={handleSubmit} style={{
           display: 'flex',
           alignItems: 'center',
-          padding: 'var(--space-md) var(--space-xl)',
+          padding: collapsed ? 'var(--space-sm) var(--space-md)' : 'var(--space-md) var(--space-xl)',
           gap: 'var(--space-sm)',
           borderTop: '1px dashed var(--border-dashed)',
           background: 'var(--bg)',
         }}>
-          <span style={{ color: 'var(--primary)', fontWeight: 600, fontSize: 'var(--font-size-xl)' }}>&gt;</span>
+          <span style={{ color: 'var(--primary)', fontWeight: 600, fontSize: collapsed ? 'var(--font-size-md)' : 'var(--font-size-xl)' }}>&gt;</span>
           <input
             ref={inputRef}
             className="input"
-            style={{ border: 'none', background: 'transparent', flex: 1, fontSize: 'var(--font-size-lg)' }}
-            placeholder={messages.length === 0 ? 'ASK_ABOUT_YOUR_GENOME...' : 'FOLLOW_UP...'}
+            style={{
+              border: 'none',
+              background: 'transparent',
+              flex: 1,
+              fontSize: collapsed ? 'var(--font-size-sm)' : 'var(--font-size-lg)',
+            }}
+            placeholder={collapsed ? 'Follow up...' : (messages.length === 0 ? 'ASK_ABOUT_YOUR_GENOME...' : 'FOLLOW_UP...')}
             value={input}
             onChange={e => setInput(e.target.value)}
             disabled={streaming}

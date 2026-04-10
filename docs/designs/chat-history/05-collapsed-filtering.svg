@@ -1,0 +1,212 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="560" viewBox="0 0 960 560">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&amp;display=swap');
+      text { font-family: 'IBM Plex Mono', monospace; }
+    </style>
+  </defs>
+
+  <!-- Main app background (visible when palette is collapsed) -->
+  <rect width="960" height="560" rx="4" fill="#e8e4dc"/>
+
+  <!-- App header -->
+  <rect x="0" y="0" width="960" height="40" fill="#e8e4dc"/>
+  <line x1="0" y1="40" x2="960" y2="40" stroke="#c4c0b8" stroke-width="1"/>
+  <text x="16" y="26" font-size="13" font-weight="600" letter-spacing="0.15em" fill="#c4724e">GENOME_TOOLKIT</text>
+  <text x="196" y="26" font-size="9" font-weight="400" letter-spacing="0.1em" fill="#7a7a76">3,412,847 VARIANTS</text>
+
+  <!-- Nav buttons -->
+  <rect x="380" y="8" width="80" height="24" rx="3" fill="var(--bg-inset)" stroke="#5b7ea1" stroke-width="1"/>
+  <text x="392" y="24" font-size="8" font-weight="500" letter-spacing="0.1em" fill="#5b7ea1">SNP_BROWSER</text>
+
+  <rect x="468" y="8" width="90" height="24" rx="3" fill="none" stroke="#c4c0b8" stroke-width="1"/>
+  <text x="478" y="24" font-size="8" font-weight="400" letter-spacing="0.1em" fill="#7a7a76">MENTAL_HEALTH</text>
+
+  <rect x="566" y="8" width="76" height="24" rx="3" fill="none" stroke="#c4c0b8" stroke-width="1"/>
+  <text x="576" y="24" font-size="8" font-weight="400" letter-spacing="0.1em" fill="#7a7a76">PGX_/_DRUGS</text>
+
+  <!-- Filter panel area (simplified) -->
+  <rect x="0" y="40" width="690" height="36" fill="#f0ece5"/>
+  <line x1="0" y1="76" x2="690" y2="76" stroke="#c4c0b8" stroke-width="0.5"/>
+  <text x="16" y="63" font-size="9" font-weight="500" letter-spacing="0.1em" fill="#7a7a76">FILTERS:</text>
+  <rect x="80" y="48" width="100" height="22" rx="2" fill="#e8e4dc" stroke="#5b7ea1" stroke-width="1"/>
+  <text x="88" y="63" font-size="9" font-weight="400" fill="#5b7ea1">gene: CYP2D6</text>
+  <rect x="188" y="48" width="120" height="22" rx="2" fill="#e8e4dc" stroke="#5b7ea1" stroke-width="1"/>
+  <text x="196" y="63" font-size="9" font-weight="400" fill="#5b7ea1">clinical: true</text>
+
+  <!-- Agent filtering indicator -->
+  <rect x="440" y="48" width="180" height="22" rx="2" fill="none" stroke="#c4724e" stroke-width="1" stroke-dasharray="4,2"/>
+  <circle cx="452" cy="59" r="4" fill="#c4724e" opacity="0.7">
+    <animate attributeName="opacity" values="0.3;1;0.3" dur="1.5s" repeatCount="indefinite"/>
+  </circle>
+  <text x="462" y="63" font-size="8" font-weight="500" letter-spacing="0.1em" fill="#c4724e">AI FILTERING ACTIVE</text>
+
+  <!-- SNP Table (visible behind collapsed palette) -->
+  <!-- Table header -->
+  <rect x="0" y="76" width="690" height="28" fill="#dedad2"/>
+  <text x="16" y="94" font-size="9" font-weight="600" letter-spacing="0.1em" fill="#5e5e5a">RSID</text>
+  <text x="120" y="94" font-size="9" font-weight="600" letter-spacing="0.1em" fill="#5e5e5a">CHR</text>
+  <text x="168" y="94" font-size="9" font-weight="600" letter-spacing="0.1em" fill="#5e5e5a">GENE</text>
+  <text x="260" y="94" font-size="9" font-weight="600" letter-spacing="0.1em" fill="#5e5e5a">GENOTYPE</text>
+  <text x="360" y="94" font-size="9" font-weight="600" letter-spacing="0.1em" fill="#5e5e5a">SIGNIFICANCE</text>
+  <text x="510" y="94" font-size="9" font-weight="600" letter-spacing="0.1em" fill="#5e5e5a">CONDITION</text>
+
+  <!-- Table rows - highlighted as "just filtered" -->
+  <rect x="0" y="104" width="690" height="28" fill="#f0ece5"/>
+  <rect x="0" y="104" width="3" height="28" fill="#5b7ea1"/>
+  <text x="16" y="122" font-size="10" font-weight="400" fill="#3a3a38">rs3892097</text>
+  <text x="120" y="122" font-size="10" fill="#5e5e5a">22</text>
+  <text x="168" y="122" font-size="10" font-weight="500" fill="#5b7ea1">CYP2D6</text>
+  <text x="260" y="122" font-size="10" font-weight="500" fill="#c4724e">CT</text>
+  <text x="360" y="122" font-size="10" fill="#c4524e">Pathogenic</text>
+  <text x="510" y="122" font-size="9" fill="#5e5e5a">Drug metabolism</text>
+
+  <rect x="0" y="132" width="690" height="28" fill="#e8e4dc"/>
+  <rect x="0" y="132" width="3" height="28" fill="#5b7ea1"/>
+  <text x="16" y="150" font-size="10" font-weight="400" fill="#3a3a38">rs16947</text>
+  <text x="120" y="150" font-size="10" fill="#5e5e5a">22</text>
+  <text x="168" y="150" font-size="10" font-weight="500" fill="#5b7ea1">CYP2D6</text>
+  <text x="260" y="150" font-size="10" font-weight="500" fill="#c4724e">AG</text>
+  <text x="360" y="150" font-size="10" fill="#956a2a">Likely path.</text>
+  <text x="510" y="150" font-size="9" fill="#5e5e5a">Drug metabolism</text>
+
+  <rect x="0" y="160" width="690" height="28" fill="#f0ece5"/>
+  <rect x="0" y="160" width="3" height="28" fill="#5b7ea1"/>
+  <text x="16" y="178" font-size="10" font-weight="400" fill="#3a3a38">rs1065852</text>
+  <text x="120" y="178" font-size="10" fill="#5e5e5a">22</text>
+  <text x="168" y="178" font-size="10" font-weight="500" fill="#5b7ea1">CYP2D6</text>
+  <text x="260" y="178" font-size="10" font-weight="500" fill="#3a3a38">CC</text>
+  <text x="360" y="178" font-size="10" fill="#956a2a">Likely path.</text>
+  <text x="510" y="178" font-size="9" fill="#5e5e5a">Drug response</text>
+
+  <rect x="0" y="188" width="690" height="28" fill="#e8e4dc"/>
+  <text x="16" y="206" font-size="10" font-weight="400" fill="#3a3a38">rs28371706</text>
+  <text x="120" y="206" font-size="10" fill="#5e5e5a">22</text>
+  <text x="168" y="206" font-size="10" font-weight="500" fill="#5b7ea1">CYP2D6</text>
+  <text x="260" y="206" font-size="10" font-weight="500" fill="#3a3a38">CC</text>
+  <text x="360" y="206" font-size="10" fill="#7a7a76">Benign</text>
+  <text x="510" y="206" font-size="9" fill="#5e5e5a">Drug metabolism</text>
+
+  <rect x="0" y="216" width="690" height="28" fill="#f0ece5"/>
+  <text x="16" y="234" font-size="10" font-weight="400" fill="#3a3a38">rs5030655</text>
+  <text x="120" y="234" font-size="10" fill="#5e5e5a">22</text>
+  <text x="168" y="234" font-size="10" font-weight="500" fill="#5b7ea1">CYP2D6</text>
+  <text x="260" y="234" font-size="10" font-weight="500" fill="#3a3a38">AA</text>
+  <text x="360" y="234" font-size="10" fill="#7a7a76">Uncertain</text>
+  <text x="510" y="234" font-size="9" fill="#5e5e5a">Drug metabolism</text>
+
+  <!-- More faded rows -->
+  <rect x="0" y="244" width="690" height="28" fill="#e8e4dc"/>
+  <text x="16" y="262" font-size="10" font-weight="400" fill="#9a968e">rs28371725</text>
+  <text x="120" y="262" font-size="10" fill="#9a968e">22</text>
+  <text x="168" y="262" font-size="10" fill="#9a968e">CYP2D6</text>
+  <text x="260" y="262" font-size="10" fill="#9a968e">GG</text>
+  <text x="360" y="262" font-size="10" fill="#9a968e">Benign</text>
+  <text x="510" y="262" font-size="9" fill="#9a968e">Drug metabolism</text>
+
+  <!-- Table footer -->
+  <rect x="0" y="272" width="690" height="24" fill="#dedad2"/>
+  <text x="16" y="288" font-size="8" font-weight="400" letter-spacing="0.1em" fill="#7a7a76">SHOWING 6 OF 23 CYP2D6 VARIANTS</text>
+  <text x="500" y="288" font-size="8" fill="#7a7a76">PAGE 1 / 1</text>
+
+  <!-- ============================================ -->
+  <!-- COLLAPSED PALETTE (right sidebar) -->
+  <!-- ============================================ -->
+  <rect x="690" y="0" width="270" height="560" fill="#f0ece5" stroke="#5b7ea1" stroke-width="1.5"/>
+
+  <!-- Expand handle -->
+  <rect x="690" y="0" width="20" height="560" fill="#e8e4dc" stroke="#5b7ea1" stroke-width="0" cursor="pointer"/>
+  <rect x="690" y="0" width="1.5" height="560" fill="#5b7ea1"/>
+
+  <!-- Expand arrow -->
+  <text x="697" y="284" font-size="14" fill="#5b7ea1" font-weight="300">&lt;</text>
+
+  <!-- Collapsed header -->
+  <rect x="690" y="0" width="270" height="40" fill="#e8e4dc"/>
+  <line x1="690" y1="40" x2="960" y2="40" stroke="#c4c0b8" stroke-width="1"/>
+
+  <text x="718" y="18" font-size="9" font-weight="600" letter-spacing="0.15em" fill="#c4724e">GENOME_AI</text>
+  <text x="718" y="32" font-size="8" font-weight="400" letter-spacing="0.1em" fill="#7a7a76">COLLAPSED</text>
+
+  <!-- Expand button -->
+  <rect x="900" y="8" width="50" height="24" rx="3" fill="none" stroke="#5b7ea1" stroke-width="1"/>
+  <text x="908" y="24" font-size="8" font-weight="500" letter-spacing="0.05em" fill="#5b7ea1">EXPAND</text>
+
+  <!-- Streaming status -->
+  <rect x="710" y="50" width="240" height="28" rx="3" fill="#e8e4dc" stroke="#c4724e" stroke-width="0.5"/>
+  <circle cx="722" cy="64" r="4" fill="#c4724e" opacity="0.8">
+    <animate attributeName="opacity" values="0.3;1;0.3" dur="1.2s" repeatCount="indefinite"/>
+  </circle>
+  <text x="732" y="68" font-size="9" font-weight="500" letter-spacing="0.1em" fill="#c4724e">FILTERING...</text>
+
+  <!-- Compact conversation -->
+  <text x="718" y="102" font-size="8" font-weight="600" letter-spacing="0.1em" fill="#7a7a76">CONVERSATION</text>
+
+  <!-- User message (compact) -->
+  <rect x="710" y="110" width="240" height="44" rx="3" fill="#e8e4dc"/>
+  <text x="718" y="124" font-size="8" font-weight="500" fill="#c4724e">YOU</text>
+  <text x="718" y="138" font-size="9" font-weight="400" fill="#3a3a38">Show me CYP2D6 variants</text>
+  <text x="718" y="150" font-size="9" font-weight="400" fill="#3a3a38">related to drug metabolism</text>
+
+  <!-- Agent response (compact, streaming) -->
+  <rect x="710" y="160" width="240" height="120" rx="3" fill="#f0ece5" stroke="#c4c0b8" stroke-width="0.5"/>
+  <text x="718" y="176" font-size="8" font-weight="500" fill="#5b7ea1">AI</text>
+  <text x="718" y="192" font-size="9" font-weight="400" fill="#3a3a38">I've filtered the table to</text>
+  <text x="718" y="206" font-size="9" font-weight="400" fill="#3a3a38">show your CYP2D6 variants.</text>
+  <text x="718" y="222" font-size="9" font-weight="400" fill="#3a3a38">Found 23 variants, 3 are</text>
+  <text x="718" y="236" font-size="9" font-weight="400" fill="#3a3a38">clinically significant.</text>
+  <text x="718" y="252" font-size="9" font-weight="600" fill="#c4724e">Your *4/*4 genotype makes</text>
+  <text x="718" y="266" font-size="9" font-weight="600" fill="#c4724e">you a poor metabolizer.</text>
+
+  <!-- Streaming cursor -->
+  <rect x="844" y="258" width="6" height="12" fill="#5b7ea1" opacity="0.8">
+    <animate attributeName="opacity" values="0;1;0" dur="1s" repeatCount="indefinite"/>
+  </rect>
+
+  <!-- Action chips (compact) -->
+  <text x="718" y="296" font-size="8" font-weight="600" letter-spacing="0.1em" fill="#7a7a76">ACTIONS</text>
+
+  <rect x="710" y="302" width="240" height="22" rx="2" fill="none" stroke="#5b7ea1" stroke-width="0.5"/>
+  <text x="718" y="317" font-size="8" font-weight="400" fill="#5b7ea1">Show drug interactions</text>
+
+  <rect x="710" y="328" width="240" height="22" rx="2" fill="none" stroke="#5b7ea1" stroke-width="0.5"/>
+  <text x="718" y="343" font-size="8" font-weight="400" fill="#5b7ea1">Add to checklist</text>
+
+  <rect x="710" y="354" width="240" height="22" rx="2" fill="none" stroke="#c4c0b8" stroke-width="0.5"/>
+  <text x="718" y="369" font-size="8" font-weight="400" fill="#5e5e5a">Explain significance levels</text>
+
+  <!-- Divider -->
+  <line x1="710" y1="390" x2="950" y2="390" stroke="#b8b4ac" stroke-width="0.5" stroke-dasharray="3,3"/>
+
+  <!-- Filter summary -->
+  <text x="718" y="410" font-size="8" font-weight="600" letter-spacing="0.1em" fill="#7a7a76">APPLIED FILTERS</text>
+
+  <rect x="710" y="418" width="110" height="18" rx="2" fill="#e8e4dc" stroke="#5b7ea1" stroke-width="0.5"/>
+  <text x="718" y="431" font-size="8" font-weight="400" fill="#5b7ea1">gene: CYP2D6</text>
+
+  <rect x="826" y="418" width="100" height="18" rx="2" fill="#e8e4dc" stroke="#5b7ea1" stroke-width="0.5"/>
+  <text x="834" y="431" font-size="8" font-weight="400" fill="#5b7ea1">clinical: true</text>
+
+  <rect x="710" y="440" width="120" height="18" rx="2" fill="#e8e4dc" stroke="#c4724e" stroke-width="0.5"/>
+  <text x="718" y="453" font-size="8" font-weight="400" fill="#c4724e">significance: *</text>
+
+  <!-- Input bar (compact) -->
+  <line x1="690" y1="510" x2="960" y2="510" stroke="#c4c0b8" stroke-width="1"/>
+  <rect x="690" y="510" width="270" height="50" fill="#e8e4dc"/>
+
+  <text x="718" y="538" font-size="10" fill="#5b7ea1">></text>
+  <rect x="732" y="522" width="186" height="24" rx="2" fill="#f0ece5" stroke="#c4c0b8" stroke-width="0.5"/>
+  <text x="740" y="538" font-size="9" font-weight="400" fill="#7a7a76">Follow up...</text>
+
+  <rect x="924" y="522" width="26" height="24" rx="2" fill="none" stroke="#c4c0b8" stroke-width="0.5"/>
+  <text x="931" y="538" font-size="9" fill="#7a7a76">^</text>
+
+  <!-- Footer -->
+  <rect x="0" y="540" width="690" height="20" fill="#e8e4dc"/>
+  <line x1="0" y1="540" x2="690" y2="540" stroke="#b8b4ac" stroke-width="0.5" stroke-dasharray="3,3"/>
+  <text x="16" y="554" font-size="8" font-weight="400" letter-spacing="0.1em" fill="#7a7a76">SIGNAL_PHASE: AI_PROCESSING</text>
+  <text x="500" y="554" font-size="8" fill="#7a7a76">GENOME_TOOLKIT // V0.1.0</text>
+
+  <!-- Annotation -->
+  <text x="345" y="320" font-size="8" font-weight="400" fill="#9a968e" text-anchor="middle">05 / COLLAPSED MODE — TABLE VISIBLE WHILE AI FILTERS</text>
+</svg>

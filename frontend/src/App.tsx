@@ -41,6 +41,7 @@ function App() {
   const starterPrompts = useStarterPrompts(view)
   const [checklistOpen, setChecklistOpen] = useState(false)
   const [checklistHighlight, setChecklistHighlight] = useState(false)
+  const [paletteCollapsed, setPaletteCollapsed] = useState(false)
 
   const navigate = useCallback((v: 'snps' | 'mental-health' | 'pgx' | 'addiction' | 'risk') => {
     setView(v)
@@ -108,6 +109,8 @@ function App() {
       }
 
       updateFilters(update)
+      // Auto-collapse palette so user can see the table being filtered
+      if (cmdkOpen) setPaletteCollapsed(true)
     } else if (action.action === 'speak') {
       const p = action.params as unknown as { text: string; emotion?: string }
       voice.speak(p.text, p.emotion)
@@ -209,12 +212,23 @@ function App() {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault()
-        setCmdkOpen(prev => !prev)
+        setCmdkOpen(prev => {
+          if (prev && paletteCollapsed) {
+            // If collapsed, Cmd+K expands back
+            setPaletteCollapsed(false)
+            return true
+          }
+          return !prev
+        })
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === '\\') {
+        e.preventDefault()
+        if (cmdkOpen) setPaletteCollapsed(prev => !prev)
       }
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [])
+  }, [cmdkOpen, paletteCollapsed])
 
   const selectVariant = useCallback((snp: SNP | null) => {
     setSelectedSNP(snp)
@@ -515,7 +529,7 @@ function App() {
       {/* Command Palette */}
       <CommandPalette
         open={cmdkOpen}
-        onClose={() => { setCmdkOpen(false); setCmdkInitialQuery(undefined) }}
+        onClose={() => { setCmdkOpen(false); setCmdkInitialQuery(undefined); setPaletteCollapsed(false) }}
         initialQuery={cmdkInitialQuery}
         messages={messages}
         streaming={streaming}
@@ -536,6 +550,8 @@ function App() {
         starterPrompts={starterPrompts.prompts}
         starterCapabilities={starterPrompts.capabilities}
         starterExplore={starterPrompts.explore}
+        collapsed={paletteCollapsed}
+        onToggleCollapse={() => setPaletteCollapsed(prev => !prev)}
       />
 
       {/* Checklist Sidebar */}
