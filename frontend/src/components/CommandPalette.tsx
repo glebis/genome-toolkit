@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import type { ChatMessage, AgentAction } from '../hooks/useChat'
 import type { StarterPrompt } from '../hooks/useStarterPrompts'
+import type { SessionSummary } from '../hooks/useSessionHistory'
 
 /* ── Vault link / gene name helpers ── */
 
@@ -183,6 +184,13 @@ interface Props {
   starterExplore?: string[]
   collapsed?: boolean
   onToggleCollapse?: () => void
+  // Session history
+  sessions?: SessionSummary[]
+  sessionsLoading?: boolean
+  currentSessionId?: string | null
+  onSelectSession?: (id: string) => void
+  onNewSession?: () => void
+  onDeleteSession?: (id: string) => void
 }
 
 function messagesToMarkdown(messages: ChatMessage[]): string {
@@ -210,16 +218,165 @@ function downloadMarkdown(text: string, filename: string) {
   URL.revokeObjectURL(url)
 }
 
-export function CommandPalette({ open, onClose, messages, streaming, streamingText, status, suggestions, actions, onSend, onAction, initialQuery, voiceSupported, voiceListening, onStartListening, onStopListening, starterPrompts, starterCapabilities, starterExplore, collapsed, onToggleCollapse }: Props) {
+const VIEW_LABELS: Record<string, string> = {
+  'risk': 'RISK',
+  'mental-health': 'MENTAL_HEALTH',
+  'pgx': 'PGX',
+  'addiction': 'ADDICTION',
+  'snps': 'SNP_BROWSER',
+}
+
+function SessionList({ sessions, currentSessionId, onSelect, onDelete }: {
+  sessions: SessionSummary[]
+  currentSessionId?: string | null
+  onSelect: (id: string) => void
+  onDelete: (id: string) => void
+}) {
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const yesterday = new Date(today.getTime() - 86400000)
+  const weekAgo = new Date(today.getTime() - 7 * 86400000)
+
+  const groups: [string, SessionSummary[]][] = []
+  const buckets: Record<string, SessionSummary[]> = {}
+
+  for (const s of sessions) {
+    const date = new Date(s.last_active)
+    let key: string
+    if (date >= today) key = 'TODAY'
+    else if (date >= yesterday) key = 'YESTERDAY'
+    else if (date >= weekAgo) key = 'THIS WEEK'
+    else key = 'OLDER'
+    if (!buckets[key]) buckets[key] = []
+    buckets[key].push(s)
+  }
+
+  for (const key of ['TODAY', 'YESTERDAY', 'THIS WEEK', 'OLDER']) {
+    if (buckets[key]?.length) groups.push([key, buckets[key]])
+  }
+
+  if (sessions.length === 0) {
+    return (
+      <div style={{ padding: 'var(--space-xl)', textAlign: 'center', color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)', fontSize: 'var(--font-size-sm)' }}>
+        No conversation history yet.
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ padding: 'var(--space-md) var(--space-xl)' }}>
+      {groups.map(([label, items]) => (
+        <div key={label}>
+          <div style={{
+            fontSize: 'var(--font-size-xs)',
+            fontWeight: 600,
+            letterSpacing: '0.2em',
+            color: 'var(--accent)',
+            margin: '14px 0 6px',
+          }}>
+            {label}
+          </div>
+          {items.map(s => {
+            const isCurrent = s.id === currentSessionId
+            const time = new Date(s.last_active)
+            const timeStr = time >= today
+              ? time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
+              : time.toLocaleDateString([], { month: 'short', day: 'numeric' })
+            return (
+              <div
+                key={s.id}
+                onClick={() => onSelect(s.id)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 8,
+                  padding: '8px 10px',
+                  borderRadius: 4,
+                  cursor: 'pointer',
+                  background: isCurrent ? 'var(--bg-inset)' : 'transparent',
+                  borderLeft: isCurrent ? '3px solid var(--primary)' : '3px solid transparent',
+                  marginBottom: 2,
+                  position: 'relative',
+                }}
+                onMouseEnter={e => {
+                  if (!isCurrent) e.currentTarget.style.background = 'var(--bg-inset)'
+                  const del = e.currentTarget.querySelector('[data-delete]') as HTMLElement
+                  if (del) del.style.opacity = '1'
+                }}
+                onMouseLeave={e => {
+                  if (!isCurrent) e.currentTarget.style.background = 'transparent'
+                  const del = e.currentTarget.querySelector('[data-delete]') as HTMLElement
+                  if (del) del.style.opacity = '0'
+                }}
+              >
+                <span style={{ color: isCurrent ? 'var(--primary)' : 'var(--text-tertiary)', fontSize: 'var(--font-size-sm)', marginTop: 1 }}>&gt;</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 'var(--font-size-sm)', fontWeight: isCurrent ? 600 : 400, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {s.title || s.first_message || 'Untitled'}
+                  </div>
+                  {s.first_message && s.title && (
+                    <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 1 }}>
+                      &quot;{s.first_message.slice(0, 60)}&quot;
+                    </div>
+                  )}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                  {s.view_context && (
+                    <span style={{
+                      fontSize: '7px', fontWeight: 500, letterSpacing: '0.1em',
+                      border: '1px solid var(--border)', borderRadius: 2,
+                      padding: '1px 4px', color: 'var(--text-tertiary)',
+                      textTransform: 'uppercase',
+                    }}>
+                      {VIEW_LABELS[s.view_context] || s.view_context}
+                    </span>
+                  )}
+                  <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)', whiteSpace: 'nowrap' }}>{timeStr}</span>
+                </div>
+                <span
+                  data-delete=""
+                  onClick={e => { e.stopPropagation(); onDelete(s.id) }}
+                  style={{
+                    position: 'absolute', right: 4, top: 4,
+                    fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)',
+                    cursor: 'pointer', opacity: 0, transition: 'opacity 0.1s',
+                    border: '1px solid var(--border)', borderRadius: 3,
+                    padding: '0 4px', lineHeight: '16px',
+                  }}
+                >
+                  x
+                </span>
+              </div>
+            )
+          })}
+        </div>
+      ))}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 8, marginTop: 16,
+        justifyContent: 'center', color: 'var(--text-tertiary)',
+        fontSize: 'var(--font-size-xs)',
+      }}>
+        <span style={{ flex: 1, borderTop: '1px dashed var(--border-dashed)' }} />
+        <span>END OF HISTORY ({sessions.length} threads)</span>
+        <span style={{ flex: 1, borderTop: '1px dashed var(--border-dashed)' }} />
+      </div>
+    </div>
+  )
+}
+
+export function CommandPalette({ open, onClose, messages, streaming, streamingText, status, suggestions, actions, onSend, onAction, initialQuery, voiceSupported, voiceListening, onStartListening, onStopListening, starterPrompts, starterCapabilities, starterExplore, collapsed, onToggleCollapse, sessions, sessionsLoading, currentSessionId, onSelectSession, onNewSession, onDeleteSession }: Props) {
   const [input, setInput] = useState('')
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const [showHistory, setShowHistory] = useState(false)
 
   useEffect(() => {
     if (open) {
       if (initialQuery) setInput(initialQuery)
       setTimeout(() => inputRef.current?.focus(), 50)
+    } else {
+      setShowHistory(false)
     }
   }, [open, initialQuery])
 
@@ -300,7 +457,7 @@ export function CommandPalette({ open, onClose, messages, streaming, streamingTe
             {collapsed ? 'GENOME_AI' : 'GENOME_AI // COMMAND_INTERFACE'}
           </span>
           <div style={{ display: 'flex', gap: 'var(--space-sm)', alignItems: 'center' }}>
-            {!collapsed && messages.length > 0 && (
+            {!showHistory && !collapsed && messages.length > 0 && (
               <>
                 <button
                   className="btn"
@@ -318,6 +475,29 @@ export function CommandPalette({ open, onClose, messages, streaming, streamingTe
                 </button>
               </>
             )}
+            {onNewSession && !collapsed && (
+              <button
+                className="btn"
+                style={{ fontSize: '9px', padding: '2px 6px', borderColor: 'var(--accent)', color: 'var(--accent)' }}
+                onClick={() => { onNewSession(); setShowHistory(false) }}
+              >
+                +NEW
+              </button>
+            )}
+            {sessions && !collapsed && (
+              <button
+                className="btn"
+                style={{
+                  fontSize: '10px', padding: '2px 8px',
+                  background: showHistory ? 'var(--primary)' : 'transparent',
+                  color: showHistory ? 'var(--bg-raised)' : 'var(--text-secondary)',
+                  borderColor: showHistory ? 'var(--primary)' : 'var(--border)',
+                }}
+                onClick={() => setShowHistory(prev => !prev)}
+              >
+                H
+              </button>
+            )}
             {onToggleCollapse && (
               <button
                 className="btn"
@@ -333,7 +513,7 @@ export function CommandPalette({ open, onClose, messages, streaming, streamingTe
               style={{ fontSize: '9px', padding: '2px 6px' }}
               onClick={onClose}
             >
-              {collapsed ? 'X' : 'ESC // CLOSE'}
+              {collapsed ? 'X' : 'ESC'}
             </button>
           </div>
         </div>
@@ -370,6 +550,15 @@ export function CommandPalette({ open, onClose, messages, streaming, streamingTe
             padding: collapsed ? 'var(--space-sm) var(--space-md)' : 'var(--space-lg) var(--space-xl)',
           }}
         >
+          {showHistory && sessions ? (
+            <SessionList
+              sessions={sessions}
+              currentSessionId={currentSessionId}
+              onSelect={(id) => { onSelectSession?.(id); setShowHistory(false) }}
+              onDelete={(id) => onDeleteSession?.(id)}
+            />
+          ) : (
+          <>
           {messages.length === 0 && !streaming && !collapsed && (
             <div style={{ padding: 'var(--space-xl)', height: '100%', overflowY: 'auto' }}>
               {starterCapabilities && starterCapabilities.length > 0 && (
@@ -540,6 +729,8 @@ export function CommandPalette({ open, onClose, messages, streaming, streamingTe
                 <span style={{ animation: 'blink 0.7s step-end infinite', color: 'var(--primary)', fontSize: '1.1em' }}>█</span>
               </div>
             </div>
+          )}
+          </>
           )}
         </div>
 
