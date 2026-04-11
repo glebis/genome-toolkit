@@ -125,5 +125,47 @@ export function useChat(onUIAction?: (action: UIAction) => void) {
     abortRef.current?.abort()
   }, [])
 
-  return { messages, streaming, streamingText, status, suggestions, actions, send, cancel, sessionId }
+  const switchSession = useCallback(async (newSessionId: string) => {
+    if (streaming) return
+    try {
+      const res = await fetch(`/api/sessions/${newSessionId}`)
+      if (!res.ok) return
+      const s = await res.json()
+      setSessionId(s.id)
+      localStorage.setItem('genome_session_id', s.id)
+      setMessages(
+        (s.messages || []).map((m: any) => ({
+          role: m.role as 'user' | 'assistant',
+          content: m.content,
+        }))
+      )
+      setSuggestions([])
+      setActions([])
+      setStreamingText('')
+      setStatus('')
+    } catch {
+      // ignore
+    }
+  }, [streaming])
+
+  const newSession = useCallback(async (): Promise<string | null> => {
+    if (streaming) return null
+    try {
+      const res = await fetch('/api/sessions', { method: 'POST' })
+      if (!res.ok) return null
+      const s = await res.json()
+      setSessionId(s.id)
+      localStorage.setItem('genome_session_id', s.id)
+      setMessages([])
+      setSuggestions([])
+      setActions([])
+      setStreamingText('')
+      setStatus('')
+      return s.id
+    } catch {
+      return null
+    }
+  }, [streaming])
+
+  return { messages, streaming, streamingText, status, suggestions, actions, send, cancel, sessionId, switchSession, newSession }
 }
