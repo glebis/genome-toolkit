@@ -30,7 +30,7 @@ git clone https://github.com/glebis/genome-toolkit.git
 cd genome-toolkit
 
 # Install Python dependencies
-pip install -e .
+pip install -e ".[web]"
 
 # Interactive setup (API keys, vault path, TTS, visible sections)
 python scripts/setup.py

@@ -8,7 +8,7 @@ Personal genomics analysis toolkit: FastAPI backend + React/TypeScript frontend 
 
 ```bash
 # 1. Install dependencies
-pip install -e .
+pip install -e ".[web]"
 cd frontend && npm install && cd ..
 
 # 2. Non-interactive setup (reads API keys from env vars)

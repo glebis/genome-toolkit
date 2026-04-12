@@ -29,10 +29,17 @@ build/
 # Obsidian internals (user-specific)
 vault-template/.obsidian/workspace.json
 vault-template/.obsidian/graph.json
+vault-template/.obsidian/community-plugins.json
 
 # Logs
 *.log
 vault-template/data/cron.log
+
+# Internal research materials
+research/
+
+# Beads (local agent task tracker)
+.beads/
 
 # Enzyme (Obsidian plugin cache)
 .enzyme/
