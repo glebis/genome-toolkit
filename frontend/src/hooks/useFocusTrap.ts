@@ -37,11 +37,11 @@ export function useFocusTrap(
     const container = containerRef.current
     if (!container) return
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        opts?.onEscape?.()
-        return
-      }
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') opts?.onEscape?.()
+    }
+
+    const handleTab = (e: KeyboardEvent) => {
       if (e.key !== 'Tab') return
 
       const focusable = Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE))
@@ -63,11 +63,11 @@ export function useFocusTrap(
       }
     }
 
-    container.addEventListener('keydown', handleKeyDown)
-    window.addEventListener('keydown', handleKeyDown)
+    window.addEventListener('keydown', handleEscape)
+    container.addEventListener('keydown', handleTab)
     return () => {
-      container.removeEventListener('keydown', handleKeyDown)
-      window.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener('keydown', handleEscape)
+      container.removeEventListener('keydown', handleTab)
     }
   }, [isOpen, containerRef, opts?.onEscape])
 }
