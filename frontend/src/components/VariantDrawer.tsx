@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import type { SNP } from '../hooks/useSNPs'
 import { useFocusTrap } from '../hooks/useFocusTrap'
+import { EvidenceComparison } from './EvidenceComparison'
 
 interface VariantDetail extends SNP {
   review_status?: string | null
@@ -269,6 +270,15 @@ export function VariantDrawer({ snp, onClose, onAskAI, onAddToChecklist }: Props
                     )}
                   </tbody>
                 </table>
+                <EvidenceComparison
+                  significance={d.significance}
+                  mvSignificance={(detail as VariantDetail)?.mv_significance ?? null}
+                  alleleFreq={(detail as VariantDetail)?.allele_freq ?? null}
+                  alleleFreqSource={(detail as VariantDetail)?.allele_freq_source ?? null}
+                  disease={d.disease}
+                  reviewStatus={(detail as VariantDetail)?.review_status ?? null}
+                  geneSymbol={d.gene_symbol}
+                />
               </>
             )}
 
