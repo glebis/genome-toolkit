@@ -3,6 +3,16 @@ import os
 import sys
 from pathlib import Path
 
+# WeasyPrint needs Homebrew's GLib/Pango libs on macOS (not in conda's search path).
+# DYLD_FALLBACK_LIBRARY_PATH is respected by the dynamic linker and not stripped by SIP.
+if sys.platform == "darwin":
+    _homebrew_lib = "/opt/homebrew/lib"
+    _existing = os.environ.get("DYLD_FALLBACK_LIBRARY_PATH", "")
+    if _homebrew_lib not in _existing:
+        os.environ["DYLD_FALLBACK_LIBRARY_PATH"] = (
+            f"{_homebrew_lib}:{_existing}" if _existing else _homebrew_lib
+        )
+
 import pytest
 
 # Add scripts/ to path so we can import lib modules
