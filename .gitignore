@@ -49,6 +49,7 @@ data/
 
 # Node
 node_modules/
+coverage/
 
 # Relay / MCP local state
 relay.db
