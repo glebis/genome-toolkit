@@ -21,7 +21,7 @@ jobs:
           cache: pip
 
       - name: Install dependencies
-        run: pip install -e ".[dev,web]"
+        run: pip install -e ".[dev,web,triage]"
 
       - name: Lint with ruff
         run: |
