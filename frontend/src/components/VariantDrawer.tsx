@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { SNP } from '../hooks/useSNPs'
+import { useFocusTrap } from '../hooks/useFocusTrap'
 
 interface VariantDetail extends SNP {
   review_status?: string | null
@@ -149,11 +150,8 @@ export function VariantDrawer({ snp, onClose, onAskAI, onAddToChecklist }: Props
       .catch(() => setLoading(false))
   }, [snp])
 
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [onClose])
+  const drawerRef = useRef<HTMLDivElement>(null)
+  useFocusTrap(drawerRef, !!snp, { onEscape: onClose })
 
   if (!snp) return null
 
@@ -162,6 +160,7 @@ export function VariantDrawer({ snp, onClose, onAskAI, onAddToChecklist }: Props
   return (
     <div
       className="sidebar-drawer"
+      ref={drawerRef}
       style={{
         position: 'fixed',
         top: 0,
