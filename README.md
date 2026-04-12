@@ -120,7 +120,7 @@ cd frontend && npm run dev
 ### Tech Stack
 
 - **Backend**: FastAPI, aiosqlite, Claude Agent SDK, SOPS-encrypted secrets
-- **Frontend**: React 18, TypeScript, Vite, 355 tests (Vitest)
+- **Frontend**: React 18, TypeScript, Vite (Vitest)
 - **Data**: SQLite (genome.db), Obsidian vault, GWAS configs (PGC), PGx configs (CPIC)
 
 ## Skills
@@ -203,7 +203,7 @@ Features:
 - SVG renderings: dashboard, score cards, visit reports
 - Session persistence (SQLite) with approval/deferral history
 - Suggestion engine based on assessment scores + genetic signals
-- 98 tests across domain, application, infrastructure, presentation layers
+- Tests across domain, application, infrastructure, presentation layers
 
 ## Onboarding Modes
 
@@ -307,7 +307,7 @@ pip install -e ".[dev]"
 python -m pytest tests/ -v
 ```
 
-98 tests covering providers, vault parser, database migrations, goal engine, and multi-agent consensus logic.
+Tests covering providers, vault parser, database migrations, goal engine, and multi-agent consensus logic.
 
 ### Project Structure
 
@@ -322,12 +322,12 @@ genome-toolkit/
     src/
       components/    # UI components (common/, mental-health/, pgx/, addiction/, risk/)
       hooks/         # Data hooks (useSNPs, useChat, usePGxData, useStarterPrompts, ...)
-      __tests__/     # 355 tests (Vitest)
+      __tests__/     # Vitest tests
   config/            # YAML/JSON configuration (goals, evidence tiers, GWAS, PGx drugs)
   scripts/           # Python pipeline (import, vault_query, migrations)
   skills/            # Claude Code skill definitions
   vault-template/    # Obsidian vault starter
-  tests/             # Python test suite (98 tests)
+  tests/             # Python test suite (pytest)
 ```
 
 ### Architecture
@@ -339,31 +339,6 @@ The toolkit follows a **separation of concerns**:
 - **Knowledge layer**: Obsidian markdown with Dataview queries (`vault-template/`)
 - **Validation layer**: Multi-agent consensus pipeline (`scripts/lib/multi_agent.py`)
 - **Skill layer**: Claude Code skills that orchestrate everything (`skills/`)
-
-### Roadmap
-
-**Done:**
-- [x] Web application with 5 interactive views (SNPs, Mental Health, PGx, Addiction, Risk)
-- [x] Ask AI chat with Claude Agent SDK + 11 MCP tools
-- [x] Personalized starter prompts with backend-driven data + caching
-- [x] Voice dictation and TTS
-- [x] GWAS integration (PGC data for 6 psychiatric traits)
-- [x] Checklist system with AI-suggested actions
-- [x] Common component library (HeroHeader, StatBox, ExportBar, etc.)
-- [x] Collapsible AI palette (auto-collapse on table filtering, Cmd+\\)
-- [x] 306 frontend tests
-- [x] Analysis scripts (PRS, enrichment, PubMed monitor, gap audit)
-- [x] Skill reference files (gene templates, genetic predictions)
-- [x] Gzip support for all DTC parsers
-- [x] Integration tests for genome_init.py end-to-end
-
-- [x] Wire provider_formats.yaml into detection logic ([#2](https://github.com/glebis/genome-toolkit/issues/2))
-- [x] Validator wrappers for multi-agent consensus ([#3](https://github.com/glebis/genome-toolkit/issues/3))
-- [x] warn_on and tolerance thresholds in consensus ([#4](https://github.com/glebis/genome-toolkit/issues/4))
-- [x] Normalize genes.rsids to JSON arrays ([#5](https://github.com/glebis/genome-toolkit/issues/5))
-- [x] GRCh38 liftover support via pyliftover ([#6](https://github.com/glebis/genome-toolkit/issues/6))
-- [x] Smoke tests for skill-referenced files ([#7](https://github.com/glebis/genome-toolkit/issues/7))
-- [x] Vault migration script with dry-run mode ([#8](https://github.com/glebis/genome-toolkit/issues/8))
 
 ## Disclaimer
 
