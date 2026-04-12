@@ -451,3 +451,14 @@ body {
   /* Links show URL */
   a[href]::after { content: " (" attr(href) ")"; font-size: 9pt; color: #666; }
 }
+
+/* Keyboard focus indicators (#19) */
+table tbody tr:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+  background: var(--bg-inset) !important;
+}
+
+table tbody tr:focus:not(:focus-visible) {
+  outline: none;
+}
