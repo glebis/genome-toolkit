@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useVaultGenes } from './useVaultGenes'
 import type { VaultGene } from './useVaultGenes'
-import type { RiskStatus, MortalityCause } from '../components/risk/RiskLandscape'
+import type { RiskStatus, MortalityCause, TimelineFrequency, TimelineItem, TimelineGroup, ConfidenceScore } from '../components/risk/RiskLandscape'
 
 function mapEvidenceTier(tier: string): string {
   const labels: Record<string, string> = {
@@ -100,6 +100,90 @@ function computePersonalBarPct(matchedGenes: VaultGene[], populationBarPct: numb
   return Math.min(Math.round(populationBarPct * factor), 100)
 }
 
+function computeConfidence(matchedGenes: VaultGene[]): ConfidenceScore {
+  const n = matchedGenes.length
+  if (n === 0) return { filled: 0, total: 3, tooltip: 'No genes analyzed' }
+
+  const tierValues: Record<string, number> = { E1: 1, E2: 2, E3: 3, E4: 4, E5: 5 }
+  const avgTier = matchedGenes.reduce((sum, g) => sum + (tierValues[g.evidence_tier] ?? 3), 0) / n
+  const avgLabel = `E${Math.round(avgTier)}`
+
+  let filled = 0
+  if (n >= 3 && avgTier <= 2) filled = 3
+  else if (n >= 2 || avgTier <= 3) filled = 2
+  else if (n >= 1) filled = 1
+
+  return {
+    filled,
+    total: 3,
+    tooltip: `${n} gene${n !== 1 ? 's' : ''} analyzed, avg evidence ${avgLabel}`,
+  }
+}
+
+const FREQUENCY_KEYWORDS: [TimelineFrequency, RegExp][] = [
+  ['quarterly', /quarterly|every 3 months|3-monthly/i],
+  ['biannual', /biannual|every 6 months|twice a year|semi-annual/i],
+  ['annually', /annual|yearly|every year|once a year/i],
+]
+
+function classifyFrequency(text: string): TimelineFrequency {
+  for (const [freq, re] of FREQUENCY_KEYWORDS) {
+    if (re.test(text)) return freq
+  }
+  return 'once'
+}
+
+const TIMELINE_META: Record<TimelineFrequency, { label: string; color: string; order: number }> = {
+  quarterly: { label: 'QUARTERLY', color: 'var(--sig-risk)', order: 0 },
+  biannual: { label: 'BIANNUAL', color: 'var(--sig-monitor)', order: 1 },
+  annually: { label: 'ANNUALLY', color: 'var(--sig-benefit)', order: 2 },
+  once: { label: 'ONCE / AS NEEDED', color: 'var(--primary)', order: 3 },
+}
+
+function buildTimeline(
+  configScreenings: ConfigScreening[],
+  vaultActions: { type: string; text: string }[],
+): TimelineGroup[] {
+  const items: TimelineItem[] = []
+
+  for (const s of configScreenings) {
+    items.push({
+      name: s.name,
+      type: s.type === 'consider' || s.type === 'monitor' || s.type === 'discuss' ? s.type : 'consider',
+      frequency: s.frequency as TimelineFrequency,
+      gene: s.gene,
+      source: 'screening',
+    })
+  }
+
+  for (const a of vaultActions) {
+    items.push({
+      name: a.text,
+      type: a.type === 'consider' || a.type === 'monitor' || a.type === 'discuss' ? a.type : 'consider',
+      frequency: classifyFrequency(a.text),
+      source: 'vault',
+    })
+  }
+
+  const groups: TimelineGroup[] = []
+  for (const freq of ['quarterly', 'biannual', 'annually', 'once'] as TimelineFrequency[]) {
+    const freqItems = items.filter(i => i.frequency === freq)
+    if (freqItems.length > 0) {
+      const meta = TIMELINE_META[freq]
+      groups.push({ frequency: freq, label: meta.label, color: meta.color, items: freqItems })
+    }
+  }
+
+  return groups
+}
+
+interface ConfigScreening {
+  name: string
+  frequency: string
+  type: string
+  gene?: string
+}
+
 interface ConfigCause {
   rank: number
   cause: string
@@ -107,6 +191,7 @@ interface ConfigCause {
   populationBarPct: number
   relevant_genes: string[]
   description?: string
+  screenings?: ConfigScreening[]
 }
 
 export interface Demographic {
@@ -216,6 +301,8 @@ export function useRiskData(): UseRiskDataReturn {
                 : 'No genetic data available'
 
         const narrative = buildNarrative(c.cause, matchedGenes, actionMinis.length)
+        const confidence = computeConfidence(matchedGenes)
+        const timeline = buildTimeline(c.screenings ?? [], actionMinis)
 
         built.push({
           rank: c.rank,
@@ -229,6 +316,8 @@ export function useRiskData(): UseRiskDataReturn {
           narrative: narrative || undefined,
           genes: geneMinis.length > 0 ? geneMinis : undefined,
           actions: actionMinis.length > 0 ? actionMinis : undefined,
+          timeline: timeline.length > 0 ? timeline : undefined,
+          confidence,
         })
       }
 

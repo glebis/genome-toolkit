@@ -20,6 +20,29 @@ interface ActionMini {
   text: string
 }
 
+type TimelineFrequency = 'quarterly' | 'biannual' | 'annually' | 'once'
+
+interface TimelineItem {
+  name: string
+  type: 'consider' | 'monitor' | 'discuss'
+  frequency: TimelineFrequency
+  gene?: string
+  source: 'screening' | 'vault'
+}
+
+interface TimelineGroup {
+  frequency: TimelineFrequency
+  label: string
+  color: string
+  items: TimelineItem[]
+}
+
+interface ConfidenceScore {
+  filled: number
+  total: 3
+  tooltip: string
+}
+
 interface MortalityCause {
   rank: number
   cause: string
@@ -32,6 +55,8 @@ interface MortalityCause {
   narrative?: string
   genes?: GeneMini[]
   actions?: ActionMini[]
+  timeline?: TimelineGroup[]
+  confidence: ConfidenceScore
 }
 
 // ── Color helpers ──────────────────────────────────────────────────────────
@@ -586,5 +611,5 @@ export function RiskLandscape({ onExport, onAddToChecklist }: RiskLandscapeProps
   )
 }
 
-export type { RiskStatus, MortalityCause }
+export type { RiskStatus, MortalityCause, TimelineFrequency, TimelineItem, TimelineGroup, ConfidenceScore }
 export { STATUS_COLORS as RISK_STATUS_COLORS, STATUS_LABELS as RISK_STATUS_LABELS }

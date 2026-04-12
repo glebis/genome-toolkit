@@ -26,8 +26,16 @@ const mockGenes = [
 ]
 
 const mockConfig = {
+  demographic: { sex: 'male', age_range: '30-44', ancestry: 'european' },
   causes: [
-    { rank: 1, cause: 'Heart Disease', pct: 23.0, populationBarPct: 100, relevant_genes: ['APOE', 'MTHFR'] },
+    {
+      rank: 1, cause: 'Heart Disease', pct: 23.0, populationBarPct: 100,
+      relevant_genes: ['APOE', 'MTHFR'],
+      screenings: [
+        { name: 'Blood pressure check', frequency: 'quarterly', type: 'monitor' },
+        { name: 'Lipid panel', frequency: 'annually', type: 'monitor' },
+      ],
+    },
     { rank: 2, cause: 'Cancer', pct: 21.0, populationBarPct: 91, relevant_genes: ['SOD2'] },
     { rank: 3, cause: 'Accidents', pct: 8.0, populationBarPct: 35, relevant_genes: ['NONEXISTENT'] },
   ],
@@ -146,5 +154,50 @@ describe('useRiskData', () => {
     const heart = result.current.causes.find(c => c.cause === 'Heart Disease')
     expect(heart?.statusText).toContain('Actionable')
     expect(heart?.statusText).toContain('1 gene')
+  })
+
+  it('computes confidence for causes with genes', async () => {
+    const { result } = await getHook()
+    await waitFor(() => expect(result.current.loading).toBe(false), { timeout: 3000 })
+    const heart = result.current.causes.find(c => c.cause === 'Heart Disease')
+    expect(heart?.confidence).toBeDefined()
+    expect(heart?.confidence.total).toBe(3)
+    // 2 genes (APOE E1, MTHFR E2), avg tier = 1.5. n>=3? no. n>=2? yes => 2 dots
+    expect(heart?.confidence.filled).toBe(2)
+    expect(heart?.confidence.tooltip).toContain('2 genes')
+  })
+
+  it('computes zero confidence for nodata causes', async () => {
+    const { result } = await getHook()
+    await waitFor(() => expect(result.current.loading).toBe(false), { timeout: 3000 })
+    const accidents = result.current.causes.find(c => c.cause === 'Accidents')
+    expect(accidents?.confidence).toBeDefined()
+    expect(accidents?.confidence.filled).toBe(0)
+  })
+
+  it('builds timeline groups from config screenings', async () => {
+    const { result } = await getHook()
+    await waitFor(() => expect(result.current.loading).toBe(false), { timeout: 3000 })
+    const heart = result.current.causes.find(c => c.cause === 'Heart Disease')
+    expect(heart?.timeline).toBeDefined()
+    expect(heart?.timeline?.length).toBeGreaterThan(0)
+    const quarterly = heart?.timeline?.find(g => g.frequency === 'quarterly')
+    expect(quarterly).toBeDefined()
+    expect(quarterly?.items.some(i => i.name === 'Blood pressure check')).toBe(true)
+  })
+
+  it('merges vault actions into once group', async () => {
+    const { result } = await getHook()
+    await waitFor(() => expect(result.current.loading).toBe(false), { timeout: 3000 })
+    const heart = result.current.causes.find(c => c.cause === 'Heart Disease')
+    const once = heart?.timeline?.find(g => g.frequency === 'once')
+    expect(once).toBeDefined()
+    expect(once?.items.some(i => i.name === 'Check LDL levels')).toBe(true)
+  })
+
+  it('returns demographic from config', async () => {
+    const { result } = await getHook()
+    await waitFor(() => expect(result.current.loading).toBe(false), { timeout: 3000 })
+    expect(result.current.demographic).toEqual({ sex: 'male', age_range: '30-44', ancestry: 'european' })
   })
 })
