@@ -23,6 +23,13 @@ async def genome_db(tmp_path):
         """)
         await conn.execute("CREATE INDEX idx_snps_chr_pos ON snps(chromosome, position)")
         await conn.execute("""
+            CREATE TABLE IF NOT EXISTS gene_snp_map (
+                rsid TEXT NOT NULL,
+                gene_symbol TEXT NOT NULL,
+                PRIMARY KEY (rsid, gene_symbol)
+            )
+        """)
+        await conn.execute("""
             CREATE TABLE IF NOT EXISTS enrichments (
                 rsid TEXT NOT NULL,
                 source TEXT NOT NULL,
