@@ -26,7 +26,7 @@ CSS = """\
     margin: 20mm;
     @top-left { content: "GENOME TOOLKIT"; font-family: sans-serif; font-size: 8pt; color: #666; }
     @top-right { content: string(report-date); font-family: sans-serif; font-size: 8pt; color: #666; }
-    @bottom-center { content: counter(page); font-family: sans-serif; font-size: 8pt; color: #999; }
+    @bottom-center { content: "github.com/glebis/genome-toolkit  ·  " counter(page); font-family: sans-serif; font-size: 8pt; color: #999; }
 }
 body {
     font-family: "EB Garamond", "Garamond", "Georgia", serif;
@@ -51,9 +51,10 @@ h2 {
     margin-top: 18pt;
 }
 h3 {
-    font-size: 11pt;
+    font-size: 13pt;
     font-weight: bold;
-    margin-top: 12pt;
+    margin-top: 14pt;
+    margin-bottom: 4pt;
 }
 table {
     width: 100%;
