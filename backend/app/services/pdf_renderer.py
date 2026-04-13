@@ -121,7 +121,7 @@ def render_pdf(
 
     html_body = md_lib.markdown(
         markdown_content,
-        extensions=["tables", "sane_lists"],
+        extensions=["tables", "sane_lists", "nl2br"],
     )
 
     html = f"""\
