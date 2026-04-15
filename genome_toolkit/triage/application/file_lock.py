@@ -53,3 +53,4 @@ class FileLock:
             fcntl.flock(self._fd, fcntl.LOCK_UN)
             self._fd.close()
             self._fd = None
+            self._lock_path.unlink(missing_ok=True)
