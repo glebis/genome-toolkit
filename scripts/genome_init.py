@@ -120,7 +120,7 @@ def main():
     conn.execute(
         """INSERT INTO imports (import_id, profile_id, source_file, file_hash, detected_format, assembly)
            VALUES (?, ?, ?, ?, ?, ?)""",
-        (import_id, profile_id, str(args.file), file_hash[:16],
+        (import_id, profile_id, args.file.name, file_hash[:16],
          f"{meta.provider}_{meta.provider_version}", meta.assembly),
     )
 
