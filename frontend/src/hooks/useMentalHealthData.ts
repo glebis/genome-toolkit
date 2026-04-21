@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import type { PathwaySection, ActionData } from '../types/genomics'
+import type { PathwaySection, ActionData, Category } from '../types/genomics'
 
 // ── Pathway groupings for mental health ──────────────────────────────────────
 
@@ -56,6 +56,37 @@ export function matchesSystem(gene: VaultGene, tags: string[]): boolean {
   })
 }
 
+const SYSTEM_TO_CATEGORY: Record<string, Category> = {
+  methylation: 'mood',
+  serotonin: 'mood',
+  neurotransmitter: 'mood',
+  'gut-brain': 'mood',
+  hormonal: 'mood',
+  dopamine: 'focus',
+  reward: 'focus',
+  behavioral: 'focus',
+  stimulant: 'focus',
+  gaba: 'sleep',
+  sleep: 'sleep',
+  circadian: 'sleep',
+  stress: 'stress',
+  hpa: 'stress',
+  cortisol: 'stress',
+  immune: 'stress',
+  inflammat: 'stress',
+}
+
+export function systemsToCategories(systems: string[]): Category[] {
+  const cats: Category[] = []
+  for (const s of systems) {
+    const lower = s.toLowerCase().replace(/\[\[|\]\]/g, '')
+    for (const [key, cat] of Object.entries(SYSTEM_TO_CATEGORY)) {
+      if (lower.includes(key) && !cats.includes(cat)) cats.push(cat)
+    }
+  }
+  return cats.length > 0 ? cats : ['mood']
+}
+
 export function vaultGeneToGeneData(g: VaultGene, pathway: string): GeneData {
   const v = g.personal_variants?.[0]
   return {
@@ -68,7 +99,7 @@ export function vaultGeneToGeneData(g: VaultGene, pathway: string): GeneData {
     studyCount: g.study_count,
     description: g.description,
     actionCount: 0,
-    categories: [],
+    categories: systemsToCategories(g.systems),
     pathway,
   }
 }

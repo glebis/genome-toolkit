@@ -7,6 +7,7 @@ import {
   worstStatus,
   matchesSystem,
   vaultGeneToGeneData,
+  systemsToCategories,
   mapActionType,
   buildFromVaultGenes,
 } from '../hooks/useMentalHealthData'
@@ -312,6 +313,42 @@ describe('matchesSystem', () => {
   })
 })
 
+describe('systemsToCategories', () => {
+  it('maps methylation system to mood', () => {
+    expect(systemsToCategories(['Methylation Pathway'])).toEqual(['mood'])
+  })
+
+  it('maps GABA system to sleep', () => {
+    expect(systemsToCategories(['GABA System', 'Sleep Architecture'])).toContain('sleep')
+  })
+
+  it('maps stress response to stress', () => {
+    expect(systemsToCategories(['Stress Response', 'HPA Axis'])).toContain('stress')
+  })
+
+  it('maps dopamine to focus', () => {
+    expect(systemsToCategories(['Dopamine System'])).toContain('focus')
+  })
+
+  it('strips wikilinks before matching', () => {
+    expect(systemsToCategories(['[[Methylation]]'])).toEqual(['mood'])
+  })
+
+  it('returns mood as default when no systems match', () => {
+    expect(systemsToCategories(['Liver and Metabolism'])).toEqual(['mood'])
+  })
+
+  it('returns mood as default for empty systems array', () => {
+    expect(systemsToCategories([])).toEqual(['mood'])
+  })
+
+  it('produces multiple categories for multi-pathway genes', () => {
+    const cats = systemsToCategories(['GABA System', 'Stress Response'])
+    expect(cats).toContain('sleep')
+    expect(cats).toContain('stress')
+  })
+})
+
 describe('vaultGeneToGeneData', () => {
   it('converts vault gene to GeneData', () => {
     const gene = makeVaultGene()
@@ -327,6 +364,16 @@ describe('vaultGeneToGeneData', () => {
     expect(result.description).toBe('Reduced folate conversion.')
     expect(result.actionCount).toBe(0)
     expect(result.pathway).toBe('Methylation Pathway')
+  })
+
+  it('derives categories from gene systems', () => {
+    const gene = makeVaultGene({ systems: ['GABA System'] })
+    expect(vaultGeneToGeneData(gene, 'GABA & Sleep').categories).toContain('sleep')
+  })
+
+  it('defaults categories to mood when systems are empty', () => {
+    const gene = makeVaultGene({ systems: [] })
+    expect(vaultGeneToGeneData(gene, 'Test').categories).toEqual(['mood'])
   })
 
   it('handles gene with no personal variants', () => {
