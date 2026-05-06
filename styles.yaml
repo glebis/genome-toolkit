@@ -1,0 +1,246 @@
+# Carousel Style Templates
+# Each style defines a prompt prefix that sets the visual language.
+# Usage: prepend style.prompt to your slide content prompt.
+# All tested on GPT Image 2 at 1024x1536 (Instagram 4:5 portrait).
+
+# ─── V4: Arntz ISOTYPE ────────────────────────────────────────────
+arntz:
+  name: "Arntz ISOTYPE"
+  version: v4
+  description: >
+    Gerd Arntz-style ISOTYPE pictograms. Bold geometric silhouettes,
+    flat shapes, woodcut aesthetic. Zero decoration, pure information.
+  palette: "black background, white figures, orange #E86833 accent"
+  typography: "Bold white sans-serif, all caps for headlines"
+  prompt: >
+    Gerd Arntz ISOTYPE pictogram style. Pure black background.
+    Bold geometric flat shapes like woodcut prints. White figures and icons,
+    orange #E86833 as single accent color. No gradients, no shading,
+    no decoration. Flat pictogram aesthetic. Bold white sans-serif text.
+  best_for:
+    - punchy social posts
+    - data cards
+    - bold statements
+  example_dir: test-images/v4/
+
+# ─── V5: Dark Narrative Infographic ───────────────────────────────
+dark-infographic:
+  name: "Dark Narrative Infographic"
+  version: v5
+  description: >
+    Clean infographic on black background. Geometric icons, schemas,
+    arrows, bar charts. Full narrative sentences, not just headlines.
+  palette: "black background, white text, orange #E86833 accent"
+  typography: "Clean white sans-serif, mixed weights"
+  prompt: >
+    Infographic style on pure black background. Clean geometric icons,
+    schemas, arrows, and diagrams. Modern sans-serif font. White text
+    with orange #E86833 accent color. Full sentences, not just keywords.
+    Data visualizations, comparison diagrams, flow arrows.
+  best_for:
+    - educational content
+    - data-driven stories
+    - explainer carousels
+  example_dir: test-images/v5/
+
+# ─── V6: Nordic Indie Craft ───────────────────────────────────────
+nordic-craft:
+  name: "Nordic Indie Craft"
+  version: v6
+  description: >
+    Warm Scandinavian indie aesthetic. Linen texture, hand-drawn
+    linocut illustrations, botanical accents, charcoal outlines.
+    Kinfolk magazine meets indie health zine.
+  palette: "warm off-white linen, charcoal outlines, terracotta, sage green"
+  typography: "Warm dark brown serif, hand-lettered feel"
+  prompt: >
+    Nordic indie craft aesthetic. Warm off-white linen textured background.
+    Hand-drawn linocut style illustrations with visible texture.
+    Thin charcoal outlines, organic shapes. Hand-tinted with muted
+    watercolor washes in terracotta and sage green. Botanical accents.
+    Warm dark brown text. Crafted, tactile, Scandinavian.
+  best_for:
+    - wellness content
+    - personal stories
+    - warm educational posts
+  example_dir: test-images/v6/
+
+# ─── V6b: Refined Nordic ─────────────────────────────────────────
+nordic-refined:
+  name: "Refined Nordic"
+  version: v6b
+  description: >
+    Cleaner evolution of Nordic craft. Less texture, modern rounded
+    grotesque sans-serif (Circular/Nunito), more polished illustrations.
+    Kinfolk meets Cereal magazine.
+  palette: "clean warm off-white, charcoal, terracotta, sage green"
+  typography: "Modern rounded grotesque sans-serif, warm charcoal"
+  prompt: >
+    Clean warm off-white background, very subtle paper texture, almost flat.
+    Modern rounded grotesque sans-serif font like Circular or Nunito Sans.
+    Refined minimalist editorial line illustrations, single stroke weight.
+    Charcoal lines, terracotta and sage green accents. Elegant, clean,
+    modern Scandinavian editorial style. No heavy texture.
+  best_for:
+    - polished personal branding
+    - editorial content
+    - health and science explainers
+  example_dir: test-images/v6b/
+
+# ─── V6c: Scientific Editorial ────────────────────────────────────
+scientific:
+  name: "Scientific Editorial"
+  version: v6c
+  description: >
+    Rigorous scientific infographics with warm editorial design.
+    Yerkes-Dodson curves, kinetics graphs, molecular diagrams,
+    custom tapered arrows, precise data visualization.
+  palette: "clean warm off-white, charcoal, terracotta, sage, dusty blue"
+  typography: "Modern rounded sans-serif, monospace for data"
+  prompt: >
+    Scientific editorial infographic style. Clean warm off-white background.
+    Modern rounded sans-serif font. Sophisticated meaningful diagrams
+    with custom tapered arrows. Precise scientific data visualization:
+    kinetics curves, molecular diagrams, flowcharts with icons.
+    Charcoal lines, terracotta and sage accents. Scientific rigor
+    meets warm editorial design. Numbered references, axis labels.
+  best_for:
+    - science communication
+    - data-heavy explainers
+    - medical/genomics content
+    - research summaries
+  example_dir: test-images/v6c/
+
+# ─── V6d: Vintage Biological Plates ──────────────────────────────
+vintage-biological:
+  name: "Vintage Biological Plates"
+  version: v6d
+  description: >
+    19th century natural history illustration. Ernst Haeckel meets
+    Santiago Ramón y Cajal. Copperplate engravings, stippling,
+    crosshatching, hand-tinted watercolor on aged parchment.
+    Plate numbering (I, II, III...).
+  palette: "aged cream parchment, ink black, terracotta and sage hand-tinting"
+  typography: "Elegant serif for titles, italic for labels. WARNING: avoid ornate script — use clean serif instead"
+  prompt: >
+    Vintage 19th century biological illustration style like Ernst Haeckel
+    or Santiago Ramón y Cajal. Aged cream parchment background with subtle
+    foxing. Detailed copperplate engraving with fine stippling and
+    crosshatching. Hand-tinted with muted watercolor washes in terracotta
+    and sage green. Labeled with thin leader lines. Roman numeral plate
+    numbers. ALL TEXT in clean serif font, NOT cursive, NOT script.
+  best_for:
+    - premium science content
+    - poster-worthy illustrations
+    - collector's series
+    - anatomy and biology
+  example_dir: test-images/v6d/
+
+# ─── V6e: Vintage Bio + Modern Type ──────────────────────────────
+vintage-modern:
+  name: "Vintage Bio + Modern Type"
+  version: v6e
+  description: >
+    Vintage biological engravings combined with clean modern sans-serif
+    typography. Like a contemporary science museum exhibit — historical
+    art with modern accessibility.
+  palette: "aged cream parchment, ink black, terracotta, sage"
+  typography: "Clean modern geometric sans-serif (Futura/Avenir), bold, NOT cursive"
+  prompt: >
+    Vintage biological illustration meets modern typography. Aged cream
+    parchment background. Detailed copperplate engraving with stippling
+    and crosshatching, hand-tinted with terracotta and sage watercolor.
+    ALL TEXT MUST BE in a clean modern geometric sans-serif font like
+    Futura or Avenir, bold, NOT cursive, NOT italic, NOT script.
+    The contrast of modern clean type over vintage illustration is intentional.
+  best_for:
+    - museum-quality science posts
+    - editorial hybrid content
+    - premium branding
+  example_dir: test-images/v6e/
+
+# ─── V7: Fritz Kahn Industriepalast ──────────────────────────────
+fritz-kahn:
+  name: "Fritz Kahn Industriepalast"
+  version: v7
+  description: >
+    1920s German popular science illustration. The body/brain as an
+    industrial factory: tiny workers, pipes, conveyor belts, control
+    rooms, furnaces, gauges. Based on Fritz Kahn's "Der Mensch als
+    Industriepalast" (1926).
+  palette: "dark background, warm yellows, copper, terracotta, steel blue, industrial grays"
+  typography: "Bold modernist sans-serif (1920s German, Futura-era)"
+  prompt: >
+    Fritz Kahn 1920s German popular science illustration style.
+    Dark background. Biological processes depicted as industrial
+    machinery: factories, pipes, conveyor belts, control rooms,
+    gauges, furnaces. Tiny worker figures operating the systems.
+    Chemical flows shown as colored particle streams. Numbered
+    reference points with clean labels. Bold modernist sans-serif
+    text. Muted industrial color palette: dark grays, warm yellows,
+    copper, terracotta highlights, steel blue.
+  best_for:
+    - complex process explanations
+    - brain/body metaphors
+    - high-engagement educational content
+    - poster-quality illustrations
+  example_dir: test-images/v7/
+
+# ─── V8: Retro Terminal ──────────────────────────────────────────
+retro-terminal:
+  name: "Retro Terminal Computers"
+  version: v8
+  description: >
+    Each slide shown on a different vintage computer in a different
+    environment. Photorealistic scenes with pixel art / terminal
+    content on screen. Green/amber phosphor, DOS/Unix CLI, 8-bit
+    pixel art. Each slide is its own world.
+  palette: "photorealistic environments, green/amber phosphor on screens"
+  typography: "Monospace terminal font on screen, pixel art"
+  prompt: >
+    A photograph of a vintage computer in a specific environment.
+    On the screen: retro terminal content with monospace green or
+    amber phosphor text, ASCII art diagrams, command-line interface.
+    8-bit pixel art where appropriate. The environment is photorealistic
+    and detailed — desk objects, lighting, room context. Each slide
+    uses a DIFFERENT computer and environment.
+  machines:
+    - "1984 original Macintosh in a cozy study with bookshelves"
+    - "IBM PC tower with amber CRT in a 1990s cluttered office, floppy disks"
+    - "Commodore 64 connected to a TV in a 1985 teenager's bedroom, wood paneling, shag carpet"
+    - "DEC VT100 terminal in a 1970s university computer lab, punch cards"
+    - "Bondi Blue iMac G3 on a late-90s desk, lava lamp, Tamagotchi"
+    - "Kindle e-ink reader on a wooden coffee table, tea, potted plant"
+    - "Apple II in a 1980s garage workshop, soldering iron, electronics parts"
+    - "Abandoned 1960s NASA Mission Control room at night, empty, single glowing screen"
+  best_for:
+    - nostalgia and aesthetic content
+    - tech audience engagement
+    - vibe-driven storytelling
+    - broad demographic appeal
+  example_dir: test-images/v8/
+
+# ─── V9: Flat Fritz Kahn ─────────────────────────────────────────
+flat-kahn:
+  name: "Flat Fritz Kahn"
+  version: v9
+  description: >
+    Ultra flat vector reinterpretation of Fritz Kahn. No gradients,
+    no shadows, no 3D — pure flat geometric shapes. Soviet-industrial
+    color palette on black. The factory metaphor in modern flat design.
+  palette: "black background, terracotta, mustard yellow, sage green, steel blue, charcoal"
+  typography: "Bold modernist sans-serif, mixed color emphasis"
+  prompt: >
+    Ultra flat vector illustration in the style of Fritz Kahn's
+    Industriepalast but rendered in modern flat design. No gradients,
+    no shadows, no 3D, pure flat geometric shapes. Black background.
+    Biological processes as flat schematic factory systems: flat
+    worker silhouettes, flat pipes, flat conveyor belts, flat gauges.
+    Bold modernist sans-serif text. Flat muted industrial palette:
+    charcoal, terracotta, mustard yellow, sage green, steel blue.
+  best_for:
+    - Instagram-native infographics
+    - modern educational content
+    - clean data storytelling
+    - brand-friendly illustrations
+  example_dir: test-images/v9/

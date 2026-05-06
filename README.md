@@ -299,6 +299,44 @@ sops config/secrets.yaml
 - E1 claims are reliable. E3-E5 claims are hypotheses, not diagnoses.
 - 40-70% of outcomes are environment, behavior, and choice
 
+## Image Generation
+
+Generate genomics-themed images via OpenAI's GPT Image 2 API with 10 curated style templates.
+
+```bash
+# List available styles
+python3 scripts/generate_image.py --list-styles
+
+# Generate with a style preset
+python3 scripts/generate_image.py --style flat-kahn --size 1024x1536 "COMT enzyme pathway" out.png
+
+# Draft mode (97% cheaper, for iteration)
+python3 scripts/generate_image.py --style nordic-refined --draft "dopamine clearance diagram" out.png
+
+# Combine styles
+python3 scripts/generate_image.py --style "fritz-kahn+retro-terminal" "brain factory on VT100" out.png
+
+# Preview composed prompt without calling API
+python3 scripts/generate_image.py --style scientific --dry-run "Yerkes-Dodson curve" out.png
+```
+
+### Style Templates
+
+| Style | Description |
+|-------|-------------|
+| `arntz` | Gerd Arntz ISOTYPE pictograms — bold geometric silhouettes on black |
+| `dark-infographic` | Schemas, arrows, bar charts on black background |
+| `nordic-craft` | Scandinavian indie — linen texture, linocut, botanical accents |
+| `nordic-refined` | Cleaner Nordic — rounded grotesque sans-serif, editorial polish |
+| `scientific` | Yerkes-Dodson curves, kinetics graphs, molecular diagrams |
+| `vintage-biological` | 19th century Haeckel/Cajal engravings on aged parchment |
+| `vintage-modern` | Vintage engravings + clean modern sans-serif typography |
+| `fritz-kahn` | 1920s Industriepalast — body as factory with tiny workers |
+| `retro-terminal` | Each slide on a different vintage computer (Mac, C64, VT100, iMac G3) |
+| `flat-kahn` | Ultra flat vector Fritz Kahn — no gradients, Soviet-industrial palette |
+
+Styles defined in `styles.yaml`. Add your own by following the existing format.
+
 ## Development
 
 ### Running Tests
