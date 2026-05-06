@@ -303,6 +303,8 @@ sops config/secrets.yaml
 
 Generate genomics-themed images via OpenAI's GPT Image 2 API with 10 curated style templates.
 
+![Style Templates Preview](docs/styles-preview.jpg)
+
 ```bash
 # List available styles
 python3 scripts/generate_image.py --list-styles
