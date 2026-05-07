@@ -35,9 +35,12 @@ interface ConfigDrug {
 }
 
 function mapMetabolizerStatus(ps: string): MetabolizerStatus {
-  if (ps === 'risk' || ps === 'poor') return 'poor'
-  if (ps === 'intermediate' || ps === 'monitor') return 'intermediate'
-  if (ps === 'ultrarapid') return 'ultrarapid'
+  const s = ps.toLowerCase().replace(/[_-]/g, '')
+  if (s === 'risk' || s === 'poor' || s === 'poormetabolizer') return 'poor'
+  if (s === 'intermediate' || s === 'monitor' || s === 'intermediatemetabolizer' || s === 'caution') return 'intermediate'
+  if (s === 'ultrarapid' || s === 'ultrarapidmetabolizer' || s === 'highactivity') return 'ultrarapid'
+  if (s === 'normal' || s === 'reference' || s === 'normalmetabolizer' || s === 'extensivemetabolizer') return 'normal'
+  if (s === 'needsreview' || s === 'indeterminate') return 'intermediate'
   return 'normal'
 }
 
@@ -121,7 +124,7 @@ export function usePGxData(): UsePGxDataReturn {
           description: byStatus?.description ?? cd.description ?? '',
           drugList: cd.drugs ?? cd.drugList ?? '',
           dangerNote: byStatus?.danger_note ?? cd.danger_note ?? cd.dangerNote,
-          category: cd.category as 'drug' | 'substance',
+          category: (cd.category === 'drug' ? 'prescription' : cd.category) as 'prescription' | 'substance',
         }
       })
 
