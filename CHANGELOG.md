@@ -2,6 +2,23 @@
 
 All notable changes to Genome Toolkit are documented here.
 
+## [Unreleased]
+
+### Bug Fixes
+
+- **PGx drug cards invisible since launch**: YAML uses `category: drug` but PGxPanel filtered on `=== 'prescription'` — all prescription drug cards never rendered (#33)
+- **Wrong metabolizer status for 3+ enzymes**: `mapMetabolizerStatus` only matched 4 exact strings; vault values like `caution`, `reference`, `intermediate-metabolizer`, `needs_review`, `high-activity` all fell through to `normal`. CYP2C9 (*1/*2, intermediate) was incorrectly showing as normal metabolizer (#33)
+
+### Features
+
+- **Image generation CLI** (`scripts/generate_image.py`): zero-dependency Python CLI for OpenAI GPT Image 2 API with `--style` flag, draft mode (97% cheaper iteration), style combining (`--style "fritz-kahn+retro-terminal"`), dry-run preview, and contact sheets
+- **10 curated style templates** (`styles.yaml`): arntz (ISOTYPE pictograms), dark-infographic, nordic-craft, nordic-refined, scientific (editorial), vintage-biological (Haeckel/Cajal), vintage-modern, fritz-kahn (Industriepalast), retro-terminal (vintage computers), flat-kahn (flat vector)
+
+### Documentation
+
+- Add image generation section and style templates preview to README
+- Design spec for PGx My Medications feature (#25, proposal 1)
+
 ## [0.3.0] — 2026-04-16
 
 ### Bug Fixes
