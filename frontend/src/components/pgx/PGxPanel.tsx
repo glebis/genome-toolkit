@@ -106,7 +106,7 @@ export function PGxPanel({ onExport, onAddToChecklist }: PGxPanelProps) {
         />
 
         {/* Pinned: Your Medications */}
-        {pinnedCards.length > 0 && filter !== 'my-meds' && (
+        {pinnedCards.length > 0 && (
           <div className="pinned-meds">
             <div className="pinned-meds-title">Your medications</div>
             <div className="pinned-meds-list">
@@ -136,8 +136,17 @@ export function PGxPanel({ onExport, onAddToChecklist }: PGxPanelProps) {
             Always discuss medication changes with your prescriber. Substance information is provided for <strong>harm reduction</strong> purposes.
         </InfoCallout>
 
+        {/* Empty state for my-meds filter */}
+        {filter === 'my-meds' && pinnedCards.length === 0 && medications.length > 0 && (
+          <div style={{ padding: '24px 0', color: 'var(--text-tertiary)', fontSize: 'var(--font-size-sm)', textAlign: 'center' }}>
+            {MOCK_PGX.length === 0
+              ? 'Waiting for enzyme data to load…'
+              : 'No drug cards found matching your medications.'}
+          </div>
+        )}
+
         {/* Enzyme sections */}
-        {MOCK_PGX.map((section, i) => {
+        {filter !== 'my-meds' && MOCK_PGX.map((section, i) => {
           const filteredDrugs = filterDrugs(section.drugs)
           if (filter !== 'all' && filteredDrugs.length === 0) return null
 
