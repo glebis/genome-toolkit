@@ -1,0 +1,143 @@
+.med-input-wrapper {
+  margin-bottom: 16px;
+}
+
+.med-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.med-input-container {
+  position: relative;
+  flex: 1;
+}
+
+.med-input {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: var(--font-size-sm);
+  background: var(--bg-inset);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  outline: none;
+}
+
+.med-input:focus {
+  border-color: var(--primary);
+}
+
+.med-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 0 0 4px 4px;
+  max-height: 240px;
+  overflow-y: auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.med-suggestion {
+  padding: 8px 12px;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  color: var(--text);
+}
+
+.med-suggestion[aria-selected="true"],
+.med-suggestion:hover {
+  background: var(--bg-inset);
+}
+
+.med-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.med-pills-label {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.med-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  background: var(--primary);
+  color: var(--bg);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+}
+
+.med-pill-remove {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+  font-size: var(--font-size-xs);
+  opacity: 0.7;
+  line-height: 1;
+}
+
+.med-pill-remove:hover {
+  opacity: 1;
+}
+
+.med-clear-btn {
+  font-size: var(--font-size-xs);
+  padding: 1px 6px;
+  color: var(--text-tertiary);
+  border-color: var(--border);
+  opacity: 0.6;
+}
+
+.med-clear-btn:hover {
+  opacity: 1;
+}
+
+/* Pinned "Your Medications" section */
+.pinned-meds {
+  margin-bottom: 24px;
+}
+
+.pinned-meds-title {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 10px;
+  color: var(--primary);
+}
+
+.pinned-meds-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pinned-meds-enzyme {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+  margin-bottom: 2px;
+  font-family: var(--font-mono);
+}
+
+.pinned-meds-divider {
+  border: none;
+  border-top: 2px solid var(--primary);
+  margin: 16px 0;
+  opacity: 0.3;
+}

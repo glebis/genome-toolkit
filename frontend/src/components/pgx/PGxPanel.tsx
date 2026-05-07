@@ -2,15 +2,18 @@ import { useState } from 'react'
 import type { PGxEnzymeSection } from '../../types/pgx'
 import { MetabolizerBar } from './MetabolizerBar'
 import { DrugCard } from './DrugCard'
+import { MedicationInput } from './MedicationInput'
 import { HeroHeader, FilterChip, ExportButton, InfoCallout, LoadingLabel, Toolbar } from '../common'
 import { usePGxData } from '../../hooks/usePGxData'
+import { useMyMedications, normalizeDrugName } from '../../hooks/useMyMedications'
 import { useSubstancesData } from '../../hooks/useSubstancesData'
 import type { SubstanceCard } from '../../hooks/useSubstancesData'
 import { printPage, downloadFile, pgxToMarkdown, exportPdf } from '../../lib/export'
+import './medications.css'
 
-type DrugFilter = 'all' | 'antidepressants' | 'pain' | 'cardio' | 'substances' | 'safety'
+type DrugFilter = 'all' | 'my-meds' | 'antidepressants' | 'pain' | 'cardio' | 'substances' | 'safety'
 
-const FILTERS: { key: DrugFilter; label: string }[] = [
+const BASE_FILTERS: { key: DrugFilter; label: string }[] = [
   { key: 'all', label: 'All enzymes' },
   { key: 'antidepressants', label: 'Antidepressants' },
   { key: 'pain', label: 'Pain' },
@@ -23,8 +26,17 @@ interface PGxPanelProps {
   onAddToChecklist?: (title: string, gene: string) => void
 }
 
+function drugMatchesMedications(drug: PGxEnzymeSection['drugs'][0], medications: string[]): boolean {
+  if (medications.length === 0) return false
+  const medNorms = medications.map(normalizeDrugName)
+  const drugListLower = drug.drugList.toLowerCase()
+  const classLower = drug.drugClass.toLowerCase()
+  return medNorms.some(m => drugListLower.includes(m) || classLower.includes(m))
+}
+
 export function PGxPanel({ onExport, onAddToChecklist }: PGxPanelProps) {
-  const { sections: MOCK_PGX, loading } = usePGxData()
+  const { sections: MOCK_PGX, allDrugNames, loading } = usePGxData()
+  const { medications, addMedication, removeMedication, clearAll } = useMyMedications()
   const { substances, loading: substancesLoading } = useSubstancesData()
   const [filter, setFilter] = useState<DrugFilter>('all')
   const [addedDrugs, setAddedDrugs] = useState<Set<string>>(new Set())
@@ -33,8 +45,13 @@ export function PGxPanel({ onExport, onAddToChecklist }: PGxPanelProps) {
 
   if (loading && substancesLoading) return <LoadingLabel />
 
+  const FILTERS = medications.length > 0
+    ? [{ key: 'my-meds' as DrugFilter, label: `My medications (${medications.length})` }, ...BASE_FILTERS]
+    : BASE_FILTERS
+
   const filterDrugs = (drugs: PGxEnzymeSection['drugs']) => {
     if (filter === 'all') return drugs
+    if (filter === 'my-meds') return drugs.filter(d => drugMatchesMedications(d, medications))
     if (filter === 'substances') return drugs.filter(d => d.category === 'substance')
     if (filter === 'safety') return drugs.filter(d => d.impact === 'danger' || d.dangerNote)
     if (filter === 'antidepressants') return drugs.filter(d =>
@@ -45,6 +62,14 @@ export function PGxPanel({ onExport, onAddToChecklist }: PGxPanelProps) {
     )
     return drugs
   }
+
+  const pinnedCards = medications.length > 0
+    ? MOCK_PGX.flatMap(section =>
+        section.drugs
+          .filter(d => drugMatchesMedications(d, medications))
+          .map(d => ({ drug: d, enzyme: section.enzyme }))
+      )
+    : []
 
   return (
     <div>
@@ -71,6 +96,40 @@ export function PGxPanel({ onExport, onAddToChecklist }: PGxPanelProps) {
       />
 
       <div className="section-content" style={{ padding: '24px' }}>
+        {/* Medication input */}
+        <MedicationInput
+          allDrugNames={allDrugNames}
+          selected={medications}
+          onAdd={addMedication}
+          onRemove={removeMedication}
+          onClear={clearAll}
+        />
+
+        {/* Pinned: Your Medications */}
+        {pinnedCards.length > 0 && filter !== 'my-meds' && (
+          <div className="pinned-meds">
+            <div className="pinned-meds-title">Your medications</div>
+            <div className="pinned-meds-list">
+              {pinnedCards.map(({ drug, enzyme }) => (
+                <div key={`${enzyme.symbol}-${drug.drugClass}`}>
+                  <div className="pinned-meds-enzyme">
+                    via {enzyme.symbol} · {enzyme.alleles}
+                  </div>
+                  <DrugCard
+                    drug={drug}
+                    added={addedDrugs.has(drug.drugClass)}
+                    onAddToChecklist={drug.dangerNote && onAddToChecklist ? (title) => {
+                      setAddedDrugs(prev => new Set(prev).add(drug.drugClass))
+                      onAddToChecklist(title, enzyme.symbol)
+                    } : undefined}
+                  />
+                </div>
+              ))}
+            </div>
+            <hr className="pinned-meds-divider" />
+          </div>
+        )}
+
         {/* Disclaimer */}
         <InfoCallout>
             This is <strong>not medical advice</strong>. Pharmacogenomics shows how your genes <em>may</em> affect drug metabolism.
