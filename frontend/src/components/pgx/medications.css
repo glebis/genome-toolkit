@@ -141,3 +141,50 @@
   margin: 16px 0;
   opacity: 0.3;
 }
+
+/* Multi-enzyme drug groups */
+.pinned-drug-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pinned-drug-group + .pinned-drug-group {
+  margin-top: 8px;
+}
+
+.pinned-drug-enzymes-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 2px;
+}
+
+.pinned-enzyme-badge {
+  font-size: var(--font-size-xs);
+  font-family: var(--font-mono);
+  padding: 1px 6px;
+  border-radius: 2px;
+  border: 1px solid var(--border);
+  color: var(--text-tertiary);
+}
+
+.pinned-enzyme-badge--ok {
+  border-color: var(--sig-benefit);
+  color: var(--sig-benefit);
+}
+
+.pinned-enzyme-badge--adjust {
+  border-color: var(--sig-reduced);
+  color: var(--sig-reduced);
+}
+
+.pinned-enzyme-badge--warn {
+  border-color: var(--sig-risk);
+  color: var(--sig-risk);
+}
+
+.pinned-enzyme-badge--danger {
+  border-color: var(--sig-danger);
+  color: var(--sig-danger);
+}

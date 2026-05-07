@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { PGxEnzymeSection } from '../../types/pgx'
+import type { PGxEnzymeSection, DrugImpact } from '../../types/pgx'
 import { MetabolizerBar } from './MetabolizerBar'
 import { DrugCard } from './DrugCard'
 import { MedicationInput } from './MedicationInput'
@@ -34,6 +34,48 @@ function drugMatchesMedications(drug: PGxEnzymeSection['drugs'][0], medications:
   return medNorms.some(m => drugListLower.includes(m) || classLower.includes(m))
 }
 
+interface EnzymeImpact {
+  enzyme: PGxEnzymeSection['enzyme']
+  drug: PGxEnzymeSection['drugs'][0]
+}
+
+interface PinnedDrugGroup {
+  drugClass: string
+  impacts: EnzymeImpact[]
+  worstImpact: DrugImpact
+}
+
+const IMPACT_RANK: Record<DrugImpact, number> = { ok: 0, adjust: 1, warn: 2, danger: 3 }
+
+function drugClassBaseKey(drugClass: string): string {
+  return drugClass.replace(/\s*\(.*?\)\s*/g, '').trim().toLowerCase()
+}
+
+function groupPinnedByDrug(sections: PGxEnzymeSection[], medications: string[]): PinnedDrugGroup[] {
+  if (medications.length === 0) return []
+  const groups = new Map<string, { label: string; impacts: EnzymeImpact[] }>()
+  for (const section of sections) {
+    for (const drug of section.drugs) {
+      if (!drugMatchesMedications(drug, medications)) continue
+      const key = drugClassBaseKey(drug.drugClass)
+      const existing = groups.get(key)
+      if (existing) {
+        existing.impacts.push({ enzyme: section.enzyme, drug })
+      } else {
+        groups.set(key, { label: drug.drugClass, impacts: [{ enzyme: section.enzyme, drug }] })
+      }
+    }
+  }
+  return Array.from(groups.values()).map(({ label, impacts }) => ({
+    drugClass: label,
+    impacts: impacts.sort((a, b) => IMPACT_RANK[b.drug.impact] - IMPACT_RANK[a.drug.impact]),
+    worstImpact: impacts.reduce((worst, i) =>
+      IMPACT_RANK[i.drug.impact] > IMPACT_RANK[worst] ? i.drug.impact : worst,
+      'ok' as DrugImpact
+    ),
+  }))
+}
+
 export function PGxPanel({ onExport, onAddToChecklist }: PGxPanelProps) {
   const { sections: MOCK_PGX, allDrugNames, loading } = usePGxData()
   const { medications, addMedication, removeMedication, clearAll } = useMyMedications()
@@ -63,13 +105,7 @@ export function PGxPanel({ onExport, onAddToChecklist }: PGxPanelProps) {
     return drugs
   }
 
-  const pinnedCards = medications.length > 0
-    ? MOCK_PGX.flatMap(section =>
-        section.drugs
-          .filter(d => drugMatchesMedications(d, medications))
-          .map(d => ({ drug: d, enzyme: section.enzyme }))
-      )
-    : []
+  const pinnedGroups = groupPinnedByDrug(MOCK_PGX, medications)
 
   return (
     <div>
@@ -105,24 +141,42 @@ export function PGxPanel({ onExport, onAddToChecklist }: PGxPanelProps) {
           onClear={clearAll}
         />
 
-        {/* Pinned: Your Medications */}
-        {pinnedCards.length > 0 && (
+        {/* Pinned: Your Medications (drug-first, multi-enzyme) */}
+        {pinnedGroups.length > 0 && (
           <div className="pinned-meds">
             <div className="pinned-meds-title">Your medications</div>
             <div className="pinned-meds-list">
-              {pinnedCards.map(({ drug, enzyme }) => (
-                <div key={`${enzyme.symbol}-${drug.drugClass}`}>
-                  <div className="pinned-meds-enzyme">
-                    via {enzyme.symbol} · {enzyme.alleles}
-                  </div>
-                  <DrugCard
-                    drug={drug}
-                    added={addedDrugs.has(drug.drugClass)}
-                    onAddToChecklist={drug.dangerNote && onAddToChecklist ? (title) => {
-                      setAddedDrugs(prev => new Set(prev).add(drug.drugClass))
-                      onAddToChecklist(title, enzyme.symbol)
-                    } : undefined}
-                  />
+              {pinnedGroups.map(group => (
+                <div key={group.drugClass} className="pinned-drug-group">
+                  {group.impacts.length > 1 && (
+                    <div className="pinned-drug-enzymes-row">
+                      {group.impacts.map(({ enzyme, drug }) => (
+                        <span key={enzyme.symbol} className={`pinned-enzyme-badge pinned-enzyme-badge--${drug.impact}`}>
+                          {enzyme.symbol} · {enzyme.alleles}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {group.impacts.map(({ enzyme, drug }) => (
+                    <div key={enzyme.symbol}>
+                      {group.impacts.length === 1 && (
+                        <div className="pinned-meds-enzyme">
+                          via {enzyme.symbol} · {enzyme.alleles}
+                        </div>
+                      )}
+                      <DrugCard
+                        drug={group.impacts.length > 1
+                          ? { ...drug, drugClass: `${drug.drugClass} — ${enzyme.symbol}` }
+                          : drug
+                        }
+                        added={addedDrugs.has(drug.drugClass)}
+                        onAddToChecklist={drug.dangerNote && onAddToChecklist ? (title) => {
+                          setAddedDrugs(prev => new Set(prev).add(drug.drugClass))
+                          onAddToChecklist(title, enzyme.symbol)
+                        } : undefined}
+                      />
+                    </div>
+                  ))}
                 </div>
               ))}
             </div>
@@ -137,7 +191,7 @@ export function PGxPanel({ onExport, onAddToChecklist }: PGxPanelProps) {
         </InfoCallout>
 
         {/* Empty state for my-meds filter */}
-        {filter === 'my-meds' && pinnedCards.length === 0 && medications.length > 0 && (
+        {filter === 'my-meds' && pinnedGroups.length === 0 && medications.length > 0 && (
           <div style={{ padding: '24px 0', color: 'var(--text-tertiary)', fontSize: 'var(--font-size-sm)', textAlign: 'center' }}>
             {MOCK_PGX.length === 0
               ? 'Waiting for enzyme data to load…'
