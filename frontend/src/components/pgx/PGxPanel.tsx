@@ -1,16 +1,19 @@
 import { useState } from 'react'
-import type { PGxEnzymeSection } from '../../types/pgx'
+import type { PGxEnzymeSection, DrugImpact } from '../../types/pgx'
 import { MetabolizerBar } from './MetabolizerBar'
 import { DrugCard } from './DrugCard'
+import { MedicationInput } from './MedicationInput'
 import { HeroHeader, FilterChip, ExportButton, InfoCallout, LoadingLabel, Toolbar } from '../common'
 import { usePGxData } from '../../hooks/usePGxData'
+import { useMyMedications, normalizeDrugName } from '../../hooks/useMyMedications'
 import { useSubstancesData } from '../../hooks/useSubstancesData'
 import type { SubstanceCard } from '../../hooks/useSubstancesData'
 import { printPage, downloadFile, pgxToMarkdown, exportPdf } from '../../lib/export'
+import './medications.css'
 
-type DrugFilter = 'all' | 'antidepressants' | 'pain' | 'cardio' | 'substances' | 'safety'
+type DrugFilter = 'all' | 'my-meds' | 'antidepressants' | 'pain' | 'cardio' | 'substances' | 'safety'
 
-const FILTERS: { key: DrugFilter; label: string }[] = [
+const BASE_FILTERS: { key: DrugFilter; label: string }[] = [
   { key: 'all', label: 'All enzymes' },
   { key: 'antidepressants', label: 'Antidepressants' },
   { key: 'pain', label: 'Pain' },
@@ -23,8 +26,59 @@ interface PGxPanelProps {
   onAddToChecklist?: (title: string, gene: string) => void
 }
 
+function drugMatchesMedications(drug: PGxEnzymeSection['drugs'][0], medications: string[]): boolean {
+  if (medications.length === 0) return false
+  const medNorms = medications.map(normalizeDrugName)
+  const drugListLower = drug.drugList.toLowerCase()
+  const classLower = drug.drugClass.toLowerCase()
+  return medNorms.some(m => drugListLower.includes(m) || classLower.includes(m))
+}
+
+interface EnzymeImpact {
+  enzyme: PGxEnzymeSection['enzyme']
+  drug: PGxEnzymeSection['drugs'][0]
+}
+
+interface PinnedDrugGroup {
+  drugClass: string
+  impacts: EnzymeImpact[]
+  worstImpact: DrugImpact
+}
+
+const IMPACT_RANK: Record<DrugImpact, number> = { ok: 0, adjust: 1, warn: 2, danger: 3 }
+
+function drugClassBaseKey(drugClass: string): string {
+  return drugClass.replace(/\s*\(.*?\)\s*/g, '').trim().toLowerCase()
+}
+
+function groupPinnedByDrug(sections: PGxEnzymeSection[], medications: string[]): PinnedDrugGroup[] {
+  if (medications.length === 0) return []
+  const groups = new Map<string, { label: string; impacts: EnzymeImpact[] }>()
+  for (const section of sections) {
+    for (const drug of section.drugs) {
+      if (!drugMatchesMedications(drug, medications)) continue
+      const key = drugClassBaseKey(drug.drugClass)
+      const existing = groups.get(key)
+      if (existing) {
+        existing.impacts.push({ enzyme: section.enzyme, drug })
+      } else {
+        groups.set(key, { label: drug.drugClass, impacts: [{ enzyme: section.enzyme, drug }] })
+      }
+    }
+  }
+  return Array.from(groups.values()).map(({ label, impacts }) => ({
+    drugClass: label,
+    impacts: impacts.sort((a, b) => IMPACT_RANK[b.drug.impact] - IMPACT_RANK[a.drug.impact]),
+    worstImpact: impacts.reduce((worst, i) =>
+      IMPACT_RANK[i.drug.impact] > IMPACT_RANK[worst] ? i.drug.impact : worst,
+      'ok' as DrugImpact
+    ),
+  }))
+}
+
 export function PGxPanel({ onExport, onAddToChecklist }: PGxPanelProps) {
-  const { sections: MOCK_PGX, loading } = usePGxData()
+  const { sections: MOCK_PGX, allDrugNames, loading } = usePGxData()
+  const { medications, addMedication, removeMedication, clearAll } = useMyMedications()
   const { substances, loading: substancesLoading } = useSubstancesData()
   const [filter, setFilter] = useState<DrugFilter>('all')
   const [addedDrugs, setAddedDrugs] = useState<Set<string>>(new Set())
@@ -33,8 +87,13 @@ export function PGxPanel({ onExport, onAddToChecklist }: PGxPanelProps) {
 
   if (loading && substancesLoading) return <LoadingLabel />
 
+  const FILTERS = medications.length > 0
+    ? [{ key: 'my-meds' as DrugFilter, label: `My medications (${medications.length})` }, ...BASE_FILTERS]
+    : BASE_FILTERS
+
   const filterDrugs = (drugs: PGxEnzymeSection['drugs']) => {
     if (filter === 'all') return drugs
+    if (filter === 'my-meds') return drugs.filter(d => drugMatchesMedications(d, medications))
     if (filter === 'substances') return drugs.filter(d => d.category === 'substance')
     if (filter === 'safety') return drugs.filter(d => d.impact === 'danger' || d.dangerNote)
     if (filter === 'antidepressants') return drugs.filter(d =>
@@ -45,6 +104,8 @@ export function PGxPanel({ onExport, onAddToChecklist }: PGxPanelProps) {
     )
     return drugs
   }
+
+  const pinnedGroups = groupPinnedByDrug(MOCK_PGX, medications)
 
   return (
     <div>
@@ -71,14 +132,75 @@ export function PGxPanel({ onExport, onAddToChecklist }: PGxPanelProps) {
       />
 
       <div className="section-content" style={{ padding: '24px' }}>
+        {/* Medication input */}
+        <MedicationInput
+          allDrugNames={allDrugNames}
+          selected={medications}
+          onAdd={addMedication}
+          onRemove={removeMedication}
+          onClear={clearAll}
+        />
+
+        {/* Pinned: Your Medications (drug-first, multi-enzyme) */}
+        {pinnedGroups.length > 0 && (
+          <div className="pinned-meds">
+            <div className="pinned-meds-title">Your medications</div>
+            <div className="pinned-meds-list">
+              {pinnedGroups.map(group => (
+                <div key={group.drugClass} className="pinned-drug-group">
+                  {group.impacts.length > 1 && (
+                    <div className="pinned-drug-enzymes-row">
+                      {group.impacts.map(({ enzyme, drug }) => (
+                        <span key={enzyme.symbol} className={`pinned-enzyme-badge pinned-enzyme-badge--${drug.impact}`}>
+                          {enzyme.symbol} · {enzyme.alleles}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {group.impacts.map(({ enzyme, drug }) => (
+                    <div key={enzyme.symbol}>
+                      {group.impacts.length === 1 && (
+                        <div className="pinned-meds-enzyme">
+                          via {enzyme.symbol} · {enzyme.alleles}
+                        </div>
+                      )}
+                      <DrugCard
+                        drug={group.impacts.length > 1
+                          ? { ...drug, drugClass: `${drug.drugClass} — ${enzyme.symbol}` }
+                          : drug
+                        }
+                        added={addedDrugs.has(drug.drugClass)}
+                        onAddToChecklist={drug.dangerNote && onAddToChecklist ? (title) => {
+                          setAddedDrugs(prev => new Set(prev).add(drug.drugClass))
+                          onAddToChecklist(title, enzyme.symbol)
+                        } : undefined}
+                      />
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+            <hr className="pinned-meds-divider" />
+          </div>
+        )}
+
         {/* Disclaimer */}
         <InfoCallout>
             This is <strong>not medical advice</strong>. Pharmacogenomics shows how your genes <em>may</em> affect drug metabolism.
             Always discuss medication changes with your prescriber. Substance information is provided for <strong>harm reduction</strong> purposes.
         </InfoCallout>
 
+        {/* Empty state for my-meds filter */}
+        {filter === 'my-meds' && pinnedGroups.length === 0 && medications.length > 0 && (
+          <div style={{ padding: '24px 0', color: 'var(--text-tertiary)', fontSize: 'var(--font-size-sm)', textAlign: 'center' }}>
+            {MOCK_PGX.length === 0
+              ? 'Waiting for enzyme data to load…'
+              : 'No drug cards found matching your medications.'}
+          </div>
+        )}
+
         {/* Enzyme sections */}
-        {MOCK_PGX.map((section, i) => {
+        {filter !== 'my-meds' && MOCK_PGX.map((section, i) => {
           const filteredDrugs = filterDrugs(section.drugs)
           if (filter !== 'all' && filteredDrugs.length === 0) return null
 

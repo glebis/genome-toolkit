@@ -53,8 +53,29 @@ function statusPosition(s: MetabolizerStatus): number {
   }
 }
 
+export function extractAllDrugNames(config: ConfigEnzyme[]): string[] {
+  const names = new Set<string>()
+  for (const enzyme of config) {
+    const cards = enzyme.drug_cards ?? enzyme.drugs ?? []
+    for (const card of cards) {
+      const drugStr = card.drugs ?? card.drugList ?? ''
+      for (const part of drugStr.split(',')) {
+        const trimmed = part.trim()
+        if (!trimmed) continue
+        names.add(trimmed)
+        const withoutBrand = trimmed.replace(/\s*\(.*?\)\s*/g, '').trim()
+        if (withoutBrand && withoutBrand !== trimmed) names.add(withoutBrand)
+        const brandMatch = trimmed.match(/\(([^)]+)\)/)
+        if (brandMatch) names.add(brandMatch[1].trim())
+      }
+    }
+  }
+  return Array.from(names).sort((a, b) => a.localeCompare(b))
+}
+
 interface UsePGxDataReturn {
   sections: PGxEnzymeSection[]
+  allDrugNames: string[]
   loading: boolean
 }
 
@@ -136,6 +157,7 @@ export function usePGxData(): UsePGxDataReturn {
 
   return {
     sections,
+    allDrugNames: config ? extractAllDrugNames(config) : [],
     loading: genesLoading || configLoading,
   }
 }
