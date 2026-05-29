@@ -6,7 +6,7 @@ import type { GeneData, EvidenceTier, ActionData } from '../../types/genomics'
 import { EVIDENCE_LABELS, EVIDENCE_COLORS } from '../../types/genomics'
 import { useAddictionData } from '../../hooks/useAddictionData'
 import type { SubstanceCard } from '../../hooks/useAddictionData'
-import { HeroHeader, StatBox, FilterChip, ExportBar, InfoCallout, SectionLabel, LoadingLabel, EmptyState, DashedDivider, ReportFooter } from '../common'
+import { HeroHeader, StatBox, FilterChip, ExportBar, InfoCallout, SectionLabel, LoadingLabel, EmptyState, DashedDivider, ReportFooter, ActionRoadmap } from '../common'
 import { printPage, downloadFile, addictionToMarkdown } from '../../lib/export'
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
@@ -144,6 +144,14 @@ export function AddictionProfile({ onExport: _onExport, onAddToChecklist, onTogg
           dependence — genetics is one factor among many, including environment, mental health, social context, and personal
           history. This information is provided for <strong>self-understanding and harm reduction</strong>, not diagnosis.
         </InfoCallout>
+
+        {/* Action roadmap — shared, ranked actions across pathways */}
+        <ActionRoadmap
+          sections={PATHWAYS}
+          actions={actions}
+          onAddToChecklist={onAddActionToChecklist ?? (() => {})}
+          checklistIds={checklistIds}
+        />
 
         {/* Evidence filter */}
         <div className="filter-chips" style={{ display: 'flex', gap: 6, marginBottom: 16, alignItems: 'center' }}>
