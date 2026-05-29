@@ -3,7 +3,7 @@ import type { PGxEnzymeSection, DrugImpact } from '../../types/pgx'
 import { MetabolizerBar } from './MetabolizerBar'
 import { DrugCard } from './DrugCard'
 import { MedicationInput } from './MedicationInput'
-import { HeroHeader, FilterChip, ExportButton, InfoCallout, LoadingLabel, Toolbar } from '../common'
+import { HeroHeader, FilterChip, ExportButton, InfoCallout, LoadingLabel, Toolbar, GeneCrossRefBadges } from '../common'
 import { usePGxData } from '../../hooks/usePGxData'
 import { useMyMedications, normalizeDrugName } from '../../hooks/useMyMedications'
 import { useSubstancesData } from '../../hooks/useSubstancesData'
@@ -235,6 +235,9 @@ export function PGxPanel({ onExport, onAddToChecklist }: PGxPanelProps) {
                     {section.enzyme.geneType}
                   </span>
                   <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)' }}>{section.enzyme.alleles}</span>
+                  <span onClick={(e) => e.stopPropagation()}>
+                    <GeneCrossRefBadges symbol={section.enzyme.symbol} currentSection="pgx" />
+                  </span>
                   {section.enzyme.about && (
                     <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)' }}>
                       {expandedEnzyme === section.enzyme.symbol ? '▴ hide' : '▾ what does this do?'}

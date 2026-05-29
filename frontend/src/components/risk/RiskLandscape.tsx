@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useRiskData } from '../../hooks/useRiskData'
-import { HeroHeader, StatBox, ExportBar, InfoCallout, LoadingLabel } from '../common'
+import { HeroHeader, StatBox, ExportBar, InfoCallout, LoadingLabel, GeneCrossRefBadges } from '../common'
 import { printPage, downloadFile, riskLandscapeToMarkdown } from '../../lib/export'
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -165,6 +165,9 @@ function GeneMiniCard({ gene, index = 0 }: { gene: GeneMini; index?: number }) {
         }}
       >
         {gene.description}
+      </div>
+      <div style={{ marginTop: 6 }}>
+        <GeneCrossRefBadges symbol={gene.symbol} currentSection="risk" />
       </div>
     </div>
   )

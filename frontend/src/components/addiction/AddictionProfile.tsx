@@ -172,7 +172,7 @@ export function AddictionProfile({ onExport: _onExport, onAddToChecklist, onTogg
                   <NarrativeBlock narrative={section.narrative} />
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {visibleGenes.map(gene => (
-                      <GeneCard key={`${gene.symbol}-${gene.rsid}`} gene={gene} onClick={handleGeneClick} />
+                      <GeneCard key={`${gene.symbol}-${gene.rsid}`} gene={gene} onClick={handleGeneClick} currentSection="addiction" />
                     ))}
                   </div>
                 </div>
