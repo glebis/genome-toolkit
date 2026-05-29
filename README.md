@@ -93,6 +93,26 @@ A full-stack web interface for exploring your genome data interactively.
 | **PGx / Drugs** | Pharmacogenomic profile — metabolizer status, drug cards, interaction warnings |
 | **Addiction** | Harm-reduction-oriented substance sensitivity analysis |
 | **Risk Landscape** | Top mortality causes overlaid with personal genetic risk factors |
+| **Import** | Browser upload for raw genome files — drag-and-drop, format auto-detection preview, and import history (no CLI required) |
+
+### Import (browser upload)
+
+Add genome data without touching the command line. The **Import** tab (always available,
+and shown automatically on first run when the database is empty) lets you:
+
+1. **Drag-and-drop or browse** for a raw file — 23andMe / AncestryDNA `.txt`,
+   MyHeritage / Genotek `.csv`, or VCF `.vcf` / `.vcf.gz` (including imputed).
+2. **Preview the detected format** — provider, version, assembly, confidence, and an
+   estimated variant count — *before* anything is written.
+3. **Set options** — profile name, minimum imputation r² (VCF only), and a dry-run toggle
+   to validate without importing.
+4. **Import and review** — imported / duplicate / low-r² counts, plus an import history table.
+
+Files are streamed to a temporary file (200 MB cap, `.zip` rejected), processed in a
+threadpool so the server stays responsive, then deleted. The browser flow and the
+`/genome-import` CLI share one code path (`scripts/lib/importer.py`), so results are identical.
+
+REST endpoints: `POST /api/import/detect`, `POST /api/import/upload`, `GET /api/import/history`.
 
 ### Ask AI (Cmd+K)
 

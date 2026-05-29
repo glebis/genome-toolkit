@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import './styles/theme.css'
 import { useSNPs, type SNP } from './hooks/useSNPs'
 import { useChat, type UIAction, type AgentAction } from './hooks/useChat'
@@ -17,6 +17,7 @@ import { ChecklistSidebar } from './components/mental-health/ChecklistSidebar'
 import { PGxPanel } from './components/pgx/PGxPanel'
 import { AddictionProfile } from './components/addiction'
 import { RiskLandscape } from './components/risk'
+import { ImportView } from './components/import'
 import {
   printPage,
   downloadFile,
@@ -30,12 +31,13 @@ import type { PageContextData } from './lib/pageContext'
 function App() {
   const { result, filters, loading, updateFilters, debouncedUpdateFilters, setPage, resetFilters, activeFilterCount } = useSNPs()
   const voice = useVoice()
-  const [view, setView] = useState<'snps' | 'mental-health' | 'pgx' | 'addiction' | 'risk'>(() => {
+  const [view, setView] = useState<'snps' | 'mental-health' | 'pgx' | 'addiction' | 'risk' | 'import'>(() => {
     const hash = window.location.hash
     if (hash === '#/mental-health') return 'mental-health'
     if (hash === '#/pgx') return 'pgx'
     if (hash === '#/addiction') return 'addiction'
     if (hash === '#/risk') return 'risk'
+    if (hash === '#/import') return 'import'
     return 'snps'
   })
   const mentalHealth = useMentalHealthData()
@@ -47,12 +49,13 @@ function App() {
   const [paletteCollapsed, setPaletteCollapsed] = useState(false)
   const [visibleViews, setVisibleViews] = useState<Set<string>>(new Set(['snps', 'mental-health', 'pgx', 'addiction', 'risk']))
 
-  const navigate = useCallback((v: 'snps' | 'mental-health' | 'pgx' | 'addiction' | 'risk') => {
+  const navigate = useCallback((v: 'snps' | 'mental-health' | 'pgx' | 'addiction' | 'risk' | 'import') => {
     setView(v)
     if (v === 'mental-health') window.location.hash = '#/mental-health'
     else if (v === 'pgx') window.location.hash = '#/pgx'
     else if (v === 'addiction') window.location.hash = '#/addiction'
     else if (v === 'risk') window.location.hash = '#/risk'
+    else if (v === 'import') window.location.hash = '#/import'
     else window.location.hash = '#/'
   }, [])
 
@@ -63,6 +66,7 @@ function App() {
       else if (hash === '#/pgx') setView('pgx')
       else if (hash === '#/addiction') setView('addiction')
       else if (hash === '#/risk') setView('risk')
+      else if (hash === '#/import') setView('import')
       else setView('snps')
     }
     window.addEventListener('hashchange', onHashChange)
@@ -75,6 +79,7 @@ function App() {
     'pgx': 'PGx / Drugs',
     'addiction': 'Addiction',
     'risk': 'Risk Landscape',
+    'import': 'Import',
   }
 
   useEffect(() => {
@@ -110,6 +115,18 @@ function App() {
         .catch(() => {})
     }
   }, [])
+
+  // First-run onboarding: if the genome DB is empty and the user didn't deep-link a
+  // view, land on the Import screen so there's an obvious way to add data.
+  const didAutoRouteRef = useRef(false)
+  useEffect(() => {
+    if (didAutoRouteRef.current || loading) return
+    didAutoRouteRef.current = true
+    // Treat empty, "#" and "#/" as "no view deep-linked".
+    const h = window.location.hash
+    const noDeepLink = h === '' || h === '#' || h === '#/'
+    if (result.total === 0 && noDeepLink) navigate('import')
+  }, [loading, result.total, navigate])
 
   const handleUIAction = useCallback((action: UIAction) => {
     if (action.action === 'filter_table') {
@@ -334,6 +351,19 @@ function App() {
               {v.label}
             </button>
           ))}
+          {/* Import is always available — needed even when the DB is empty */}
+          <button
+            className="btn"
+            style={{
+              fontSize: 'var(--font-size-xs)',
+              background: view === 'import' ? 'var(--bg-inset)' : 'transparent',
+              borderColor: view === 'import' ? 'var(--primary)' : 'var(--border)',
+              color: view === 'import' ? 'var(--primary)' : 'var(--text-secondary)',
+            }}
+            onClick={() => navigate('import')}
+          >
+            IMPORT
+          </button>
           <button
             className="btn"
             style={{
@@ -474,6 +504,11 @@ function App() {
             setTimeout(() => setChecklistHighlight(false), 1500)
           }} />
         </main>
+      ) : view === 'import' ? (
+        <ImportView
+          onImported={() => updateFilters({})}
+          onGoToBrowser={() => navigate('snps')}
+        />
       ) : (
         <main>
           <MentalHealthDashboard
