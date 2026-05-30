@@ -4,11 +4,12 @@ import { useLifeMap } from '../../hooks/useLifeMap'
 import { CountryAnchors } from './CountryAnchors'
 import { MigrationContextMarker } from './MigrationContextMarker'
 import { ResidenceHistoryInput } from './ResidenceHistoryInput'
+import { LifeModifiers } from './LifeModifiers'
 
 export function LifeMap() {
   const { state, addResidence, updateResidence, removeResidence, setCurrentCountry, setSex, setAge } =
     useResidenceHistory()
-  const { anchors, blend, table, loading } = useLifeMap({
+  const { anchors, blend, modifiers, table, loading } = useLifeMap({
     residences: state.residences,
     currentCountry: state.currentCountry,
     sex: state.sex,
@@ -55,6 +56,8 @@ export function LifeMap() {
           <CountryAnchors anchors={anchors} currentCountry={state.currentCountry} />
           <MigrationContextMarker blend={blend} />
         </section>
+
+        <LifeModifiers modifiers={modifiers} />
       </div>
 
       <div
