@@ -3,6 +3,8 @@ import type { PGxEnzymeSection } from '../types/pgx'
 import type { MortalityCause } from '../components/risk/RiskLandscape'
 import type { SubstanceCard } from '../hooks/useAddictionData'
 import type { ChecklistItem } from '../hooks/useChecklist'
+import type { CountryAnchor, BlendMarker, Residence } from './lifeBlend'
+import type { LifeModifier } from '../hooks/useLifeMap'
 
 // ── Print ────────────────────────────────────────────────────────────────────
 
@@ -312,6 +314,86 @@ export function checklistToMarkdown(items: ChecklistItem[]): string {
     lines.push('')
   }
 
+  lines.push(footer())
+  return lines.join('\n')
+}
+
+// ── Life Map Markdown ─────────────────────────────────────────────────────────
+
+export interface LifeMapExportInput {
+  sex: string
+  age: number
+  currentCountry: string
+  anchors: CountryAnchor[]
+  residences: Residence[]
+  blend: BlendMarker | null
+  modifiers: LifeModifier[]
+  retrieved?: string
+}
+
+const MODIFIER_GROUPS: { key: LifeModifier['category']; label: string }[] = [
+  { key: 'stress', label: 'Stress & lifestyle' },
+  { key: 'mental-health', label: 'Mental health' },
+  { key: 'family-history', label: 'Family history' },
+]
+
+export function lifeMapToMarkdown(input: LifeMapExportInput): string {
+  const { sex, age, currentCountry, anchors, residences, blend, modifiers } = input
+  const yearsBy = new Map(residences.map((r) => [r.country, r.years]))
+  const currentName = anchors.find((a) => a.country === currentCountry)?.name ?? currentCountry
+
+  const lines: string[] = [
+    `# Life Map — Life Expectancy Context`,
+    `_Date: ${today()}_`,
+    '',
+    `**Assumptions:** ${sex}, current age ${age}, current country ${currentName || '—'}.`,
+    `These are **period life expectancy** figures (population statistics), **not a personal prediction**.`,
+    '',
+    `## Country anchors`,
+    '',
+    '| Country | Years lived | Life expectancy at age ' + age + ' | Expected age |',
+    '|---------|------------|------|------|',
+  ]
+  for (const a of anchors) {
+    lines.push(`| ${a.name} | ${yearsBy.get(a.country) ?? 0} | ${a.exAtAge.toFixed(1)} | ${a.targetAge.toFixed(1)} |`)
+  }
+  lines.push('')
+
+  if (blend && anchors.length > 1) {
+    const sorted = [...anchors].sort((x, y) => y.targetAge - x.targetAge)
+    const gap = (sorted[0].targetAge - sorted[sorted.length - 1].targetAge).toFixed(1)
+    const dominant = [...residences].sort((x, y) => y.years - x.years)[0]
+    const dominantName = anchors.find((a) => a.country === dominant?.country)?.name ?? dominant?.country
+    lines.push(`## Migration context marker`)
+    lines.push('')
+    lines.push(`Blended estimate **≈ ${blend.targetAge.toFixed(1)}** (spread ${blend.spread.min.toFixed(1)}–${blend.spread.max.toFixed(1)}).`)
+    lines.push('')
+    lines.push(`This is a **heuristic, not a personal prediction** — a years-lived blend weighted toward your current residence. Living across countries did **not** "cause" the gap; migration and mortality interact in complex ways (healthy-migrant effects, gradual risk convergence).`)
+    lines.push('')
+    lines.push(`- Biggest gap between anchors: **${gap} years** (${sorted[0].name} vs ${sorted[sorted.length - 1].name}).`)
+    if (dominantName) lines.push(`- Most years lived in: **${dominantName}**.`)
+    lines.push('')
+  }
+
+  const present = MODIFIER_GROUPS.filter((g) => modifiers.some((m) => m.category === g.key))
+  if (present.length > 0) {
+    lines.push(`## Life context`)
+    lines.push('')
+    lines.push(`_Qualitative factors only. Population year-range estimates are intentionally omitted from exports._`)
+    lines.push('')
+    for (const g of present) {
+      lines.push(`### ${g.label}`)
+      for (const m of modifiers.filter((x) => x.category === g.key)) {
+        lines.push(`- **${m.label}** (evidence: ${m.evidence}) — ${m.qualitative.trim()}`)
+      }
+      lines.push('')
+    }
+  }
+
+  if (input.retrieved) {
+    lines.push(`_Data: Eurostat (EU) + WHO GHO (Russia), retrieved ${input.retrieved}._`)
+  }
+  lines.push(`_Not medical advice. For awareness and prevention, not diagnosis._`)
   lines.push(footer())
   return lines.join('\n')
 }
