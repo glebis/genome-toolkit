@@ -10,7 +10,7 @@ import { LifeExpectancyAxis } from './LifeExpectancyAxis'
 import { LifeMapGlyph } from './LifeMapGlyph'
 
 export function LifeMap() {
-  const { state, addResidence, updateResidence, removeResidence, setCurrentCountry, setSex, setAge } =
+  const { state, addResidence, updateResidence, removeResidence, setCurrentCountry, setSex, setAge, toggleModifier } =
     useResidenceHistory()
   const { anchors, blend, modifiers, table, loading } = useLifeMap({
     residences: state.residences,
@@ -18,6 +18,8 @@ export function LifeMap() {
     sex: state.sex,
     age: state.age,
   })
+
+  const selectedModifiers = modifiers.filter((m) => state.modifierIds.includes(m.id))
 
   function handleExport(format: string) {
     if (format === 'md') {
@@ -28,7 +30,7 @@ export function LifeMap() {
         anchors,
         residences: state.residences,
         blend,
-        modifiers,
+        modifiers: selectedModifiers,
         retrieved: table?.retrieved,
       })
       downloadFile(md, `life-map-${new Date().toISOString().slice(0, 10)}.md`)
@@ -86,7 +88,7 @@ export function LifeMap() {
           <MigrationContextMarker blend={blend} />
         </section>
 
-        <LifeModifiers modifiers={modifiers} />
+        <LifeModifiers available={modifiers} selectedIds={state.modifierIds} onToggle={toggleModifier} />
 
         {anchors.length > 0 && <ExportBar onExport={handleExport} />}
       </div>

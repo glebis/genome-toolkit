@@ -42,6 +42,17 @@ describe('useResidenceHistory', () => {
     expect(saved.age).toBe(38)
   })
 
+  it('defaults to no selected modifiers and toggles them, persisting', () => {
+    const { result } = renderHook(() => useResidenceHistory())
+    expect(result.current.state.modifierIds).toEqual([])
+    act(() => result.current.toggleModifier('smoking'))
+    act(() => result.current.toggleModifier('anxiety'))
+    expect(result.current.state.modifierIds).toEqual(['smoking', 'anxiety'])
+    act(() => result.current.toggleModifier('smoking'))
+    expect(result.current.state.modifierIds).toEqual(['anxiety'])
+    expect(JSON.parse(store[RESIDENCE_STORAGE_KEY]).modifierIds).toEqual(['anxiety'])
+  })
+
   it('recovers from malformed JSON', () => {
     store[RESIDENCE_STORAGE_KEY] = '{not json'
     const { result } = renderHook(() => useResidenceHistory())

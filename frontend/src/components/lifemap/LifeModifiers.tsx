@@ -2,7 +2,11 @@ import { useState } from 'react'
 import type { LifeModifier } from '../../hooks/useLifeMap'
 
 interface LifeModifiersProps {
-  modifiers: LifeModifier[]
+  /** The full catalogue of factors the user can choose from. */
+  available: LifeModifier[]
+  /** IDs the user has marked as applying to them. */
+  selectedIds: string[]
+  onToggle: (id: string) => void
 }
 
 const CATEGORY_LABELS: Record<LifeModifier['category'], string> = {
@@ -19,7 +23,30 @@ function canShowRange(m: LifeModifier): boolean {
   return m.evidence === 'strong' && !!m.range
 }
 
-function ModifierCard({ m }: { m: LifeModifier }) {
+function Toggle({ m, selected, onToggle }: { m: LifeModifier; selected: boolean; onToggle: (id: string) => void }) {
+  return (
+    <button
+      type="button"
+      aria-pressed={selected}
+      onClick={() => onToggle(m.id)}
+      style={{
+        fontFamily: 'var(--font-mono)',
+        fontSize: 'var(--font-size-xs)',
+        padding: '6px 10px',
+        borderRadius: 16,
+        cursor: 'pointer',
+        border: `1px solid ${selected ? 'var(--primary)' : 'var(--border)'}`,
+        background: selected ? 'var(--primary)' : 'transparent',
+        color: selected ? 'var(--bg)' : 'var(--text-secondary)',
+      }}
+    >
+      {selected ? '✓ ' : '+ '}
+      {m.label}
+    </button>
+  )
+}
+
+function DetailCard({ m }: { m: LifeModifier }) {
   const [showRange, setShowRange] = useState(false)
   return (
     <div style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '12px 14px', background: 'var(--bg-inset)' }}>
@@ -37,22 +64,11 @@ function ModifierCard({ m }: { m: LifeModifier }) {
       {canShowRange(m) && (
         <div style={{ marginTop: 10 }}>
           {!showRange ? (
-            <button
-              className="btn"
-              style={{ fontSize: 'var(--font-size-xs)' }}
-              onClick={() => setShowRange(true)}
-            >
+            <button className="btn" style={{ fontSize: 'var(--font-size-xs)' }} onClick={() => setShowRange(true)}>
               Show range
             </button>
           ) : (
-            <div
-              style={{
-                border: '1px dashed var(--sig-monitor, var(--border))',
-                borderRadius: 6,
-                padding: '8px 10px',
-                fontSize: 'var(--font-size-xs)',
-              }}
-            >
+            <div style={{ border: '1px dashed var(--sig-monitor, var(--border))', borderRadius: 6, padding: '8px 10px', fontSize: 'var(--font-size-xs)' }}>
               <div style={{ fontVariantNumeric: 'tabular-nums' }}>
                 Associated with roughly <strong>{m.range!.lowYears}–{m.range!.highYears} years</strong> in population studies.
               </div>
@@ -68,31 +84,47 @@ function ModifierCard({ m }: { m: LifeModifier }) {
   )
 }
 
-export function LifeModifiers({ modifiers }: LifeModifiersProps) {
-  if (modifiers.length === 0) return null
+export function LifeModifiers({ available, selectedIds, onToggle }: LifeModifiersProps) {
+  if (available.length === 0) return null
+  const selected = available.filter((m) => selectedIds.includes(m.id))
+
   return (
     <section>
-      <h3 style={{ fontSize: 'var(--font-size-sm)', letterSpacing: '0.08em', color: 'var(--text-secondary)', marginBottom: 12 }}>
+      <h3 style={{ fontSize: 'var(--font-size-sm)', letterSpacing: '0.08em', color: 'var(--text-secondary)', marginBottom: 6 }}>
         LIFE CONTEXT
       </h3>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+      <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)', margin: '0 0 14px', maxWidth: 640 }}>
+        Select any factors that apply to you. Only what you choose is shown — nothing here is inferred about you.
+      </p>
+
+      {/* Picker, grouped by category */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: selected.length ? 20 : 0 }}>
         {CATEGORY_ORDER.map((cat) => {
-          const items = modifiers.filter((m) => m.category === cat)
+          const items = available.filter((m) => m.category === cat)
           if (items.length === 0) return null
           return (
             <div key={cat}>
-              <div style={{ fontSize: 'var(--font-size-xs)', letterSpacing: '0.06em', color: 'var(--text-tertiary)', marginBottom: 8 }}>
+              <div style={{ fontSize: 'var(--font-size-xs)', letterSpacing: '0.06em', color: 'var(--text-tertiary)', marginBottom: 6 }}>
                 {CATEGORY_LABELS[cat]}
               </div>
-              <div style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {items.map((m) => (
-                  <ModifierCard key={m.id} m={m} />
+                  <Toggle key={m.id} m={m} selected={selectedIds.includes(m.id)} onToggle={onToggle} />
                 ))}
               </div>
             </div>
           )
         })}
       </div>
+
+      {/* Detail cards for selected factors */}
+      {selected.length > 0 && (
+        <div style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))' }}>
+          {selected.map((m) => (
+            <DetailCard key={m.id} m={m} />
+          ))}
+        </div>
+      )}
     </section>
   )
 }

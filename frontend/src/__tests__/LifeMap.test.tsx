@@ -18,9 +18,9 @@ vi.mock('../hooks/useLifeMap', () => ({ useLifeMap: () => lifeMapReturn }))
 vi.mock('../hooks/useResidenceHistory', () => ({
   RESIDENCE_STORAGE_KEY: 'genome_residence_history',
   useResidenceHistory: () => ({
-    state: { residences: [{ country: 'DE', years: 5 }, { country: 'RU', years: 33 }], currentCountry: 'DE', sex: 'male', age: 38 },
+    state: { residences: [{ country: 'DE', years: 5 }, { country: 'RU', years: 33 }], currentCountry: 'DE', sex: 'male', age: 38, modifierIds: [] },
     addResidence: vi.fn(), updateResidence: vi.fn(), removeResidence: vi.fn(),
-    setCurrentCountry: vi.fn(), setSex: vi.fn(), setAge: vi.fn(),
+    setCurrentCountry: vi.fn(), setSex: vi.fn(), setAge: vi.fn(), toggleModifier: vi.fn(),
   }),
 }))
 

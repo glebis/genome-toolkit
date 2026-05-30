@@ -8,6 +8,8 @@ export interface ResidenceState {
   currentCountry: string
   sex: Sex
   age: number
+  /** IDs of life-context factors the user marked as applying to them. */
+  modifierIds: string[]
 }
 
 const DEFAULT_STATE: ResidenceState = {
@@ -15,6 +17,7 @@ const DEFAULT_STATE: ResidenceState = {
   currentCountry: '',
   sex: 'male',
   age: 30,
+  modifierIds: [],
 }
 
 function loadState(): ResidenceState {
@@ -27,6 +30,7 @@ function loadState(): ResidenceState {
       currentCountry: typeof parsed.currentCountry === 'string' ? parsed.currentCountry : '',
       sex: parsed.sex === 'female' ? 'female' : 'male',
       age: typeof parsed.age === 'number' ? parsed.age : DEFAULT_STATE.age,
+      modifierIds: Array.isArray(parsed.modifierIds) ? parsed.modifierIds : [],
     }
   } catch {
     return { ...DEFAULT_STATE }
@@ -74,5 +78,14 @@ export function useResidenceHistory() {
   const setSex = useCallback((sex: Sex) => mutate((prev) => ({ ...prev, sex })), [mutate])
   const setAge = useCallback((age: number) => mutate((prev) => ({ ...prev, age })), [mutate])
 
-  return { state, addResidence, updateResidence, removeResidence, setCurrentCountry, setSex, setAge }
+  const toggleModifier = useCallback((id: string) => {
+    mutate((prev) => ({
+      ...prev,
+      modifierIds: prev.modifierIds.includes(id)
+        ? prev.modifierIds.filter((x) => x !== id)
+        : [...prev.modifierIds, id],
+    }))
+  }, [mutate])
+
+  return { state, addResidence, updateResidence, removeResidence, setCurrentCountry, setSex, setAge, toggleModifier }
 }
