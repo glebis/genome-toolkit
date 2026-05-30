@@ -108,7 +108,7 @@ async def get_gwas_overlap():
 
     results: list[dict] = []
     for rsid, traits_list in pleiotropic.items():
-        snp = await genome_db.get_snp(rsid)
+        snp = await genome_db.get_snp(rsid, profile_id="default")
         # Use the first trait's effect allele for counting (they may differ across studies)
         ea = traits_list[0].get("effect_allele")
         ea_count = _count_effect_alleles(
@@ -175,7 +175,7 @@ async def get_gwas_summary():
             rsid = hit.get("rsid")
             if not rsid:
                 continue
-            snp = await genome_db.get_snp(rsid)
+            snp = await genome_db.get_snp(rsid, profile_id="default")
             if not snp:
                 continue
             ea_count = _count_effect_alleles(snp.get("genotype"), hit.get("effect_allele"))
@@ -250,7 +250,7 @@ async def _compute_trait_summary(trait: str) -> dict | None:
         rsid = hit.get("rsid")
         if not rsid:
             continue
-        snp = await genome_db.get_snp(rsid)
+        snp = await genome_db.get_snp(rsid, profile_id="default")
         if not snp:
             continue
         ea_count = _count_effect_alleles(snp.get("genotype"), hit.get("effect_allele"))
@@ -358,7 +358,7 @@ async def get_addiction_gwas_summary():
         if not rsid:
             continue
 
-        snp = await genome_db.get_snp(rsid)
+        snp = await genome_db.get_snp(rsid, profile_id="default")
         if not snp:
             continue
 
@@ -456,7 +456,7 @@ async def get_gwas_matches(trait: str, clumped: bool = Query(False)):
         if not rsid:
             continue
 
-        snp = await genome_db.get_snp(rsid)
+        snp = await genome_db.get_snp(rsid, profile_id="default")
         if not snp:
             continue
 

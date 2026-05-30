@@ -65,7 +65,7 @@ async def query_snps(args: dict[str, Any]) -> dict[str, Any]:
     annotations=ToolAnnotations(readOnlyHint=True, destructiveHint=False),
 )
 async def get_snp_detail(args: dict[str, Any]) -> dict[str, Any]:
-    snp = await _genome_db.get_snp(args["rsid"])
+    snp = await _genome_db.get_snp(args["rsid"], profile_id="default")
     if not snp:
         text = f"Variant {args['rsid']} not found in your data."
     else:
