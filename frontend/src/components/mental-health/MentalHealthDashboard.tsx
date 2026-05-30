@@ -259,7 +259,7 @@ export function MentalHealthDashboard({
                   <NarrativeBlock narrative={section.narrative} />
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {visibleGenes.map(gene => (
-                      <GeneCard key={gene.rsid} gene={gene} onClick={handleGeneClick} />
+                      <GeneCard key={gene.symbol} gene={gene} onClick={handleGeneClick} />
                     ))}
                   </div>
                 </div>
