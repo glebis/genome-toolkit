@@ -30,9 +30,10 @@ describe('useLifeMap', () => {
       useLifeMap({ residences: [{ country: 'DE', years: 5 }, { country: 'RU', years: 33 }], currentCountry: 'DE', sex: 'male', age: 38 }),
     )
     await waitFor(() => expect(result.current.loading).toBe(false))
+    // RU exposes only WHO ages 0 and 60 (gap > MAX_INTERPOLATION_GAP_YEARS), so a
+    // 38-year-old gets no honest anchor from it (audit #13) — only DE (exact age 38) anchors.
     expect(result.current.anchors).toEqual([
       { country: 'DE', name: 'Germany', exAtAge: 41.9, targetAge: 79.9 },
-      { country: 'RU', name: 'Russia', exAtAge: 14.0, targetAge: 74.0 },
     ])
     expect(result.current.blend?.heuristic).toBe(true)
     expect(result.current.modifiers).toHaveLength(1)
