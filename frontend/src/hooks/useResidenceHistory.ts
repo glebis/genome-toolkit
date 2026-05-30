@@ -20,18 +20,53 @@ const DEFAULT_STATE: ResidenceState = {
   modifierIds: [],
 }
 
+/** Sane bounds for ages and years-of-residence. blendMarker() uses `years` as a
+ *  weight, so out-of-range values (negative or huge) would distort the life map. */
+const MIN_AGE = 0
+const MAX_AGE = 110
+const MIN_YEARS = 0
+const MAX_YEARS = 110
+
+function clampNumber(value: unknown, fallback: number, min: number, max: number): number {
+  const n = typeof value === 'number' && Number.isFinite(value) ? value : fallback
+  return Math.max(min, Math.min(max, n))
+}
+
+/** Coerce an unknown residence into a valid one, or drop it (null) if it has no
+ *  usable country code. Years are clamped to a sane range. */
+function sanitizeResidence(r: unknown): Residence | null {
+  if (!r || typeof r !== 'object') return null
+  const x = r as Partial<Residence>
+  if (typeof x.country !== 'string' || !x.country) return null
+  return { country: x.country, years: clampNumber(x.years, MIN_YEARS, MIN_YEARS, MAX_YEARS) }
+}
+
+/** Sanitize a whole state object: clamp age/years, coerce sex, drop invalid
+ *  residences. Applied both on localStorage load and on every mutation. */
+function sanitizeState(state: ResidenceState): ResidenceState {
+  return {
+    residences: state.residences
+      .map(sanitizeResidence)
+      .filter((r): r is Residence => r !== null),
+    currentCountry: typeof state.currentCountry === 'string' ? state.currentCountry : '',
+    sex: state.sex === 'female' ? 'female' : 'male',
+    age: clampNumber(state.age, DEFAULT_STATE.age, MIN_AGE, MAX_AGE),
+    modifierIds: Array.isArray(state.modifierIds) ? state.modifierIds : [],
+  }
+}
+
 function loadState(): ResidenceState {
   try {
     const raw = localStorage.getItem(RESIDENCE_STORAGE_KEY)
     if (!raw) return { ...DEFAULT_STATE }
     const parsed = JSON.parse(raw)
-    return {
+    return sanitizeState({
       residences: Array.isArray(parsed.residences) ? parsed.residences : [],
       currentCountry: typeof parsed.currentCountry === 'string' ? parsed.currentCountry : '',
       sex: parsed.sex === 'female' ? 'female' : 'male',
       age: typeof parsed.age === 'number' ? parsed.age : DEFAULT_STATE.age,
       modifierIds: Array.isArray(parsed.modifierIds) ? parsed.modifierIds : [],
-    }
+    })
   } catch {
     return { ...DEFAULT_STATE }
   }
@@ -46,7 +81,7 @@ export function useResidenceHistory() {
 
   const mutate = useCallback((fn: (prev: ResidenceState) => ResidenceState) => {
     setState((prev) => {
-      const next = fn(prev)
+      const next = sanitizeState(fn(prev))
       save(next)
       return next
     })
