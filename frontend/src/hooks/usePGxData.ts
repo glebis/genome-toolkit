@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useVaultGenes } from './useVaultGenes'
 import type { VaultGene } from './useVaultGenes'
-import type { PGxEnzymeSection, MetabolizerStatus, DrugImpact, DrugCardData, EnzymeData, GeneType } from '../types/pgx'
+import type { PGxEnzymeSection, MetabolizerStatus, DrugImpact, DrugCardData, EnzymeData, GeneType, EvidenceScope } from '../types/pgx'
 
 interface ConfigEnzyme {
   symbol: string
@@ -20,6 +20,7 @@ interface ConfigDrug {
   class?: string             // YAML uses 'class'
   drugClass?: string         // fallback
   category: string
+  evidence_scope?: EvidenceScope
   description?: string
   drugs?: string             // YAML uses 'drugs' for drug list
   drugList?: string          // fallback
@@ -174,6 +175,10 @@ export function usePGxData(): UsePGxDataReturn {
           drugList: cd.drugs ?? cd.drugList ?? '',
           dangerNote: byStatus?.danger_note ?? cd.danger_note ?? cd.dangerNote,
           category: (cd.category === 'drug' ? 'prescription' : cd.category) as 'prescription' | 'substance',
+          // Default sensibly when the config omits it: guideline-backed only when
+          // the enzyme actually names a guideline, otherwise exploratory. Never
+          // let an untagged substance/drug inherit prescriber-grade framing.
+          evidenceScope: cd.evidence_scope ?? (ce.guideline ? 'guideline' : 'exploratory'),
         }
       })
 

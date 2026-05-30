@@ -7,8 +7,8 @@ substances:
   - name: MDMA / Ecstasy
     relevant_genes: [CYP2D6, DRD2, COMT, SLC6A4]
     relevant_enzymes: [CYP2D6]
-    harm_title: Harm reduction
-    harm_text: "Start with lower doses than typical recommendations (your metabolism is slower). Wait at least 3 hours before considering redose. Avoid if on SSRIs."
+    harm_title: Harm reduction (not genotype-backed dosing)
+    harm_text: "General harm-reduction guidance, not a genotype-derived dose: many people start conservatively and wait at least 2-3 hours before considering any redose. Avoid combining with SSRIs/MAOIs (serotonin-syndrome risk). Test substances and stay hydrated without overdoing water."
   - name: Cocaine
     relevant_genes: [CYP3A4, CYP2D6, DRD2, COMT]
     relevant_enzymes: [CYP3A4, CYP2D6]
@@ -17,8 +17,8 @@ substances:
   - name: Psychedelics (Psilocybin, LSD)
     relevant_genes: [CYP3A4, CYP2D6, MAOA]
     relevant_enzymes: [CYP3A4, CYP2D6]
-    harm_title: Harm reduction
-    harm_text: "For psilocybin: start with lower doses given slightly slower CYP2D6 metabolism. For DMT/ayahuasca: MAO-A status means monoamine clearance is already reduced — use extreme caution with MAOIs."
+    harm_title: Harm reduction (not genotype-backed dosing)
+    harm_text: "General harm-reduction guidance, not a genotype-derived dose: many people start low and go slow, especially in unfamiliar settings. For DMT/ayahuasca, be extremely cautious about combining with MAOIs and serotonergic medications."
   - name: Ketamine
     relevant_genes: [CYP3A4, CYP2B6, BDNF]
     relevant_enzymes: [CYP3A4, CYP2B6]
@@ -32,5 +32,5 @@ substances:
   - name: Benzodiazepines (Xanax, Klonopin)
     relevant_genes: [CYP3A4, GABRA2, GAD1]
     relevant_enzymes: [CYP3A4]
-    harm_title: Harm reduction
-    harm_text: "Your genetic profile suggests higher-than-average benzodiazepine sensitivity and faster dependence development. Never combine with alcohol or opioids. Taper slowly if stopping."
+    harm_title: Harm reduction (not genotype-backed dosing)
+    harm_text: "Benzodiazepines carry real dependence and overdose-in-combination risks for everyone — this is not a genotype-derived dose. Never combine with alcohol or opioids (respiratory depression). If stopping after regular use, taper slowly with clinician support rather than quitting abruptly."

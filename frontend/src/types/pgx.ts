@@ -31,6 +31,30 @@ export function statusLabel(status: MetabolizerStatus, geneType: GeneType): stri
 
 export type DrugImpact = 'ok' | 'adjust' | 'warn' | 'danger'
 
+/** How strongly a drug/substance card's claim is backed by evidence.
+ *  - guideline:       named clinical PGx guideline (e.g. CPIC). Prescriber-facing.
+ *  - label:           FDA/EMA drug-label biomarker note. Prescriber-facing.
+ *  - pk_only:         pharmacokinetic/metabolism note only; no dose amounts.
+ *  - harm_reduction:  safety/combos/redosing context; NOT genotype-backed dosing.
+ *  - exploratory:     research-only; low prominence, no prescriber framing. */
+export type EvidenceScope = 'guideline' | 'label' | 'pk_only' | 'harm_reduction' | 'exploratory'
+
+/** Short badge label shown per card. */
+export const EVIDENCE_SCOPE_LABELS: Record<EvidenceScope, string> = {
+  guideline: 'Guideline-backed PGx',
+  label: 'Drug-label biomarker',
+  pk_only: 'Pharmacokinetic note',
+  harm_reduction: 'Harm-reduction note, not genotype-backed dosing',
+  exploratory: 'Research-only',
+}
+
+/** Only these scopes may appear under prescriber-recommendation framing. */
+export const PRESCRIBER_SCOPES: ReadonlySet<EvidenceScope> = new Set<EvidenceScope>(['guideline', 'label'])
+
+export function isPrescriberScope(scope: EvidenceScope): boolean {
+  return PRESCRIBER_SCOPES.has(scope)
+}
+
 export interface EnzymeData {
   symbol: string
   alleles: string         // e.g. "*1/*4"
@@ -50,6 +74,7 @@ export interface DrugCardData {
   drugList: string        // e.g. "fluoxetine, paroxetine"
   dangerNote?: string     // safety-critical note
   category: 'prescription' | 'substance'
+  evidenceScope: EvidenceScope  // how strongly the claim is backed (see EvidenceScope)
 }
 
 export interface PGxEnzymeSection {

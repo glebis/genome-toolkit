@@ -54,6 +54,7 @@ const baseDrug: DrugCardData = {
   description: 'Lower starting dose recommended.',
   drugList: 'fluoxetine, paroxetine',
   category: 'prescription',
+  evidenceScope: 'guideline',
 }
 
 describe('DrugCard', () => {

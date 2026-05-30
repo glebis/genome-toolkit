@@ -13,18 +13,19 @@ const mockSections = [
       {
         drugClass: 'SSRIs', impact: 'adjust', statusText: 'Dose adjustment needed',
         description: 'Reduced metabolism.', drugList: 'fluoxetine, paroxetine',
-        category: 'prescription',
+        category: 'prescription', evidenceScope: 'guideline',
       },
       {
         drugClass: 'Codeine', impact: 'danger', statusText: 'Avoid',
         description: 'Cannot convert codeine.', drugList: 'codeine, tramadol',
         dangerNote: 'Codeine will not provide pain relief.',
-        category: 'prescription',
+        category: 'prescription', evidenceScope: 'label',
       },
       {
         drugClass: 'Cannabis', impact: 'adjust', statusText: 'Slower processing',
         description: 'THC breakdown affected.', drugList: 'THC, CBD',
-        category: 'substance',
+        category: 'substance', evidenceScope: 'harm_reduction',
+        dangerNote: 'Edibles hit harder; start low.',
       },
     ],
   },
@@ -161,5 +162,36 @@ describe('PGxPanel', () => {
     await renderComponent()
     // Old behavior rendered "Based on CPIC guidelines (2025)" for every section.
     expect(screen.queryByText(/Based on CPIC guidelines/)).not.toBeInTheDocument()
+  })
+
+  it('renders a scope badge per drug card', async () => {
+    await renderComponent()
+    // guideline-scoped SSRIs card
+    expect(screen.getByText('Guideline-backed PGx')).toBeInTheDocument()
+    // label-scoped Codeine card
+    expect(screen.getByText('Drug-label biomarker')).toBeInTheDocument()
+    // harm_reduction-scoped Cannabis card — kept and clearly relabeled
+    expect(screen.getByText('Harm-reduction note, not genotype-backed dosing')).toBeInTheDocument()
+  })
+
+  it('keeps the harm-reduction card visible by default (not hidden behind a filter)', async () => {
+    await renderComponent()
+    // filter defaults to 'all'; the harm_reduction substance card must be present.
+    expect(screen.getByText('Cannabis')).toBeInTheDocument()
+  })
+
+  it('groups non-guideline/label scopes under a "not genotype-backed dosing" label', async () => {
+    await renderComponent()
+    // Exact group header (distinct from the per-card harm-reduction badge text).
+    expect(screen.getByText('Not genotype-backed dosing')).toBeInTheDocument()
+  })
+
+  it('only applies prescriber framing to guideline/label scopes', async () => {
+    await renderComponent()
+    // The harm_reduction Cannabis card has a dangerNote but must NOT use
+    // the prescriber-discussion header reserved for guideline/label drugs.
+    expect(screen.getByText('Interaction warning')).toBeInTheDocument()
+    // prescriber-only header text still present for the guideline/label prescription card (Codeine)
+    expect(screen.getByText('Discuss with prescriber')).toBeInTheDocument()
   })
 })

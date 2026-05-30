@@ -1,4 +1,5 @@
 import type { DrugCardData } from '../../types/pgx'
+import { EVIDENCE_SCOPE_LABELS, isPrescriberScope } from '../../types/pgx'
 
 const IMPACT_STYLES: Record<string, { borderColor: string; statusColor: string; bg?: string }> = {
   ok: { borderColor: 'var(--sig-benefit)', statusColor: 'var(--sig-benefit)' },
@@ -28,6 +29,25 @@ export function DrugCard({ drug, onAddToChecklist, added }: DrugCardProps) {
         <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 500, color: style.statusColor }}>
           {drug.statusText}
         </span>
+      </div>
+      {/* Evidence-scope badge — prescriber-grade scopes (guideline/label) read as
+          accents; everything else is muted and labeled not-genotype-backed. */}
+      <div
+        title={EVIDENCE_SCOPE_LABELS[drug.evidenceScope]}
+        style={{
+          display: 'inline-block',
+          fontSize: 'var(--font-size-xs)',
+          fontWeight: 600,
+          letterSpacing: '0.06em',
+          textTransform: 'uppercase',
+          padding: '1px 6px',
+          borderRadius: 3,
+          marginBottom: 6,
+          border: `1px solid ${isPrescriberScope(drug.evidenceScope) ? 'var(--primary)' : 'var(--border)'}`,
+          color: isPrescriberScope(drug.evidenceScope) ? 'var(--primary)' : 'var(--text-tertiary)',
+        }}
+      >
+        {EVIDENCE_SCOPE_LABELS[drug.evidenceScope]}
       </div>
       <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text)', lineHeight: 1.6 }}>
         {drug.description}

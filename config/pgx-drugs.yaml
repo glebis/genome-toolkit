@@ -31,6 +31,7 @@ enzymes:
       - class: Recreational Substances
         drugs: "MDMA, Dextromethorphan (DXM)"
         category: substance
+        evidence_scope: harm_reduction
         impact_by_status:
           poor: { impact: danger, text: "Severely impaired clearance", description: "MDMA and DXM are CYP2D6 substrates. Poor metabolizers experience dramatically prolonged and intensified effects.", danger_note: "MDMA lasts much longer and redosing is extremely dangerous. DXM can reach serotonin-syndrome levels." }
           intermediate: { impact: warn, text: "Slower clearance — dose carefully", description: "Effects last longer than typical. Start with lower doses and extend intervals." }
@@ -90,12 +91,14 @@ enzymes:
       - class: Grapefruit (food-drug interaction)
         drugs: "Grapefruit, grapefruit juice, pomelo, Seville oranges"
         category: substance
+        evidence_scope: pk_only
         impact_by_status:
           normal: { impact: warn, text: "Can dramatically raise levels of CYP3A4 drugs", description: "Grapefruit contains furanocoumarins that irreversibly inhibit intestinal CYP3A4 for 24-72 hours. This is NOT about your genotype — it affects everyone. One glass of grapefruit juice can double or triple plasma levels of sensitive drugs like statins, some calcium channel blockers, certain benzodiazepines, and immunosuppressants.", danger_note: "If you take any CYP3A4 substrate (check the cards above — statins, CCBs, benzos, immunosuppressants), avoid grapefruit entirely. Separating by a few hours does NOT work — the effect lasts days. Safe citrus: regular oranges, lemons, limes, mandarins. Dangerous: grapefruit, pomelo, Seville oranges, some tangelos." }
           poor: { impact: warn, text: "Even more dramatic effects", description: "Combined with your already slower CYP3A4 metabolism, grapefruit can push levels into toxic range very quickly." }
       - class: Recreational Substances
         drugs: "Cocaine, Ketamine, GHB"
         category: substance
+        evidence_scope: harm_reduction
         impact_by_status:
           poor: { impact: warn, text: "Slower clearance for some substances", description: "Cocaine and ketamine partially rely on CYP3A4. Effects may be slightly prolonged." }
           normal: { impact: ok, text: "Standard metabolism", description: "Normal clearance. Standard harm reduction applies." }
@@ -132,6 +135,7 @@ enzymes:
       - class: Psychedelics (Psilocybin context)
         drugs: "Psilocybin, LSD (minor pathway)"
         category: substance
+        evidence_scope: harm_reduction
         impact_by_status:
           poor: { impact: adjust, text: "Slightly prolonged effects possible", description: "CYP2C19 plays a secondary role in psilocybin metabolism. Effects may last a bit longer than typical." }
           normal: { impact: ok, text: "Standard metabolism", description: "Normal clearance. Standard harm reduction applies." }
@@ -165,6 +169,7 @@ enzymes:
       - class: Cannabis (THC)
         drugs: "THC (smoked, edibles, vaped)"
         category: substance
+        evidence_scope: harm_reduction
         impact_by_status:
           poor: { impact: warn, text: "Stronger and longer effects than average", description: "CYP2C9 is a major pathway for THC clearance. Poor metabolizers experience significantly more intense and longer-lasting effects, especially from edibles.", danger_note: "Edibles will hit you harder and last longer — sometimes 8-12 hours instead of 4-6. Start with half the 'standard' dose (2.5mg THC, not 5-10mg) and wait at least 2 hours before redosing. Smoking/vaping is more predictable than edibles for you." }
           intermediate: { impact: adjust, text: "Effects may last longer than typical", description: "Moderately slower THC clearance. Edibles especially may outlast expectations." }
@@ -179,8 +184,9 @@ enzymes:
       - class: Bupropion (Wellbutrin, Zyban)
         drugs: "Bupropion (Wellbutrin, Zyban)"
         category: drug
+        evidence_scope: guideline
         impact_by_status:
-          poor: { impact: warn, text: "Elevated levels — seizure risk", description: "Bupropion has a dose-dependent seizure risk. Poor metabolizers accumulate higher plasma levels, increasing risk.", danger_note: "If prescribed Wellbutrin for depression or Zyban for smoking cessation, start at the lowest dose (100mg SR, not XL 150). Watch for signs of overstimulation — insomnia, agitation, tremor — these mean levels are too high." }
+          poor: { impact: warn, text: "Discuss lower starting dose / closer monitoring", description: "Bupropion exposure may vary with CYP2B6 phenotype, and bupropion carries a dose-dependent seizure risk. Treat this as a prescriber discussion point, not a self-adjustment instruction.", danger_note: "Do not change dose without the prescribing clinician. Ask about seizure-risk factors, interactions, and monitoring. Signs of overstimulation (insomnia, agitation, tremor) are worth reporting to your prescriber." }
           intermediate: { impact: adjust, text: "Standard dose, monitor for overstimulation", description: "Moderately slower clearance. Start lower and titrate carefully." }
           normal: { impact: ok, text: "Standard dosing", description: "Normal metabolism. Standard bupropion protocols." }
           ultrarapid: { impact: warn, text: "May underperform at standard doses", description: "Rapid clearance can reduce efficacy. If bupropion feels like 'nothing', this is why." }
@@ -199,8 +205,9 @@ enzymes:
       - class: Ketamine (therapeutic and recreational)
         drugs: "Ketamine (IV, IM, nasal, recreational)"
         category: substance
+        evidence_scope: harm_reduction
         impact_by_status:
-          poor: { impact: warn, text: "Longer and deeper effects", description: "CYP2B6 is a major ketamine pathway. Poor metabolizers experience longer dissociative effects and slower return to baseline.", danger_note: "Whether therapeutic (for depression) or recreational, expect longer trips than peers report. Space doses further apart. Never combine with alcohol, GHB, or benzos — respiratory depression risk compounds. Stay hydrated; ketamine is hard on the bladder for frequent users." }
+          poor: { impact: warn, text: "Potentially slower clearance — avoid risky combinations", description: "CYP2B6 may affect ketamine metabolism, but this is not a dosing guide and your genotype does not specify a dose.", danger_note: "Never combine with alcohol, GHB, benzodiazepines, or opioids — respiratory depression risk compounds. Stay hydrated; ketamine is hard on the bladder for frequent users. Therapeutic use should be supervised by a clinician." }
           intermediate: { impact: adjust, text: "Slightly prolonged effects", description: "Moderately slower clearance. Effects may outlast typical reports." }
           normal: { impact: ok, text: "Standard metabolism", description: "Normal clearance. Standard harm reduction applies." }
 
@@ -212,8 +219,9 @@ enzymes:
       - class: Acetaminophen (Tylenol, Paracetamol)
         drugs: "Acetaminophen (Tylenol), combo products (Percocet, Vicodin, NyQuil)"
         category: drug
+        evidence_scope: pk_only
         impact_by_status:
-          ultrarapid: { impact: warn, text: "Higher liver toxicity risk", description: "CYP2E1 converts a fraction of acetaminophen into NAPQI, a toxic liver metabolite. Ultrarapid metabolism produces more NAPQI per dose.", danger_note: "Stay well under the 4g/day ceiling — aim for <3g on any day you take it. NEVER combine with alcohol (also induces CYP2E1 — effects stack). Watch combo products: NyQuil, Percocet, Vicodin all contain acetaminophen and it adds up fast." }
+          ultrarapid: { impact: warn, text: "Pharmacokinetic note — possible higher NAPQI exposure", description: "CYP2E1 converts a fraction of acetaminophen into NAPQI, a toxic liver metabolite. This is a metabolism note, not a genotype-specific dose recommendation; the standard label limits apply to everyone.", danger_note: "Follow the standard product label and your clinician's guidance for limits. NEVER combine acetaminophen with heavy alcohol use (alcohol also induces CYP2E1 — effects stack). Watch combo products: NyQuil, Percocet, Vicodin all contain acetaminophen and it adds up fast." }
           normal: { impact: ok, text: "Standard dosing", description: "Normal metabolism. Standard dosing (max 4g/day, lower with alcohol use)." }
           poor: { impact: ok, text: "Standard dosing", description: "Slower NAPQI formation. Standard protocols apply." }
       - class: Volatile Anesthetics
@@ -225,6 +233,7 @@ enzymes:
       - class: Alcohol (chronic use)
         drugs: "Ethanol (beer, wine, spirits)"
         category: substance
+        evidence_scope: harm_reduction
         impact_by_status:
           ultrarapid: { impact: warn, text: "Faster tolerance + higher ALD risk long-term", description: "CYP2E1 is the secondary alcohol pathway (main one is ADH). Ultrarapid CYP2E1 metabolism generates more reactive oxygen species during alcohol breakdown, increasing long-term liver damage risk.", danger_note: "Short-term: you may feel 'less drunk' per drink than peers — this isn't protection, it's a faster path to tolerance and dependence. Long-term: higher risk of fatty liver and hepatitis at the same drinking level as friends. Alcohol-free days matter more for you than they do for an average person." }
           normal: { impact: ok, text: "Standard metabolism", description: "Normal CYP2E1. ADH/ALDH2 status is more relevant for alcohol — check those genes." }

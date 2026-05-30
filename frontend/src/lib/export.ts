@@ -1,5 +1,6 @@
 import type { PathwaySection, ActionData } from '../types/genomics'
 import type { PGxEnzymeSection } from '../types/pgx'
+import { EVIDENCE_SCOPE_LABELS, isPrescriberScope } from '../types/pgx'
 import type { MortalityCause } from '../components/risk/RiskLandscape'
 import type { SubstanceCard } from '../hooks/useAddictionData'
 import type { ChecklistItem } from '../hooks/useChecklist'
@@ -130,19 +131,36 @@ export function pgxToMarkdown(sections: PGxEnzymeSection[]): string {
     lines.push(e.description)
     lines.push('')
 
+    const renderDrug = (d: PGxEnzymeSection['drugs'][number]) => {
+      const icon = d.impact === 'danger' ? '!!!' : d.impact === 'warn' ? '!!' : d.impact === 'adjust' ? '!' : '-'
+      lines.push(`### ${icon} ${d.drugClass} [${d.impact.toUpperCase()}]`)
+      lines.push(`**Status:** ${d.statusText}`)
+      lines.push(`**Evidence scope:** ${EVIDENCE_SCOPE_LABELS[d.evidenceScope]}`)
+      if (d.drugList) lines.push(`**Drugs affected:** ${d.drugList}`)
+      lines.push('')
+      lines.push(d.description)
+      if (d.dangerNote) {
+        lines.push('')
+        lines.push(`> **WARNING:** ${d.dangerNote}`)
+      }
+      lines.push('')
+    }
+
     if (section.drugs.length > 0) {
-      for (const d of section.drugs) {
-        const icon = d.impact === 'danger' ? '!!!' : d.impact === 'warn' ? '!!' : d.impact === 'adjust' ? '!' : '-'
-        lines.push(`### ${icon} ${d.drugClass} [${d.impact.toUpperCase()}]`)
-        lines.push(`**Status:** ${d.statusText}`)
-        if (d.drugList) lines.push(`**Drugs affected:** ${d.drugList}`)
+      // Only guideline/label scopes belong in the prescriber report body.
+      const prescriberDrugs = section.drugs.filter((d) => isPrescriberScope(d.evidenceScope))
+      const otherDrugs = section.drugs.filter((d) => !isPrescriberScope(d.evidenceScope))
+
+      for (const d of prescriberDrugs) renderDrug(d)
+
+      if (otherDrugs.length > 0) {
+        // Keep harm-reduction / exploratory / PK content, but clearly segregate it
+        // so it cannot read as a genotype-backed prescriber recommendation.
+        lines.push('### Not genotype-backed dosing — not for prescribing')
+        lines.push('> The items below are harm-reduction, pharmacokinetic, or research-only notes.')
+        lines.push('> They are NOT backed by your genotype as specific doses and must not be treated as prescriber recommendations.')
         lines.push('')
-        lines.push(d.description)
-        if (d.dangerNote) {
-          lines.push('')
-          lines.push(`> **WARNING:** ${d.dangerNote}`)
-        }
-        lines.push('')
+        for (const d of otherDrugs) renderDrug(d)
       }
     }
 

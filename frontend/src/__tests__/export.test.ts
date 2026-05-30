@@ -92,7 +92,7 @@ describe('pgxToMarkdown', () => {
     drugs: [{
       drugClass: 'SSRIs', impact: 'adjust', statusText: 'May need dose adjustment',
       description: 'Lower starting dose recommended.', drugList: 'fluoxetine, paroxetine',
-      category: 'prescription',
+      category: 'prescription', evidenceScope: 'guideline',
     }],
   }]
 
@@ -127,6 +127,29 @@ describe('pgxToMarkdown', () => {
     const md = pgxToMarkdown(dangerSections)
     expect(md).toContain('### !!! SSRIs [DANGER]')
     expect(md).toContain('> **WARNING:** Avoid codeine completely.')
+  })
+
+  it('segregates non-guideline/label scopes out of the prescriber report body', () => {
+    const mixed: PGxEnzymeSection[] = [{
+      ...sections[0],
+      drugs: [
+        { ...sections[0].drugs[0], drugClass: 'SSRIs', evidenceScope: 'guideline' },
+        {
+          drugClass: 'Ketamine', impact: 'warn', statusText: 'Avoid combos',
+          description: 'Harm-reduction note.', drugList: 'ketamine',
+          category: 'substance', evidenceScope: 'harm_reduction',
+          dangerNote: 'Never combine with alcohol or benzos.',
+        },
+      ],
+    }]
+    const md = pgxToMarkdown(mixed)
+    // Guideline-scoped drug stays in the prescriber report.
+    expect(md).toContain('SSRIs')
+    // Harm-reduction content is KEPT (not removed) ...
+    expect(md).toContain('Ketamine')
+    expect(md).toContain('Never combine with alcohol or benzos.')
+    // ... but explicitly flagged as not-for-prescribing / not genotype-backed.
+    expect(md).toMatch(/Not genotype-backed dosing|not for prescribing/i)
   })
 })
 
