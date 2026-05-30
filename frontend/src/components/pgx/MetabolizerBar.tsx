@@ -6,6 +6,17 @@ interface MetabolizerBarProps {
 }
 
 export function MetabolizerBar({ enzyme }: MetabolizerBarProps) {
+  if (enzyme.status === 'unknown') {
+    return (
+      <div style={{
+        marginBottom: 14, fontSize: 'var(--font-size-sm)',
+        color: 'var(--text-secondary)',
+      }}>
+        PGx phenotype unknown. No metabolizer-speed marker shown.
+      </div>
+    )
+  }
+
   const color = METABOLIZER_COLORS[enzyme.status]
   const isTransporter = enzyme.geneType === 'transporter'
   const scaleLabels = isTransporter

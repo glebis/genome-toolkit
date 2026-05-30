@@ -327,7 +327,11 @@ export function PGxPanel({ onExport, onAddToChecklist }: PGxPanelProps) {
                 borderTop: '1px dashed var(--border-dashed)', paddingTop: 10,
                 display: 'flex', justifyContent: 'space-between', fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)',
               }}>
-                <span>Based on {section.enzyme.guideline || 'CPIC'} guidelines (2025)</span>
+                <span>
+                  {section.enzyme.guideline
+                    ? `Guideline-backed: ${section.enzyme.guideline}. Verify current prescribing guidance with a clinician.`
+                    : 'Exploratory metabolism note. Not guideline-backed for dosing.'}
+                </span>
               </div>
 
               {/* Separator between enzymes */}

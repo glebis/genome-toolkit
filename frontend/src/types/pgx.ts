@@ -1,7 +1,8 @@
-export type MetabolizerStatus = 'poor' | 'intermediate' | 'normal' | 'ultrarapid'
+export type MetabolizerStatus = 'unknown' | 'poor' | 'intermediate' | 'normal' | 'ultrarapid'
 export type GeneType = 'enzyme' | 'transporter'
 
 export const METABOLIZER_COLORS: Record<MetabolizerStatus, string> = {
+  unknown: 'var(--text-tertiary)',
   poor: 'var(--sig-risk)',
   intermediate: 'var(--sig-reduced)',
   normal: 'var(--sig-benefit)',
@@ -9,6 +10,7 @@ export const METABOLIZER_COLORS: Record<MetabolizerStatus, string> = {
 }
 
 export const METABOLIZER_LABELS: Record<MetabolizerStatus, string> = {
+  unknown: 'Unknown phenotype',
   poor: 'Poor Metabolizer',
   intermediate: 'Intermediate Metabolizer',
   normal: 'Normal Metabolizer',
@@ -16,6 +18,7 @@ export const METABOLIZER_LABELS: Record<MetabolizerStatus, string> = {
 }
 
 export const TRANSPORTER_LABELS: Record<MetabolizerStatus, string> = {
+  unknown: 'Unknown function',
   poor: 'Poor Function',
   intermediate: 'Decreased Function',
   normal: 'Normal Function',

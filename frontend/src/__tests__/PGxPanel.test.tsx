@@ -28,6 +28,15 @@ const mockSections = [
       },
     ],
   },
+  {
+    enzyme: {
+      symbol: 'CYP3A4', alleles: 'unknown', status: 'unknown',
+      position: 50, description: 'Broad metabolism note.',
+      geneType: 'enzyme',
+      // no guideline configured → must NOT claim CPIC backing
+    },
+    drugs: [],
+  },
 ]
 
 const mockSubstances = [
@@ -131,6 +140,26 @@ describe('PGxPanel', () => {
 
   it('renders footer with enzyme and substance counts', async () => {
     await renderComponent()
-    expect(screen.getByText(/1 enzymes.*1 substances/)).toBeInTheDocument()
+    expect(screen.getByText(/2 enzymes.*1 substances/)).toBeInTheDocument()
+  })
+
+  it('shows guideline-backed wording (with real name, no hardcoded year) when a guideline is configured', async () => {
+    await renderComponent()
+    // The CYP2D6 section has guideline 'CPIC'.
+    expect(screen.getByText(/Guideline-backed: CPIC/)).toBeInTheDocument()
+    // No false hardcoded year claim.
+    expect(screen.queryByText(/\(2025\)/)).not.toBeInTheDocument()
+  })
+
+  it('shows exploratory wording when no guideline is configured', async () => {
+    await renderComponent()
+    // The CYP3A4 section has no guideline → must be labeled exploratory / not guideline-backed.
+    expect(screen.getByText(/Exploratory metabolism note\. Not guideline-backed/)).toBeInTheDocument()
+  })
+
+  it('never falsely claims CPIC backing for a section with no configured guideline', async () => {
+    await renderComponent()
+    // Old behavior rendered "Based on CPIC guidelines (2025)" for every section.
+    expect(screen.queryByText(/Based on CPIC guidelines/)).not.toBeInTheDocument()
   })
 })

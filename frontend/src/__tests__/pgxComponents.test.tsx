@@ -35,6 +35,15 @@ describe('MetabolizerBar', () => {
     render(<MetabolizerBar enzyme={enzymeData} />)
     expect(screen.getByText('Intermediate Metabolizer')).toBeInTheDocument()
   })
+
+  it('renders an unknown-phenotype state without a speed marker', () => {
+    const unknown: EnzymeData = { ...enzymeData, status: 'unknown', alleles: 'unknown' }
+    render(<MetabolizerBar enzyme={unknown} />)
+    expect(screen.getByText(/unknown/i)).toBeInTheDocument()
+    expect(screen.getByText(/no metabolizer-speed marker/i)).toBeInTheDocument()
+    // No scale labels rendered for the unknown state.
+    expect(screen.queryByText('Ultrarapid')).not.toBeInTheDocument()
+  })
 })
 
 // ── DrugCard ────────────────────────────────────────────────────────────────

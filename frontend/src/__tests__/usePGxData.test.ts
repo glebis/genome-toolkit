@@ -5,15 +5,17 @@ const mockGenes = [
   {
     symbol: 'CYP2D6', full_name: 'Cytochrome P450 2D6', chromosome: '22',
     systems: ['Drug Metabolism'], evidence_tier: 'E1', personal_status: 'intermediate',
+    pgx_phenotype: 'intermediate', pgx_diplotype: '*1/*4',
     relevance: 'high', description: 'Reduced CYP2D6 activity.',
-    personal_variants: [{ rsid: 'rs3892097', genotype: '*1/*4', significance: 'Drug Response' }],
+    personal_variants: [{ rsid: 'rs3892097', genotype: 'AG', significance: 'Drug Response' }],
     tags: [], study_count: 100, has_vault_note: true,
   },
   {
     symbol: 'CYP2C19', full_name: 'Cytochrome P450 2C19', chromosome: '10',
     systems: ['Drug Metabolism'], evidence_tier: 'E1', personal_status: 'risk',
+    pharmacogenomics: { phenotype: 'poor', diplotype: '*2/*2' },
     relevance: 'high', description: 'Poor metabolizer.',
-    personal_variants: [{ rsid: 'rs4244285', genotype: '*2/*2', significance: 'Drug Response' }],
+    personal_variants: [{ rsid: 'rs4244285', genotype: 'GG', significance: 'Drug Response' }],
     tags: [], study_count: 80, has_vault_note: true,
   },
 ]
@@ -90,11 +92,25 @@ describe('usePGxData', () => {
     expect(cyp2c19?.enzyme.status).toBe('poor') // 'risk' maps to 'poor'
   })
 
-  it('uses vault genotype as alleles', async () => {
+  it('uses PGx-specific diplotype as alleles', async () => {
     const { result } = await getHook()
     await waitFor(() => expect(result.current.loading).toBe(false))
     const cyp2d6 = result.current.sections.find(s => s.enzyme.symbol === 'CYP2D6')
     expect(cyp2d6?.enzyme.alleles).toBe('*1/*4')
+
+    const cyp2c19 = result.current.sections.find(s => s.enzyme.symbol === 'CYP2C19')
+    expect(cyp2c19?.enzyme.alleles).toBe('*2/*2')
+  })
+
+  it('never presents a raw rsID genotype as a star-allele diplotype', async () => {
+    const { result } = await getHook()
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    // mockGenes carry personal_variants[0].genotype of 'AG' / 'GG' — these
+    // must NOT leak into the alleles field as if they were a diplotype.
+    for (const s of result.current.sections) {
+      expect(s.enzyme.alleles).not.toBe('AG')
+      expect(s.enzyme.alleles).not.toBe('GG')
+    }
   })
 
   it('uses vault description over config default', async () => {
@@ -119,6 +135,65 @@ describe('usePGxData', () => {
     await waitFor(() => expect(result.current.loading).toBe(false))
     const cyp2d6 = result.current.sections.find(s => s.enzyme.symbol === 'CYP2D6')
     expect(cyp2d6?.enzyme.guideline).toBe('CPIC')
+  })
+
+  it('defaults to unknown (not normal) when no PGx-specific field is present', async () => {
+    vi.resetModules()
+    vi.doMock('../hooks/useVaultGenes', () => ({
+      useVaultGenes: () => ({
+        genes: [
+          {
+            symbol: 'CYP2D6', full_name: 'Cytochrome P450 2D6', chromosome: '22',
+            systems: ['Drug Metabolism'], evidence_tier: 'E1',
+            // generic health-dashboard status only — NOT a PGx phenotype
+            personal_status: 'risk',
+            relevance: 'high', description: 'Generic status only.',
+            personal_variants: [{ rsid: 'rs3892097', genotype: 'AG', significance: 'Drug Response' }],
+            tags: [], study_count: 100, has_vault_note: true,
+          },
+        ],
+        loading: false, error: null,
+      }),
+    }))
+    const configNoDefault = {
+      enzymes: [
+        { symbol: 'CYP2D6', guideline: 'CPIC', description: 'd', gene_type: 'enzyme', drug_cards: [] },
+      ],
+    }
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true, json: () => Promise.resolve(configNoDefault),
+    }) as any
+
+    const mod = await import('../hooks/usePGxData')
+    const { result } = renderHook(() => mod.usePGxData())
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    const cyp2d6 = result.current.sections.find(s => s.enzyme.symbol === 'CYP2D6')
+    expect(cyp2d6?.enzyme.status).toBe('unknown')
+    // rsID genotype must not surface as a diplotype
+    expect(cyp2d6?.enzyme.alleles).not.toBe('AG')
+    expect(cyp2d6?.enzyme.alleles).toBe('unknown')
+  })
+
+  it('defaults to unknown when no vault gene matches', async () => {
+    vi.resetModules()
+    vi.doMock('../hooks/useVaultGenes', () => ({
+      useVaultGenes: () => ({ genes: [], loading: false, error: null }),
+    }))
+    const config = {
+      enzymes: [
+        { symbol: 'CYP2D6', guideline: 'CPIC', description: 'd', gene_type: 'enzyme', drug_cards: [] },
+      ],
+    }
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true, json: () => Promise.resolve(config),
+    }) as any
+
+    const mod = await import('../hooks/usePGxData')
+    const { result } = renderHook(() => mod.usePGxData())
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    const cyp2d6 = result.current.sections.find(s => s.enzyme.symbol === 'CYP2D6')
+    expect(cyp2d6?.enzyme.status).toBe('unknown')
+    expect(cyp2d6?.enzyme.alleles).toBe('unknown')
   })
 
   it('computes position from metabolizer status', async () => {
