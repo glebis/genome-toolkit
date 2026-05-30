@@ -14,9 +14,23 @@ describe('lifeExpectancyAtAge', () => {
   it('returns exact-age ex', () => {
     expect(lifeExpectancyAtAge(TABLE, 'DE', 'male', 38)).toBe(41.9)
   })
-  it('maps to nearest available bracket when exact age missing', () => {
-    // age 38 -> nearest of 35/40 is 40 (tie broken toward later? 38 is closer to 40 by 2 vs 3)
-    expect(lifeExpectancyAtAge(TABLE, 'RU', 'male', 38)).toBe(29.0)
+  it('interpolates within a small gap when exact age missing', () => {
+    // age 38 sits between brackets 35 (33.0) and 40 (29.0); gap is 5 (== MAX).
+    // t = (38-35)/(40-35) = 0.6 -> 33.0 + (29.0-33.0)*0.6 = 30.6
+    expect(lifeExpectancyAtAge(TABLE, 'RU', 'male', 38)).toBe(30.6)
+  })
+  it('returns null when no bracketing pair is within the interpolation gap', () => {
+    // Sparse WHO-style table: only at-birth and age-60. A 38yo has lower=0,
+    // upper=60 -> gap 60 > MAX_INTERPOLATION_GAP_YEARS, so no anchor.
+    const sparse: LifeTable = {
+      retrieved: 'x',
+      countries: { RU: { name: 'Russia', source: 'WHO', ex_by_age: { male: { '0': 65.6, '60': 14.0 }, female: {} } } },
+    }
+    expect(lifeExpectancyAtAge(sparse, 'RU', 'male', 38)).toBeNull()
+  })
+  it('returns null when age is outside the available brackets (no upper)', () => {
+    // age 38 is above both 35 and 40? No -- use age 42: lower=40, no upper bracket.
+    expect(lifeExpectancyAtAge(TABLE, 'RU', 'male', 42)).toBeNull()
   })
   it('returns null for unknown country', () => {
     expect(lifeExpectancyAtAge(TABLE, 'XX', 'male', 38)).toBeNull()
@@ -24,22 +38,24 @@ describe('lifeExpectancyAtAge', () => {
 })
 
 describe('countryAnchors', () => {
-  it('builds target age = bracketAge + ex per residence country', () => {
-    // DE: exact age 38 -> 38 + 41.9 = 79.9. RU: nearest bracket 40 -> 40 + 29.0 = 69.0
+  it('builds target age from exact age or interpolated ex per residence country', () => {
+    // DE: exact age 38 -> 38 + 41.9 = 79.9.
+    // RU: 38 interpolated between 35/40 -> ex 30.6, target = 38 + 30.6 = 68.6
     const a = countryAnchors(TABLE, [{ country: 'DE', years: 5 }, { country: 'RU', years: 33 }], 'male', 38)
     expect(a).toEqual([
       { country: 'DE', name: 'Germany', exAtAge: 41.9, targetAge: 79.9 },
-      { country: 'RU', name: 'Russia', exAtAge: 29.0, targetAge: 69.0 },
+      { country: 'RU', name: 'Russia', exAtAge: 30.6, targetAge: 68.6 },
     ])
   })
-  it('uses the matched bracket age (not current age) for sparse data like WHO Russia', () => {
-    // Only at-birth and age-60 brackets; a 38yo maps to nearest (60), target = 60 + 14 = 74
+  it('skips sparse age-0/age-60 data for current-age anchors', () => {
+    // Only at-birth and age-60 brackets. A 38yo has no bracketing pair within the
+    // interpolation gap, so the country yields no anchor (must not borrow age-60 ex).
     const sparse: LifeTable = {
       retrieved: 'x',
       countries: { RU: { name: 'Russia', source: 'WHO', ex_by_age: { male: { '0': 65.6, '60': 14.0 }, female: {} } } },
     }
     const a = countryAnchors(sparse, [{ country: 'RU', years: 38 }], 'male', 38)
-    expect(a).toEqual([{ country: 'RU', name: 'Russia', exAtAge: 14.0, targetAge: 74.0 }])
+    expect(a).toEqual([])
   })
   it('skips unknown countries', () => {
     const a = countryAnchors(TABLE, [{ country: 'XX', years: 5 }], 'male', 38)

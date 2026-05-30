@@ -35,9 +35,17 @@ const CURRENT_EMPHASIS = 2
 
 const round1 = (n: number): number => Math.round(n * 10) / 10
 
-/** Resolve the best age bracket for `age`, returning the bracket's age and its
- *  remaining life expectancy. Maps to the nearest bracket when the exact age is
- *  absent (e.g. WHO Russia exposes only at-birth and age-60). null if no data. */
+// Beyond this gap between the nearest lower and upper age brackets we refuse to
+// interpolate — a far future bracket (e.g. WHO age-60 ex applied to a 38yo) is a
+// conditional-on-survival expectation and not valid for current-age anchoring.
+const MAX_INTERPOLATION_GAP_YEARS = 5
+
+/** Resolve remaining life expectancy for `age` at exact age x.
+ *  Exact age is preferred; otherwise we linearly interpolate, but ONLY between a
+ *  lower and an upper bracket that are within MAX_INTERPOLATION_GAP_YEARS. Sparse
+ *  age-0/age-60 tables (WHO) therefore yield null for a working-age person rather
+ *  than misusing the age-60 conditional expectation. The returned bracketAge is
+ *  the exact age the ex value refers to, so target age = bracketAge + ex stays honest. */
 function resolveBracket(
   table: LifeTable,
   country: string,
@@ -50,13 +58,17 @@ function resolveBracket(
   if (!ages) return null
   const exact = ages[String(age)]
   if (exact != null) return { bracketAge: age, ex: exact }
-  const keys = Object.keys(ages).map(Number)
+  const keys = Object.keys(ages).map(Number).sort((a, b) => a - b)
   if (keys.length === 0) return null
-  const nearest = keys.reduce(
-    (best, k) => (Math.abs(k - age) < Math.abs(best - age) ? k : best),
-    keys[0],
-  )
-  return { bracketAge: nearest, ex: ages[String(nearest)] }
+  const lower = [...keys].reverse().find((k) => k < age)
+  const upper = keys.find((k) => k > age)
+  if (lower == null || upper == null) return null
+  if (upper - lower > MAX_INTERPOLATION_GAP_YEARS) return null
+
+  const lowerEx = ages[String(lower)]
+  const upperEx = ages[String(upper)]
+  const t = (age - lower) / (upper - lower)
+  return { bracketAge: age, ex: round1(lowerEx + (upperEx - lowerEx) * t) }
 }
 
 /** Remaining life expectancy at (or nearest to) `age` for a country/sex.
@@ -72,8 +84,9 @@ export function lifeExpectancyAtAge(
 }
 
 /** Per-country anchors (the primary truth): target age = bracketAge + ex, where
- *  bracketAge is the age the ex value actually refers to (so sparse WHO brackets
- *  stay honest). Countries without data are skipped. */
+ *  bracketAge is the exact age the ex value refers to (current age for an exact or
+ *  interpolated hit). Countries without usable current-age data — including sparse
+ *  age-0/age-60 tables — are skipped rather than anchored to a far bracket. */
 export function countryAnchors(
   table: LifeTable,
   residences: Residence[],

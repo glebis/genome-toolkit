@@ -39,7 +39,7 @@ export function CountryAnchors({ anchors, currentCountry }: CountryAnchorsProps)
           </div>
           <div style={{ fontSize: 28, fontVariantNumeric: 'tabular-nums', marginTop: 6 }}>{a.targetAge.toFixed(1)}</div>
           <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)' }}>
-            expected age &middot; {a.exAtAge.toFixed(1)} yrs remaining
+            period table anchor &middot; {a.exAtAge.toFixed(1)} population yrs remaining
           </div>
         </div>
       ))}
