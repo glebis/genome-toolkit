@@ -85,9 +85,9 @@ export function LifeExpectancyAxis({ anchors, blend, currentCountry }: LifeExpec
         const labelY = i % 2 === 0 ? 22 : 40
         return (
           <g key={a.country}>
-            <line x1={cx} y1={labelY + 4} x2={cx} y2={TRACK_Y} stroke="var(--border-strong, var(--border))" strokeWidth={1} />
+            <line x1={cx} y1={labelY + 4} x2={cx} y2={TRACK_Y} stroke="var(--border-strong)" strokeWidth={1} />
             <circle cx={cx} cy={TRACK_Y + TRACK_H / 2} r={5} fill={isCurrent ? 'var(--primary)' : 'var(--sig-benefit)'} stroke="var(--bg)" strokeWidth={1.5} />
-            <text x={cx} y={labelY} textAnchor="middle" fontSize={11} fontWeight={600} fill="var(--text-primary)">
+            <text x={cx} y={labelY} textAnchor="middle" fontSize={11} fontWeight={600} fill="var(--text)">
               {a.name}
             </text>
             <text x={cx} y={labelY + 12} textAnchor="middle" fontSize={10} fill="var(--text-secondary)">

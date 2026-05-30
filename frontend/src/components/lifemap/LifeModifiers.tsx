@@ -35,8 +35,8 @@ function Toggle({ m, selected, onToggle }: { m: LifeModifier; selected: boolean;
         padding: '6px 10px',
         borderRadius: 16,
         cursor: 'pointer',
-        border: `1px solid ${selected ? 'var(--primary)' : 'var(--border)'}`,
-        background: selected ? 'var(--primary)' : 'transparent',
+        border: `1px solid ${selected ? 'var(--primary-strong)' : 'var(--border)'}`,
+        background: selected ? 'var(--primary-strong)' : 'transparent',
         color: selected ? 'var(--bg)' : 'var(--text-secondary)',
       }}
     >
@@ -68,7 +68,7 @@ function DetailCard({ m }: { m: LifeModifier }) {
               Show range
             </button>
           ) : (
-            <div style={{ border: '1px dashed var(--sig-monitor, var(--border))', borderRadius: 6, padding: '8px 10px', fontSize: 'var(--font-size-xs)' }}>
+            <div style={{ border: '1px dashed var(--sig-monitor)', borderRadius: 6, padding: '8px 10px', fontSize: 'var(--font-size-xs)' }}>
               <div style={{ fontVariantNumeric: 'tabular-nums' }}>
                 Associated with roughly <strong>{m.range!.lowYears}–{m.range!.highYears} years</strong> in population studies.
               </div>

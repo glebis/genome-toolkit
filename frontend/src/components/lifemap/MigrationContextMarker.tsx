@@ -11,7 +11,7 @@ export function MigrationContextMarker({ blend }: MigrationContextMarkerProps) {
   return (
     <div
       style={{
-        border: '1px dashed var(--border-strong, var(--border))',
+        border: '1px dashed var(--border-strong)',
         borderRadius: 8,
         padding: '14px 16px',
         marginTop: 16,

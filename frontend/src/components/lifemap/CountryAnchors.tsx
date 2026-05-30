@@ -32,7 +32,7 @@ export function CountryAnchors({ anchors, currentCountry }: CountryAnchorsProps)
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
             <span style={{ fontWeight: 600 }}>{a.name}</span>
             {a.country === currentCountry && (
-              <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--primary)', letterSpacing: '0.08em' }}>
+              <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--primary-strong)', letterSpacing: '0.08em' }}>
                 CURRENT
               </span>
             )}

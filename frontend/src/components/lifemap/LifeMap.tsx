@@ -96,7 +96,7 @@ export function LifeMap() {
       <div
         style={{
           padding: '8px 24px',
-          borderTop: '1px dashed var(--border-dashed, var(--border))',
+          borderTop: '1px dashed var(--border-dashed)',
           display: 'flex',
           justifyContent: 'space-between',
           fontSize: 'var(--font-size-xs)',
