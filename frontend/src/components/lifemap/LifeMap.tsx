@@ -1,10 +1,13 @@
-import { HeroHeader, InfoCallout, LoadingLabel } from '../common'
+import { HeroHeader, InfoCallout, LoadingLabel, ExportBar } from '../common'
+import { lifeMapToMarkdown, downloadFile, printPage } from '../../lib/export'
 import { useResidenceHistory } from '../../hooks/useResidenceHistory'
 import { useLifeMap } from '../../hooks/useLifeMap'
 import { CountryAnchors } from './CountryAnchors'
 import { MigrationContextMarker } from './MigrationContextMarker'
 import { ResidenceHistoryInput } from './ResidenceHistoryInput'
 import { LifeModifiers } from './LifeModifiers'
+import { LifeExpectancyAxis } from './LifeExpectancyAxis'
+import { LifeMapGlyph } from './LifeMapGlyph'
 
 export function LifeMap() {
   const { state, addResidence, updateResidence, removeResidence, setCurrentCountry, setSex, setAge } =
@@ -16,6 +19,26 @@ export function LifeMap() {
     age: state.age,
   })
 
+  function handleExport(format: string) {
+    if (format === 'md') {
+      const md = lifeMapToMarkdown({
+        sex: state.sex,
+        age: state.age,
+        currentCountry: state.currentCountry,
+        anchors,
+        residences: state.residences,
+        blend,
+        modifiers,
+        retrieved: table?.retrieved,
+      })
+      downloadFile(md, `life-map-${new Date().toISOString().slice(0, 10)}.md`)
+    } else if (format === 'pdf') {
+      printPage('pdf')
+    } else if (format === 'doctor') {
+      printPage('doctor')
+    }
+  }
+
   if (loading) return <LoadingLabel />
 
   return (
@@ -25,6 +48,7 @@ export function LifeMap() {
         description="A person is not one demographic. If you've lived across countries, your life-expectancy picture is mixed. This map shows each country's anchor side by side, plus a clearly-labeled migration blend — using real Eurostat (EU) and WHO (Russia) period life tables."
         genotypes={[]}
         glyphLabel="life map"
+        icon={<LifeMapGlyph countries={state.residences.map((r) => r.country)} size={100} label="life map" />}
       />
 
       <div className="section-content" style={{ padding: '28px 24px', flex: 1, display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -54,10 +78,17 @@ export function LifeMap() {
             COUNTRY ANCHORS
           </h3>
           <CountryAnchors anchors={anchors} currentCountry={state.currentCountry} />
+          {anchors.length > 0 && (
+            <div style={{ marginTop: 16 }}>
+              <LifeExpectancyAxis anchors={anchors} blend={blend} currentCountry={state.currentCountry} />
+            </div>
+          )}
           <MigrationContextMarker blend={blend} />
         </section>
 
         <LifeModifiers modifiers={modifiers} />
+
+        {anchors.length > 0 && <ExportBar onExport={handleExport} />}
       </div>
 
       <div
