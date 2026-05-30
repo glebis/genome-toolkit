@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-05-29T16:58:22.304280",
+  "prompt": "A full-width desktop web application screen titled 'Import' for a personal genomics tool, filling the entire frame edge to edge. Warm beige background, IBM Plex Mono monospace typography, muted slate-blue and burnt-orange accents. A horizontal top navigation bar spanning the full width with tabs: SNPs, Mental Health, PGx, Risk, and a highlighted Import tab. A large centered dashed-border drop zone with a small burnt-orange plus-circle icon and the text 'Drag a raw data file here, or click to browse' and a faint hint line '.txt .csv .vcf .vcf.gz'. Below it an 'Import history' table with columns Profile, Provider, Assembly, Variants. Minimal, calm, terminal-inspired, generous whitespace, flat clean UI design, no photographic elements, desktop browser layout",
+  "preset": "app-mockup",
+  "platform": "blog",
+  "thinking": "medium",
+  "quality": "high",
+  "provider": "openai",
+  "n": 1,
+  "seed": 1505,
+  "output": "docs/import-ui/images/import-view-mockup.png",
+  "project": null,
+  "estimated_cost": 0.32
+}

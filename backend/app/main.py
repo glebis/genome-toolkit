@@ -89,6 +89,7 @@ from backend.app.routes.gwas_analytics import router as gwas_analytics_router
 from backend.app.routes.gwas import router as gwas_router
 from backend.app.routes.starter_prompts import router as starter_prompts_router
 from backend.app.routes.export import router as export_router
+from backend.app.routes.imports_route import router as imports_router
 
 app.include_router(snps_router)
 app.include_router(sessions_router)
@@ -101,6 +102,7 @@ app.include_router(gwas_analytics_router)
 app.include_router(gwas_router)
 app.include_router(starter_prompts_router)
 app.include_router(export_router)
+app.include_router(imports_router)
 
 
 @app.get("/api/health")
