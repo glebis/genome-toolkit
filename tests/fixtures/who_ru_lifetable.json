@@ -1,0 +1,14 @@
+{
+  "0": {
+    "value": [
+      { "SpatialDim": "RUS", "Dim1": "SEX_MLE", "NumericValue": 65.571461310, "TimeDim": 2021 },
+      { "SpatialDim": "RUS", "Dim1": "SEX_FMLE", "NumericValue": 74.802345678, "TimeDim": 2021 }
+    ]
+  },
+  "60": {
+    "value": [
+      { "SpatialDim": "RUS", "Dim1": "SEX_MLE", "NumericValue": 14.512345670, "TimeDim": 2021 },
+      { "SpatialDim": "RUS", "Dim1": "SEX_FMLE", "NumericValue": 19.020434150, "TimeDim": 2021 }
+    ]
+  }
+}
