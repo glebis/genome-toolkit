@@ -25,25 +25,8 @@ function canShowRange(m: LifeModifier): boolean {
 
 function Toggle({ m, selected, onToggle }: { m: LifeModifier; selected: boolean; onToggle: (id: string) => void }) {
   return (
-    <button
-      type="button"
-      aria-pressed={selected}
-      onClick={() => onToggle(m.id)}
-      style={{
-        fontFamily: 'var(--font-mono)',
-        fontSize: 'var(--font-size-xs)',
-        padding: '6px 12px',
-        minHeight: 44, // touch target (WCAG 2.5.8)
-        display: 'inline-flex',
-        alignItems: 'center',
-        borderRadius: 16,
-        cursor: 'pointer',
-        border: `1px solid ${selected ? 'var(--primary-strong)' : 'var(--border)'}`,
-        background: selected ? 'var(--primary-strong)' : 'transparent',
-        color: selected ? 'var(--bg)' : 'var(--text-secondary)',
-      }}
-    >
-      {selected ? '✓ ' : '+ '}
+    <button type="button" className="lifemap-chip" aria-pressed={selected} onClick={() => onToggle(m.id)}>
+      <span aria-hidden="true">{selected ? '✓' : '+'}</span>
       {m.label}
     </button>
   )
