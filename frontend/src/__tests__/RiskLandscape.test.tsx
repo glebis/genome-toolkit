@@ -26,15 +26,15 @@ const mockCauses = [
     rank: 2, cause: 'Cancer', pct: 21.0,
     populationBarPct: 91, personalBarPct: 27,
     status: 'optimal', genesText: 'SOD2',
-    statusText: 'Optimal — no elevated risk variants',
+    statusText: 'No configured risk flag',
     genes: [{ symbol: 'SOD2', variant: 'C/C', evidenceTier: 'E3', status: 'optimal', description: 'Normal.' }],
     confidence: { filled: 1, total: 3, tooltip: '1 gene analyzed, avg evidence E3' },
   },
   {
     rank: 3, cause: 'Accidents', pct: 8.0,
     populationBarPct: 35, personalBarPct: 11,
-    status: 'nodata', genesText: 'No relevant variants detected',
-    statusText: 'No genetic data available',
+    status: 'nodata', genesText: 'No configured gene match / not assessed',
+    statusText: 'No configured genetic assessment',
     confidence: { filled: 0, total: 3, tooltip: 'No genes analyzed' },
   },
 ]
@@ -45,7 +45,7 @@ beforeEach(async () => {
   vi.doMock('../hooks/useRiskData', () => ({
     useRiskData: () => ({
       causes: mockCauses,
-      demographic: { sex: 'male', age_range: '30-44', ancestry: 'european' },
+      demographic: { label: 'Reference profile', is_default: true, sex: 'male', age_range: '30-44', ancestry: 'european' },
       loading: false,
     }),
   }))
@@ -66,7 +66,8 @@ describe('RiskLandscape', () => {
     await renderComponent()
     expect(screen.getByText('Actionable areas')).toBeInTheDocument()
     expect(screen.getAllByText('Monitor').length).toBeGreaterThanOrEqual(1)
-    expect(screen.getByText('Optimal / no risk')).toBeInTheDocument()
+    // #7: relabeled from "Optimal / no risk"
+    expect(screen.getByText('No configured flags')).toBeInTheDocument()
   })
 
   it('renders all mortality causes', async () => {
@@ -85,7 +86,8 @@ describe('RiskLandscape', () => {
   it('shows genes text', async () => {
     await renderComponent()
     expect(screen.getByText('APOE, MTHFR')).toBeInTheDocument()
-    expect(screen.getByText('No relevant variants detected')).toBeInTheDocument()
+    // #7: relabeled from "No relevant variants detected"
+    expect(screen.getByText('No configured gene match / not assessed')).toBeInTheDocument()
   })
 
   it('shows expanded detail for rank 1 by default', async () => {
@@ -112,13 +114,15 @@ describe('RiskLandscape', () => {
 
   it('renders honest risk disclaimer', async () => {
     await renderComponent()
-    expect(screen.getByText(/qualitative assessment/)).toBeInTheDocument()
-    expect(screen.getByText(/not a calibrated risk score or PRS/)).toBeInTheDocument()
+    // #6: reworded — no longer a "qualitative assessment" of severity; an
+    // explicit not-a-calibrated-score statement.
+    expect(screen.getByText(/not a calibrated risk score, PRS, mortality estimate/i)).toBeInTheDocument()
   })
 
-  it('renders demographic in callout', async () => {
+  it('renders demographic as a reference profile in callout', async () => {
     await renderComponent()
-    expect(screen.getByText(/males, 30.44, European ancestry/i)).toBeInTheDocument()
+    // #8: presented as a configured reference profile, not "your demographic".
+    expect(screen.getByText(/reference profile/i)).toBeInTheDocument()
   })
 
   it('renders export bar', async () => {
@@ -134,7 +138,8 @@ describe('RiskLandscape', () => {
 
   it('renders bar legend', async () => {
     await renderComponent()
-    expect(screen.getByText('Population prevalence')).toBeInTheDocument()
-    expect(screen.getByText('Actionable genetic factors')).toBeInTheDocument()
+    // #6/#7: relabeled legend
+    expect(screen.getByText('Population share of deaths')).toBeInTheDocument()
+    expect(screen.getByText('Configured genetic flag present')).toBeInTheDocument()
   })
 })

@@ -73,11 +73,11 @@ function buildNarrative(cause: string, matchedGenes: VaultGene[], actionCount: n
     const names = optimal.map((g) => g.symbol).join(', ')
     parts.push(
       optimal.length === 1
-        ? `${names} shows no elevated risk.`
-        : `${names} show no elevated risk.`,
+        ? `${names} has no configured risk flag.`
+        : `${names} have no configured risk flags.`,
     )
   } else if (optimal.length === matchedGenes.length) {
-    parts.push('No elevated risk variants detected across all analyzed genes.')
+    parts.push('No configured elevated-risk flags detected in this limited gene set.')
   }
 
   // Actions available
@@ -88,16 +88,13 @@ function buildNarrative(cause: string, matchedGenes: VaultGene[], actionCount: n
   return parts.join(' ')
 }
 
-function computePersonalBarPct(matchedGenes: VaultGene[], populationBarPct: number): number {
-  if (matchedGenes.length === 0) return Math.round(populationBarPct * 0.3)
-  const actionableCount = matchedGenes.filter(
-    (g) => g.personal_status === 'risk' || g.personal_status === 'actionable',
-  ).length
-  const monitorCount = matchedGenes.filter(
-    (g) => g.personal_status === 'intermediate' || g.personal_status === 'monitor',
-  ).length
-  const factor = 1 + actionableCount * 0.3 + monitorCount * 0.1
-  return Math.min(Math.round(populationBarPct * factor), 100)
+// #6: Categorical marker ONLY. This is not calibrated risk, a PRS, a mortality
+// estimate, or a severity scale, and it must NOT scale with mortality share
+// (populationBarPct) or with gene counts. It is a fixed presence/absence flag.
+const GENETIC_FLAG_MARKER_PCT = 10
+
+function computePersonalBarPct(matchedGenes: VaultGene[]): number {
+  return matchedGenes.length === 0 ? 0 : GENETIC_FLAG_MARKER_PCT
 }
 
 function computeConfidence(matchedGenes: VaultGene[]): ConfidenceScore {
@@ -143,13 +140,22 @@ const TIMELINE_META: Record<TimelineFrequency, { label: string; color: string; o
 function buildTimeline(
   configScreenings: ConfigScreening[],
   vaultActions: { type: string; text: string }[],
+  status: RiskStatus,
 ): TimelineGroup[] {
   const items: TimelineItem[] = []
 
   for (const s of configScreenings) {
+    // #9: gate medical screenings by the cause's genetic status. Default gate is
+    // 'genetic_flag': hide when the cause has no configured flag (nodata/optimal).
+    const gate = s.applies_when ?? 'genetic_flag'
+    if (gate === 'actionable' && status !== 'actionable') continue
+    if (gate === 'monitor' && status !== 'monitor' && status !== 'actionable') continue
+    if (gate === 'genetic_flag' && (status === 'nodata' || status === 'optimal')) continue
+
     items.push({
       name: s.name,
-      type: s.type === 'consider' || s.type === 'monitor' || s.type === 'discuss' ? s.type : 'consider',
+      // #9: default unknown types to 'discuss' (conservative), not 'consider'.
+      type: s.type === 'consider' || s.type === 'monitor' || s.type === 'discuss' ? s.type : 'discuss',
       frequency: s.frequency as TimelineFrequency,
       gene: s.gene,
       source: 'screening',
@@ -182,19 +188,25 @@ interface ConfigScreening {
   frequency: string
   type: string
   gene?: string
+  applies_when?: 'always' | 'genetic_flag' | 'actionable' | 'monitor'
 }
 
 interface ConfigCause {
-  rank: number
+  // #5: rank and populationBarPct are optional in config; defaults are derived
+  // from array order and pct so missing fields never produce NaN.
+  rank?: number
   cause: string
   pct: number
-  populationBarPct: number
+  populationBarPct?: number
   relevant_genes: string[]
   description?: string
   screenings?: ConfigScreening[]
 }
 
 export interface Demographic {
+  // #8: configured reference profile, not a validated user demographic.
+  label?: string
+  is_default?: boolean
   sex: string
   age_range: string
   ancestry: string
@@ -248,8 +260,19 @@ export function useRiskData(): UseRiskDataReturn {
           .map((sym: string) => geneMap.get(sym.toUpperCase()))
           .filter(Boolean) as VaultGene[]
 
+        // #5: derive safe numeric defaults — rank from array order, population
+        // bar from populationBarPct or pct, clamped 0-100. Never NaN.
+        const rank = Number.isFinite(c.rank) ? Number(c.rank) : built.length + 1
+        const populationBarPct = Math.max(
+          0,
+          Math.min(
+            100,
+            Number.isFinite(c.populationBarPct) ? Number(c.populationBarPct) : Number(c.pct ?? 0),
+          ),
+        )
+
         const status = determineRiskStatus(matchedGenes)
-        const personalBarPct = computePersonalBarPct(matchedGenes, c.populationBarPct)
+        const personalBarPct = computePersonalBarPct(matchedGenes)
 
         const geneMinis = matchedGenes.map((g) => ({
           symbol: g.symbol,
@@ -286,7 +309,7 @@ export function useRiskData(): UseRiskDataReturn {
         const genesText =
           matchedGenes.length > 0
             ? matchedGenes.map((g) => g.symbol).join(', ')
-            : 'No relevant variants detected'
+            : 'No configured gene match / not assessed'
 
         const actionableCount = matchedGenes.filter(
           (g) => g.personal_status === 'risk' || g.personal_status === 'actionable',
@@ -297,18 +320,18 @@ export function useRiskData(): UseRiskDataReturn {
             : status === 'monitor'
               ? `Monitor — ${matchedGenes.length} gene${matchedGenes.length !== 1 ? 's' : ''}`
               : status === 'optimal'
-                ? 'Optimal — no elevated risk variants'
-                : 'No genetic data available'
+                ? 'No configured risk flag'
+                : 'No configured genetic assessment'
 
         const narrative = buildNarrative(c.cause, matchedGenes, actionMinis.length)
         const confidence = computeConfidence(matchedGenes)
-        const timeline = buildTimeline(c.screenings ?? [], actionMinis)
+        const timeline = buildTimeline(c.screenings ?? [], actionMinis, status)
 
         built.push({
-          rank: c.rank,
+          rank,
           cause: c.cause,
           pct: c.pct,
-          populationBarPct: c.populationBarPct,
+          populationBarPct,
           personalBarPct,
           status,
           genesText,

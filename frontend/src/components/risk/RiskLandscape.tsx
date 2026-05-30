@@ -562,11 +562,11 @@ function MortalityRow({
 
 function BarLegend() {
   const items: Array<{ label: string; height: number; color: string; opacity: number; dashed?: boolean }> = [
-    { label: 'Population prevalence', height: 8, color: 'var(--border)', opacity: 1 },
-    { label: 'Actionable genetic factors', height: 14, color: 'var(--sig-risk)', opacity: 0.75 },
+    { label: 'Population share of deaths', height: 8, color: 'var(--border)', opacity: 1 },
+    { label: 'Configured genetic flag present', height: 14, color: 'var(--sig-risk)', opacity: 0.75 },
     { label: 'Monitor', height: 14, color: 'var(--sig-monitor)', opacity: 0.75 },
-    { label: 'Optimal / protective', height: 14, color: 'var(--sig-benefit)', opacity: 0.75 },
-    { label: 'No genetic data', height: 14, color: 'var(--border)', opacity: 0.3, dashed: true },
+    { label: 'No configured risk flag', height: 14, color: 'var(--sig-benefit)', opacity: 0.75 },
+    { label: 'Not assessed', height: 14, color: 'var(--border)', opacity: 0.3, dashed: true },
   ]
 
   return (
@@ -610,8 +610,12 @@ interface RiskLandscapeProps {
   onAddToChecklist?: (title: string, cause: string) => void
 }
 
-function formatDemographic(d: { sex: string; age_range: string; ancestry: string }): string {
-  return `${d.sex}s, ${d.age_range}, ${d.ancestry.charAt(0).toUpperCase() + d.ancestry.slice(1)} ancestry`
+function formatDemographic(d: { label?: string; is_default?: boolean; sex: string; age_range: string; ancestry: string }): string {
+  // #8: a hardcoded/default demographic is a configured reference profile, not
+  // the user's. Lead with the configured label and mark the cell as reference.
+  const cell = `${d.sex}s, ${d.age_range}, ${d.ancestry.charAt(0).toUpperCase() + d.ancestry.slice(1)} ancestry`
+  const label = d.label ?? (d.is_default ? 'Reference profile' : undefined)
+  return label ? `${label} (${cell})` : cell
 }
 
 export function RiskLandscape({ onExport, onAddToChecklist }: RiskLandscapeProps) {
@@ -650,14 +654,14 @@ export function RiskLandscape({ onExport, onAddToChecklist }: RiskLandscapeProps
       {/* Hero */}
       <HeroHeader
         title="Mortality &amp; Risk Landscape"
-        description="The top causes of mortality for your demographic, overlaid with your personal genetic factors. Knowledge is power — knowing where to focus attention lets you take informed action."
+        description="Reference cause-of-death landscape overlaid with configured genetic annotations. This is prioritization context, not personal mortality prediction."
         genotypes={CAUSES.flatMap(c => (c.genes || []).map(g => g.variant))}
         glyphLabel="risk profile"
       >
         <div className="stats-row" style={{ display: 'flex', gap: 24, marginTop: 20, flexWrap: 'wrap' }}>
           <StatBox value={stats.actionable} label="Actionable areas" color="var(--sig-risk)" />
           <StatBox value={stats.monitor} label="Monitor" color="var(--sig-monitor)" />
-          <StatBox value={stats.optimal} label="Optimal / no risk" color="var(--sig-benefit)" />
+          <StatBox value={stats.optimal} label="No configured flags" color="var(--sig-benefit)" />
           <StatBox value={stats.nodata} label="No data" color="var(--text-tertiary)" />
         </div>
       </HeroHeader>
@@ -666,12 +670,12 @@ export function RiskLandscape({ onExport, onAddToChecklist }: RiskLandscapeProps
       <div className="section-content" style={{ padding: '28px 24px', flex: 1 }}>
         {/* Context block */}
         <InfoCallout>
-          Population bars show how common each cause of death is for{' '}
-          <strong>{demographic ? formatDemographic(demographic) : 'your demographic profile'}</strong>.
-          Your personal bar reflects the number and severity of relevant genetic variants found
-          — <strong>it is a qualitative assessment, not a calibrated risk score or PRS</strong>.
-          Having variants does not predict outcomes — it shows where awareness and prevention can
-          make a difference.
+          Population bars show the configured reference share of deaths for{' '}
+          <strong>{demographic ? formatDemographic(demographic) : 'the reference profile'}</strong>.
+          The genetic marker shows whether configured genes have flags —{' '}
+          <strong>it is not a calibrated risk score, PRS, mortality estimate, or severity scale</strong>.
+          Having a configured flag does not predict outcomes — it shows where awareness and prevention
+          can make a difference.
         </InfoCallout>
 
         {/* Bar legend */}

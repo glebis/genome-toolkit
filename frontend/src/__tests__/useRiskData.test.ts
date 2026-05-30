@@ -112,7 +112,8 @@ describe('useRiskData', () => {
     const { result } = await getHook()
     await waitFor(() => expect(result.current.loading).toBe(false), { timeout: 3000 })
     const accidents = result.current.causes.find(c => c.cause === 'Accidents')
-    expect(accidents?.genesText).toBe('No relevant variants detected')
+    // #7: avoid false-reassurance wording; "not assessed" instead of "no variants"
+    expect(accidents?.genesText).toBe('No configured gene match / not assessed')
   })
 
   it('builds narrative for causes with matched genes', async () => {
@@ -123,21 +124,22 @@ describe('useRiskData', () => {
     expect(heart?.narrative).toContain('APOE')
   })
 
-  it('computes personalBarPct higher for actionable genes', async () => {
+  it('uses a small fixed categorical marker for flagged causes (not a scaled bar)', async () => {
     const { result } = await getHook()
     await waitFor(() => expect(result.current.loading).toBe(false), { timeout: 3000 })
     const heart = result.current.causes.find(c => c.cause === 'Heart Disease')
-    // populationBarPct is 100, with 1 actionable + 1 monitor: factor = 1 + 0.3 + 0.1 = 1.4
-    // personalBarPct = min(100 * 1.4, 100) = 100
-    expect(heart?.personalBarPct).toBeGreaterThanOrEqual(100)
+    // #6: marker no longer scales with mortality share or gene severity.
+    // It is a small fixed flag value, independent of populationBarPct (100 here).
+    expect(heart?.personalBarPct).toBeGreaterThan(0)
+    expect(heart?.personalBarPct).toBeLessThanOrEqual(15)
   })
 
-  it('computes low personalBarPct for nodata causes', async () => {
+  it('uses a zero marker for nodata causes', async () => {
     const { result } = await getHook()
     await waitFor(() => expect(result.current.loading).toBe(false), { timeout: 3000 })
     const accidents = result.current.causes.find(c => c.cause === 'Accidents')
-    // No matched genes: populationBarPct * 0.3 = 35 * 0.3 = 10.5 ≈ 11
-    expect(accidents?.personalBarPct).toBeLessThan(35)
+    // #6: no matched genes -> no flag -> 0 marker.
+    expect(accidents?.personalBarPct).toBe(0)
   })
 
   it('fetches actions for actionable genes', async () => {
