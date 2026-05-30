@@ -37,12 +37,25 @@ def _get_applied_migrations(conn: sqlite3.Connection) -> set[str]:
 
 
 def apply_migrations(conn: sqlite3.Connection, migrations_dir: Path = MIGRATIONS_DIR) -> list[str]:
-    """Apply all pending SQL migrations in order. Returns list of applied versions."""
+    """Apply all pending SQL migrations in order. Returns list of applied versions.
+
+    Fails loudly (RuntimeError) when the migrations directory is absent or
+    contains no ``*.sql`` files, rather than silently leaving an empty schema.
+    """
     if not migrations_dir.is_dir():
-        return []
+        raise RuntimeError(
+            f"Migrations directory not found: {migrations_dir}. "
+            "Refusing to start with an empty schema."
+        )
+
+    migration_files = sorted(migrations_dir.glob("*.sql"))
+    if not migration_files:
+        raise RuntimeError(
+            f"No migration files (*.sql) found in {migrations_dir}. "
+            "Refusing to start with an empty schema."
+        )
 
     applied = _get_applied_migrations(conn)
-    migration_files = sorted(migrations_dir.glob("*.sql"))
     newly_applied = []
 
     for mig_file in migration_files:
