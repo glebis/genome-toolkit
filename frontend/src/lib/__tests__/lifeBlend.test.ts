@@ -24,12 +24,22 @@ describe('lifeExpectancyAtAge', () => {
 })
 
 describe('countryAnchors', () => {
-  it('builds target age = age + ex per residence country', () => {
+  it('builds target age = bracketAge + ex per residence country', () => {
+    // DE: exact age 38 -> 38 + 41.9 = 79.9. RU: nearest bracket 40 -> 40 + 29.0 = 69.0
     const a = countryAnchors(TABLE, [{ country: 'DE', years: 5 }, { country: 'RU', years: 33 }], 'male', 38)
     expect(a).toEqual([
       { country: 'DE', name: 'Germany', exAtAge: 41.9, targetAge: 79.9 },
-      { country: 'RU', name: 'Russia', exAtAge: 29.0, targetAge: 67.0 },
+      { country: 'RU', name: 'Russia', exAtAge: 29.0, targetAge: 69.0 },
     ])
+  })
+  it('uses the matched bracket age (not current age) for sparse data like WHO Russia', () => {
+    // Only at-birth and age-60 brackets; a 38yo maps to nearest (60), target = 60 + 14 = 74
+    const sparse: LifeTable = {
+      retrieved: 'x',
+      countries: { RU: { name: 'Russia', source: 'WHO', ex_by_age: { male: { '0': 65.6, '60': 14.0 }, female: {} } } },
+    }
+    const a = countryAnchors(sparse, [{ country: 'RU', years: 38 }], 'male', 38)
+    expect(a).toEqual([{ country: 'RU', name: 'Russia', exAtAge: 14.0, targetAge: 74.0 }])
   })
   it('skips unknown countries', () => {
     const a = countryAnchors(TABLE, [{ country: 'XX', years: 5 }], 'male', 38)
@@ -40,13 +50,13 @@ describe('countryAnchors', () => {
 describe('blendMarker', () => {
   const anchors = [
     { country: 'DE', name: 'Germany', exAtAge: 41.9, targetAge: 79.9 },
-    { country: 'RU', name: 'Russia', exAtAge: 29.0, targetAge: 67.0 },
+    { country: 'RU', name: 'Russia', exAtAge: 29.0, targetAge: 69.0 },
   ]
   it('years-weights with current-residence emphasis and reports spread', () => {
     const m = blendMarker(anchors, [{ country: 'DE', years: 5 }, { country: 'RU', years: 33 }], 'DE')
     expect(m.heuristic).toBe(true)
-    expect(m.spread).toEqual({ min: 67.0, max: 79.9 })
-    expect(m.targetAge).toBeGreaterThan(67.0)
+    expect(m.spread).toEqual({ min: 69.0, max: 79.9 })
+    expect(m.targetAge).toBeGreaterThan(69.0)
     expect(m.targetAge).toBeLessThan(79.9)
   })
   it('single country returns that anchor with no emphasis effect', () => {

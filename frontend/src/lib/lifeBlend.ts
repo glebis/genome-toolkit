@@ -35,31 +35,45 @@ const CURRENT_EMPHASIS = 2
 
 const round1 = (n: number): number => Math.round(n * 10) / 10
 
-/** Remaining life expectancy at `age` for a country/sex, mapping to the nearest
- *  available age bracket when the exact age is absent. null if no data. */
-export function lifeExpectancyAtAge(
+/** Resolve the best age bracket for `age`, returning the bracket's age and its
+ *  remaining life expectancy. Maps to the nearest bracket when the exact age is
+ *  absent (e.g. WHO Russia exposes only at-birth and age-60). null if no data. */
+function resolveBracket(
   table: LifeTable,
   country: string,
   sex: Sex,
   age: number,
-): number | null {
+): { bracketAge: number; ex: number } | null {
   const c = table.countries[country]
   if (!c) return null
   const ages = c.ex_by_age[sex]
   if (!ages) return null
   const exact = ages[String(age)]
-  if (exact != null) return exact
+  if (exact != null) return { bracketAge: age, ex: exact }
   const keys = Object.keys(ages).map(Number)
   if (keys.length === 0) return null
   const nearest = keys.reduce(
     (best, k) => (Math.abs(k - age) < Math.abs(best - age) ? k : best),
     keys[0],
   )
-  return ages[String(nearest)]
+  return { bracketAge: nearest, ex: ages[String(nearest)] }
 }
 
-/** Per-country anchors (the primary truth): target age = current age + ex.
- *  Countries without data are skipped. */
+/** Remaining life expectancy at (or nearest to) `age` for a country/sex.
+ *  null if no data. */
+export function lifeExpectancyAtAge(
+  table: LifeTable,
+  country: string,
+  sex: Sex,
+  age: number,
+): number | null {
+  const b = resolveBracket(table, country, sex, age)
+  return b ? b.ex : null
+}
+
+/** Per-country anchors (the primary truth): target age = bracketAge + ex, where
+ *  bracketAge is the age the ex value actually refers to (so sparse WHO brackets
+ *  stay honest). Countries without data are skipped. */
 export function countryAnchors(
   table: LifeTable,
   residences: Residence[],
@@ -68,13 +82,13 @@ export function countryAnchors(
 ): CountryAnchor[] {
   const out: CountryAnchor[] = []
   for (const r of residences) {
-    const ex = lifeExpectancyAtAge(table, r.country, sex, age)
-    if (ex == null) continue
+    const b = resolveBracket(table, r.country, sex, age)
+    if (b == null) continue
     out.push({
       country: r.country,
       name: table.countries[r.country].name,
-      exAtAge: ex,
-      targetAge: round1(age + ex),
+      exAtAge: b.ex,
+      targetAge: round1(b.bracketAge + b.ex),
     })
   }
   return out
