@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { GWASFindings } from '../components/mental-health/GWASFindings'
+import { GWASFindings, interpretTally } from '../components/mental-health/GWASFindings'
 import type { GWASTraitData, GWASMatch } from '../hooks/useGWASData'
 
 const mockMatch: GWASMatch = {
@@ -68,7 +68,7 @@ describe('GWASFindings', () => {
     mockFetchWithData(highRisk)
     render(<GWASFindings trait="anxiety" />)
     await waitFor(() => {
-      expect(screen.getByText(/more risk-associated variants than average/)).toBeInTheDocument()
+      expect(screen.getByText(/Higher uncalibrated risk-direction tally/)).toBeInTheDocument()
     })
   })
 
@@ -77,7 +77,7 @@ describe('GWASFindings', () => {
     mockFetchWithData(lowRisk)
     render(<GWASFindings trait="anxiety" />)
     await waitFor(() => {
-      expect(screen.getByText(/fewer risk-associated variants than average/)).toBeInTheDocument()
+      expect(screen.getByText(/Lower uncalibrated risk-direction tally/)).toBeInTheDocument()
     })
   })
 
@@ -116,6 +116,54 @@ describe('GWASFindings', () => {
     })
     fireEvent.click(screen.getByText('Methodology & caveats'))
     expect(screen.getByText('What you\'re looking at')).toBeInTheDocument()
+  })
+
+  it('headline never frames the tally as an average/distribution/percentile (#10)', async () => {
+    for (const total of [5, 25, 45]) {
+      const data = { ...mockData, risk_allele_total: total, risk_allele_max: 50 }
+      const headline = interpretTally(data).headline.toLowerCase()
+      expect(headline).not.toContain('average')
+      expect(headline).not.toContain('distribution')
+      expect(headline).not.toContain('percentile')
+      expect(headline).not.toMatch(/lower than|higher than/)
+    }
+  })
+
+  it('meaning makes no positive "portion of the distribution" claim (#10)', () => {
+    const { meaning } = interpretTally(mockData).meaning ? interpretTally(mockData) : { meaning: '' }
+    const text = meaning.toLowerCase()
+    expect(text).not.toContain('portion of the distribution')
+    // "average"/"percentile" only appear inside explicit negations
+    expect(text).not.toMatch(/places you in the/)
+  })
+
+  it('interpretation explicitly disclaims percentile/PRS/population average (#10)', () => {
+    const { meaning } = interpretTally(mockData)
+    expect(meaning.toLowerCase()).toContain('not a percentile')
+    expect(meaning.toLowerCase()).toContain('population average')
+    expect(meaning.toLowerCase()).toContain('calibrated prs')
+  })
+
+  it('bar legend does not label the midpoint as a population average (#10)', async () => {
+    mockFetchWithData(mockData)
+    render(<GWASFindings trait="anxiety" />)
+    await waitFor(() => {
+      expect(screen.getByText('35/50')).toBeInTheDocument()
+    })
+    expect(screen.queryByText('average')).not.toBeInTheDocument()
+    expect(screen.getByText('50% possible')).toBeInTheDocument()
+  })
+
+  it('methodology copy does not claim the midpoint is an average person (#10)', async () => {
+    mockFetchWithData(mockData)
+    const onDiscuss = vi.fn()
+    render(<GWASFindings trait="anxiety" onDiscuss={onDiscuss} />)
+    await waitFor(() => {
+      expect(screen.getByText('Methodology & caveats')).toBeInTheDocument()
+    })
+    fireEvent.click(screen.getByText('Methodology & caveats'))
+    expect(screen.queryByText(/what an average person would carry/i)).not.toBeInTheDocument()
+    expect(screen.getByText(/50% of possible counted allele copies/i)).toBeInTheDocument()
   })
 
   it('calls onDiscuss when Ask AI button clicked', async () => {

@@ -29,6 +29,11 @@ export interface GWASTraitData {
   risk_allele_total: number
   risk_allele_max: number
   matches: GWASMatch[]
+  /** True when the backend served LD-clumped hits; false/undefined if it fell back to unclumped. */
+  clumped?: boolean
+  clumping_window_kb?: number
+  n_hits_before_clump?: number
+  n_hits_after_clump?: number
 }
 
 interface UseGWASDataReturn {
@@ -47,7 +52,7 @@ export function useGWASData(trait: string): UseGWASDataReturn {
     setLoading(true)
     setError(null)
 
-    fetch(`/api/gwas/${trait}`)
+    fetch(`/api/gwas/${encodeURIComponent(trait)}?clumped=true`)
       .then(async (res) => {
         if (!res.ok) {
           const body = await res.json().catch(() => ({}))
