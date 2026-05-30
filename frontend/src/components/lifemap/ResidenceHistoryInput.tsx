@@ -21,6 +21,8 @@ const inputStyle: React.CSSProperties = {
   color: 'var(--text)',
   padding: '4px 8px',
   fontSize: 'var(--font-size-sm)',
+  minHeight: 44, // touch target (WCAG 2.5.8)
+  boxSizing: 'border-box',
 }
 
 export function ResidenceHistoryInput(props: ResidenceHistoryInputProps) {
@@ -58,8 +60,8 @@ export function ResidenceHistoryInput(props: ResidenceHistoryInputProps) {
       {residences.map((r) => {
         const name = countries.find((c) => c.code === r.country)?.name ?? r.country
         return (
-          <div key={r.country} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            <span style={{ minWidth: 120 }}>{name}</span>
+          <div key={r.country} style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+            <span style={{ flex: '1 1 8rem', minWidth: 0, overflowWrap: 'anywhere' }}>{name}</span>
             <label htmlFor={`years-${r.country}`} style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)' }}>Years</label>
             <input
               id={`years-${r.country}`}
@@ -71,7 +73,7 @@ export function ResidenceHistoryInput(props: ResidenceHistoryInputProps) {
               value={r.years}
               onChange={(e) => props.onUpdate(r.country, { years: Number(e.target.value) })}
             />
-            <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 'var(--font-size-xs)' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 'var(--font-size-xs)', minHeight: 44, padding: '0 6px', cursor: 'pointer' }}>
               <input
                 type="radio"
                 name="current-country"
@@ -81,7 +83,12 @@ export function ResidenceHistoryInput(props: ResidenceHistoryInputProps) {
               />
               Current
             </label>
-            <button className="btn" aria-label={`Remove ${name}`} style={{ fontSize: 'var(--font-size-xs)' }} onClick={() => props.onRemove(r.country)}>
+            <button
+              className="btn"
+              aria-label={`Remove ${name}`}
+              style={{ fontSize: 'var(--font-size-sm)', minWidth: 44, minHeight: 44 }}
+              onClick={() => props.onRemove(r.country)}
+            >
               ✕
             </button>
           </div>

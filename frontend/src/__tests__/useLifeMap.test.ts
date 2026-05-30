@@ -47,6 +47,29 @@ describe('useLifeMap', () => {
     expect(result.current.blend).toBeNull()
   })
 
+  it('surfaces an error when the fetch fails, then recovers on reload', async () => {
+    let calls = 0
+    vi.stubGlobal('fetch', vi.fn(() => {
+      calls++
+      // first life-tables call rejects; subsequent calls succeed
+      if (calls <= 1) return Promise.reject(new Error('network down'))
+      return Promise.resolve({ ok: true, json: () => Promise.resolve(
+        String(calls).includes('x') ? MODS : { retrieved: 'x', countries: { DE: { name: 'Germany', source: 's', ex_by_age: { male: { '38': 41.9 }, female: {} } } } }) })
+    }) as unknown as typeof fetch)
+    const { result } = renderHook(() =>
+      useLifeMap({ residences: [{ country: 'DE', years: 5 }], currentCountry: 'DE', sex: 'male', age: 38 }),
+    )
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    expect(result.current.error).toBeTruthy()
+    expect(typeof result.current.reload).toBe('function')
+
+    // recover
+    vi.stubGlobal('fetch', mockFetch())
+    result.current.reload()
+    await waitFor(() => expect(result.current.error).toBeNull())
+    expect(result.current.anchors.length).toBeGreaterThan(0)
+  })
+
   it('does not refetch when only the input selection changes', async () => {
     const spy = mockFetch()
     vi.stubGlobal('fetch', spy)

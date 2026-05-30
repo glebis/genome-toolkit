@@ -28,6 +28,16 @@ describe('LifeExpectancyAxis', () => {
     render(<LifeExpectancyAxis anchors={ANCHORS} blend={BLEND} currentCountry="DE" />)
     expect(screen.getByLabelText(/blend spread 74\.2–79\.5/i)).toBeInTheDocument()
   })
+  it('exposes the country values + heuristic blend in the svg accessible name', () => {
+    render(<LifeExpectancyAxis anchors={ANCHORS} blend={BLEND} currentCountry="DE" />)
+    const svg = screen.getByRole('img')
+    const label = svg.getAttribute('aria-label') ?? ''
+    expect(label).toMatch(/Russia/)
+    expect(label).toMatch(/74\.2/)
+    expect(label).toMatch(/Germany/)
+    expect(label).toMatch(/79\.5/)
+    expect(label).toMatch(/heuristic/i)
+  })
   it('renders nothing when there are no anchors', () => {
     const { container } = render(<LifeExpectancyAxis anchors={[]} blend={null} currentCountry="" />)
     expect(container.querySelector('svg')).toBeNull()

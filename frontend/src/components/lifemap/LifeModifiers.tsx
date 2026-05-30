@@ -32,7 +32,10 @@ function Toggle({ m, selected, onToggle }: { m: LifeModifier; selected: boolean;
       style={{
         fontFamily: 'var(--font-mono)',
         fontSize: 'var(--font-size-xs)',
-        padding: '6px 10px',
+        padding: '6px 12px',
+        minHeight: 44, // touch target (WCAG 2.5.8)
+        display: 'inline-flex',
+        alignItems: 'center',
         borderRadius: 16,
         cursor: 'pointer',
         border: `1px solid ${selected ? 'var(--primary-strong)' : 'var(--border)'}`,

@@ -36,12 +36,19 @@ export function LifeExpectancyAxis({ anchors, blend, currentCountry }: LifeExpec
   const gridYears: number[] = []
   for (let y = min; y <= max; y += 5) gridYears.push(y)
 
+  const anchorSummary = anchors
+    .map((a) => `${a.name} ${a.targetAge.toFixed(1)}${a.country === currentCountry ? ' (current)' : ''}`)
+    .join(', ')
+  const ariaLabel = blend
+    ? `Expected age by country: ${anchorSummary}. Heuristic migration blend ${blend.targetAge.toFixed(1)} (spread ${blend.spread.min.toFixed(1)}–${blend.spread.max.toFixed(1)}).`
+    : `Expected age by country: ${anchorSummary}.`
+
   return (
     <svg
       viewBox={`0 0 ${W} 96`}
       width="100%"
       role="img"
-      aria-label="Life expectancy by country, with migration blend band"
+      aria-label={ariaLabel}
       style={{ fontFamily: 'var(--font-mono)' }}
     >
       {/* gridlines + scale labels */}

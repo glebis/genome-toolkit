@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import {
   countryAnchors,
   blendMarker,
@@ -33,6 +33,7 @@ interface UseLifeMapReturn {
   table: LifeTable | null
   loading: boolean
   error: string | null
+  reload: () => void
 }
 
 export function useLifeMap(input: LifeMapInput): UseLifeMapReturn {
@@ -40,10 +41,15 @@ export function useLifeMap(input: LifeMapInput): UseLifeMapReturn {
   const [modifiers, setModifiers] = useState<LifeModifier[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [reloadKey, setReloadKey] = useState(0)
 
-  // Fetch static data once — selection changes must not refetch.
+  const reload = useCallback(() => setReloadKey((k) => k + 1), [])
+
+  // Fetch static data once — selection changes must not refetch (only reload does).
   useEffect(() => {
     let cancelled = false
+    setLoading(true)
+    setError(null)
     Promise.all([
       fetch('/api/life-map/life-tables').then((r) => {
         if (!r.ok) throw new Error(`life-tables ${r.status}`)
@@ -65,7 +71,7 @@ export function useLifeMap(input: LifeMapInput): UseLifeMapReturn {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [reloadKey])
 
   const anchors = useMemo(
     () => (table ? countryAnchors(table, input.residences, input.sex, input.age) : []),
@@ -77,5 +83,5 @@ export function useLifeMap(input: LifeMapInput): UseLifeMapReturn {
     [anchors, input.residences, input.currentCountry],
   )
 
-  return { anchors, blend, modifiers, table, loading, error }
+  return { anchors, blend, modifiers, table, loading, error, reload }
 }

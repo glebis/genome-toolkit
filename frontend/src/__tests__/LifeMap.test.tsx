@@ -12,6 +12,7 @@ const lifeMapReturn = {
   table: { retrieved: 'x', countries: { DE: { name: 'Germany', source: 's', ex_by_age: { male: {}, female: {} } }, RU: { name: 'Russia', source: 's', ex_by_age: { male: {}, female: {} } } } },
   loading: false,
   error: null,
+  reload: vi.fn(),
 }
 
 vi.mock('../hooks/useLifeMap', () => ({ useLifeMap: () => lifeMapReturn }))

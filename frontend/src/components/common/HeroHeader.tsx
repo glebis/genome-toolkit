@@ -22,15 +22,15 @@ export function HeroHeader({ title, description, genotypes, glyphLabel, children
     }}>
       {icon ?? <GenomeGlyph genotypes={genotypes} size={100} label={glyphLabel} />}
       <div style={{ flex: 1 }}>
-        <div style={{
+        <h1 style={{
           fontSize: 28,
           fontWeight: 600,
           letterSpacing: '0.08em',
           fontFamily: 'var(--font-mono)',
-          marginBottom: 10,
+          margin: '0 0 10px',
         }}>
           {title}
-        </div>
+        </h1>
         <div style={{
           fontSize: 'var(--font-size-md)',
           color: 'var(--text-secondary)',

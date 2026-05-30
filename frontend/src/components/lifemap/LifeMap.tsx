@@ -12,7 +12,7 @@ import { LifeMapGlyph } from './LifeMapGlyph'
 export function LifeMap() {
   const { state, addResidence, updateResidence, removeResidence, setCurrentCountry, setSex, setAge, toggleModifier } =
     useResidenceHistory()
-  const { anchors, blend, modifiers, table, loading } = useLifeMap({
+  const { anchors, blend, modifiers, table, loading, error, reload } = useLifeMap({
     residences: state.residences,
     currentCountry: state.currentCountry,
     sex: state.sex,
@@ -42,6 +42,22 @@ export function LifeMap() {
   }
 
   if (loading) return <LoadingLabel />
+
+  if (error) {
+    return (
+      <div role="alert" style={{ padding: '40px 24px', maxWidth: 560 }}>
+        <p style={{ color: 'var(--text)', fontSize: 'var(--font-size-md)', marginBottom: 12 }}>
+          Couldn't load the life-expectancy data.
+        </p>
+        <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--font-size-sm)', marginBottom: 16 }}>
+          The reference tables (Eurostat + WHO) didn't load. This is usually a temporary network issue.
+        </p>
+        <button className="btn" onClick={reload}>
+          Try again
+        </button>
+      </div>
+    )
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
