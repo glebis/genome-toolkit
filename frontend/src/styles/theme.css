@@ -99,6 +99,28 @@ body {
 .btn--accent { border-color: var(--accent); color: var(--accent); }
 .btn--accent:hover { background: var(--accent); color: var(--bg); }
 
+/* Life Map selectable factor chip (toggle via aria-pressed) */
+.lifemap-chip {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  padding: 6px 12px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s var(--ease-out-quart);
+}
+.lifemap-chip:hover { border-color: var(--primary); color: var(--primary); }
+.lifemap-chip:active { transform: scale(0.97); }
+.lifemap-chip:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.lifemap-chip[aria-pressed="true"] { background: var(--primary-strong); border-color: var(--primary-strong); color: var(--bg); }
+.lifemap-chip[aria-pressed="true"]:hover { background: var(--primary); border-color: var(--primary); color: var(--bg); }
+
 .input {
   font-family: var(--font-mono);
   font-size: var(--font-size-sm);
@@ -279,6 +301,7 @@ body {
   .risk-bar { animation-duration: 0.01ms !important; }
   .gene-card-enter { animation-duration: 0.01ms !important; }
   .btn-add-action { transition-duration: 0.01ms !important; }
+  .lifemap-chip { transition-duration: 0.01ms !important; }
 }
 
 /* ── Responsive ────────────────────────────────────────────────────────────── */

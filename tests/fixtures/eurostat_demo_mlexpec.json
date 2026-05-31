@@ -1,0 +1,26 @@
+{
+  "version": "2.0",
+  "class": "dataset",
+  "label": "Life expectancy by age and sex",
+  "source": "ESTAT",
+  "value": {
+    "0": 41.1,
+    "1": 42.0,
+    "2": 40.0,
+    "3": 41.0,
+    "4": 45.6,
+    "5": 46.5,
+    "6": 44.0,
+    "7": 45.0
+  },
+  "id": ["freq", "unit", "sex", "age", "geo", "time"],
+  "size": [1, 1, 2, 2, 2, 1],
+  "dimension": {
+    "freq": { "category": { "index": { "A": 0 }, "label": { "A": "Annual" } } },
+    "unit": { "category": { "index": { "YR": 0 }, "label": { "YR": "Year" } } },
+    "sex": { "category": { "index": { "M": 0, "F": 1 }, "label": { "M": "Males", "F": "Females" } } },
+    "age": { "category": { "index": { "Y38": 0, "Y40": 1 }, "label": { "Y38": "38 years", "Y40": "40 years" } } },
+    "geo": { "category": { "index": { "DE": 0, "NL": 1 }, "label": { "DE": "Germany", "NL": "Netherlands" } } },
+    "time": { "category": { "index": { "2022": 0 }, "label": { "2022": "2022" } } }
+  }
+}

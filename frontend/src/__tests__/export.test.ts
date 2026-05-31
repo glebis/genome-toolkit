@@ -363,3 +363,55 @@ describe('mentalHealthToMarkdown — empty sections', () => {
     expect(md).not.toContain('## ')
   })
 })
+
+// ── lifeMapToMarkdown ─────────────────────────────────────────────────────────
+
+import { lifeMapToMarkdown } from '../lib/export'
+import type { CountryAnchor, BlendMarker } from '../lib/lifeBlend'
+import type { LifeModifier } from '../hooks/useLifeMap'
+
+describe('lifeMapToMarkdown', () => {
+  const anchors: CountryAnchor[] = [
+    { country: 'RU', name: 'Russia', exAtAge: 14.2, targetAge: 74.2 },
+    { country: 'DE', name: 'Germany', exAtAge: 41.5, targetAge: 79.5 },
+  ]
+  const blend: BlendMarker = { targetAge: 75.5, spread: { min: 74.2, max: 79.5 }, heuristic: true }
+  const modifiers: LifeModifier[] = [
+    { id: 'smoking', category: 'stress', label: 'Smoking', qualitative: 'Most studied factor', actions: [], evidence: 'strong', range: { lowYears: 5, highYears: 10 } },
+    { id: 'anxiety', category: 'mental-health', label: 'Anxiety disorder', qualitative: 'Supportive note', actions: [], evidence: 'weak' },
+  ]
+  const input = {
+    sex: 'male', age: 38, currentCountry: 'DE',
+    anchors, residences: [{ country: 'RU', years: 33 }, { country: 'DE', years: 5 }],
+    blend, modifiers, retrieved: '2026-05-30',
+  }
+
+  it('includes assumptions, the anchor table and years lived', () => {
+    const md = lifeMapToMarkdown(input)
+    expect(md).toContain('# Life Map')
+    expect(md).toContain('male')
+    expect(md).toContain('38')
+    expect(md).toContain('Russia')
+    expect(md).toContain('74.2')
+    expect(md).toContain('| 33 |') // years lived in Russia
+  })
+
+  it('labels the blend a heuristic, never a prediction', () => {
+    const md = lifeMapToMarkdown(input)
+    expect(md).toMatch(/heuristic/i)
+    expect(md).toMatch(/not a personal prediction/i)
+  })
+
+  it('lists modifiers qualitatively and NEVER exports year ranges', () => {
+    const md = lifeMapToMarkdown(input)
+    expect(md).toContain('Smoking')
+    expect(md).toContain('Anxiety disorder')
+    expect(md).not.toMatch(/5.?10 years/) // opt-in range must not leak into export
+    expect(md).not.toContain('lowYears')
+  })
+
+  it('reports the biggest gap between anchors', () => {
+    const md = lifeMapToMarkdown(input)
+    expect(md).toMatch(/5\.3/) // 79.5 - 74.2
+  })
+})

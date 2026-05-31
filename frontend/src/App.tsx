@@ -17,6 +17,7 @@ import { ChecklistSidebar } from './components/mental-health/ChecklistSidebar'
 import { PGxPanel } from './components/pgx/PGxPanel'
 import { AddictionProfile } from './components/addiction'
 import { RiskLandscape } from './components/risk'
+import { LifeMap } from './components/lifemap/LifeMap'
 import {
   printPage,
   downloadFile,
@@ -30,12 +31,13 @@ import type { PageContextData } from './lib/pageContext'
 function App() {
   const { result, filters, loading, updateFilters, debouncedUpdateFilters, setPage, resetFilters, activeFilterCount } = useSNPs()
   const voice = useVoice()
-  const [view, setView] = useState<'snps' | 'mental-health' | 'pgx' | 'addiction' | 'risk'>(() => {
+  const [view, setView] = useState<'snps' | 'mental-health' | 'pgx' | 'addiction' | 'risk' | 'life-map'>(() => {
     const hash = window.location.hash
     if (hash === '#/mental-health') return 'mental-health'
     if (hash === '#/pgx') return 'pgx'
     if (hash === '#/addiction') return 'addiction'
     if (hash === '#/risk') return 'risk'
+    if (hash === '#/life-map') return 'life-map'
     return 'snps'
   })
   const mentalHealth = useMentalHealthData()
@@ -45,14 +47,15 @@ function App() {
   const [checklistOpen, setChecklistOpen] = useState(false)
   const [checklistHighlight, setChecklistHighlight] = useState(false)
   const [paletteCollapsed, setPaletteCollapsed] = useState(false)
-  const [visibleViews, setVisibleViews] = useState<Set<string>>(new Set(['snps', 'mental-health', 'pgx', 'addiction', 'risk']))
+  const [visibleViews, setVisibleViews] = useState<Set<string>>(new Set(['snps', 'mental-health', 'pgx', 'addiction', 'risk', 'life-map']))
 
-  const navigate = useCallback((v: 'snps' | 'mental-health' | 'pgx' | 'addiction' | 'risk') => {
+  const navigate = useCallback((v: 'snps' | 'mental-health' | 'pgx' | 'addiction' | 'risk' | 'life-map') => {
     setView(v)
     if (v === 'mental-health') window.location.hash = '#/mental-health'
     else if (v === 'pgx') window.location.hash = '#/pgx'
     else if (v === 'addiction') window.location.hash = '#/addiction'
     else if (v === 'risk') window.location.hash = '#/risk'
+    else if (v === 'life-map') window.location.hash = '#/life-map'
     else window.location.hash = '#/'
   }, [])
 
@@ -63,6 +66,7 @@ function App() {
       else if (hash === '#/pgx') setView('pgx')
       else if (hash === '#/addiction') setView('addiction')
       else if (hash === '#/risk') setView('risk')
+      else if (hash === '#/life-map') setView('life-map')
       else setView('snps')
     }
     window.addEventListener('hashchange', onHashChange)
@@ -75,6 +79,7 @@ function App() {
     'pgx': 'PGx / Drugs',
     'addiction': 'Addiction',
     'risk': 'Risk Landscape',
+    'life-map': 'Life Map',
   }
 
   useEffect(() => {
@@ -319,6 +324,7 @@ function App() {
             { id: 'pgx', label: 'PGX_/_DRUGS' },
             { id: 'addiction', label: 'ADDICTION' },
             { id: 'risk', label: 'RISK' },
+            { id: 'life-map', label: 'LIFE_MAP' },
           ] as const).filter(v => visibleViews.has(v.id)).map(v => (
             <button
               key={v.id}
@@ -473,6 +479,10 @@ function App() {
             setChecklistHighlight(true)
             setTimeout(() => setChecklistHighlight(false), 1500)
           }} />
+        </main>
+      ) : view === 'life-map' ? (
+        <main>
+          <LifeMap />
         </main>
       ) : (
         <main>
