@@ -2,8 +2,9 @@
 """Analyze biomarker lab results against genetic predictions.
 
 Reads Biomarker Entry notes from Biomarkers/ directory, extracts marker
-values and dates, compares against genetic predictions, and flags values
-that cross clinical decision thresholds.
+values and dates, compares against genetic predictions, and surfaces
+screening prompts when values cross unit-matched reference thresholds.
+These are informational prompts, not clinical decisions.
 
 Usage:
     python3 biomarker_analyzer.py
@@ -17,37 +18,51 @@ from collections import defaultdict
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from lib.config import VAULT_ROOT, BIOMARKERS_DIR
 
-# Clinical decision thresholds derived from genetic profile.
-# Format: marker_name_lower -> list of (operator, threshold, action)
+# Screening prompts. Not clinical decisions and not derived from genetics alone.
+# Each rule carries an explicit `unit`; a value is only compared when the
+# marker's reported unit matches (see check_thresholds). Actions use soft,
+# non-prescriptive "discuss with clinician" wording.
+# Format: marker_name_lower -> list of {op, threshold, unit, action}
 THRESHOLDS = {
     "crp": [
-        (">", 3.0, "SSRI augmentation consideration (IL1B)"),
-        (">", 1.0, "Anti-inflammatory intervention escalation (IL1B)"),
+        {"op": ">", "threshold": 3.0, "unit": "mg/L",
+         "action": "Discuss elevated CRP with clinician; do not infer medication changes from genetics alone."},
+        {"op": ">", "threshold": 1.0, "unit": "mg/L",
+         "action": "Discuss inflammation context and repeat testing if clinically relevant; do not infer medication changes from genetics alone."},
     ],
     "ferritin": [
-        (">", 300.0, "Phlebotomy discussion (HFE het carrier)"),
+        {"op": ">", "threshold": 300.0, "unit": "ng/mL",
+         "action": "Discuss elevated ferritin with clinician (e.g. HFE carrier context); do not infer treatment from genetics alone."},
     ],
     "transferrin saturation": [
-        (">", 45.0, "Iron overload workup (HFE het carrier)"),
+        {"op": ">", "threshold": 45.0, "unit": "%",
+         "action": "Discuss elevated transferrin saturation with clinician (HFE carrier context); do not infer treatment from genetics alone."},
     ],
     "alt": [
-        (">", 80.0, "Hepatology referral — ALT > 2x ULN (PNPLA3 G;G)"),
+        {"op": ">", "threshold": 80.0, "unit": "U/L",
+         "action": "Discuss elevated ALT with clinician; do not infer a diagnosis from genetics alone."},
     ],
     "ast": [
-        (">", 80.0, "Hepatology referral — AST > 2x ULN (PNPLA3 G;G)"),
+        {"op": ">", "threshold": 80.0, "unit": "U/L",
+         "action": "Discuss elevated AST with clinician; do not infer a diagnosis from genetics alone."},
     ],
     "homocysteine": [
-        (">", 15.0, "Methylation support escalation (MTHFR/MTRR)"),
-        (">", 10.0, "Monitor — borderline elevated (MTHFR/MTRR)"),
+        {"op": ">", "threshold": 15.0, "unit": "µmol/L",
+         "action": "Discuss elevated homocysteine with clinician; do not infer supplementation from genetics alone."},
+        {"op": ">", "threshold": 10.0, "unit": "µmol/L",
+         "action": "Discuss borderline-elevated homocysteine with clinician; do not infer supplementation from genetics alone."},
     ],
     "25(oh) vitamin d": [
-        ("<", 30.0, "Supplement dose increase (VDR variants)"),
+        {"op": "<", "threshold": 30.0, "unit": "ng/mL",
+         "action": "Discuss low vitamin D with clinician; do not infer dosing from genetics alone."},
     ],
     "vitamin d": [
-        ("<", 30.0, "Supplement dose increase (VDR variants)"),
+        {"op": "<", "threshold": 30.0, "unit": "ng/mL",
+         "action": "Discuss low vitamin D with clinician; do not infer dosing from genetics alone."},
     ],
     "ggt": [
-        (">", 60.0, "Liver function follow-up (PNPLA3 G;G)"),
+        {"op": ">", "threshold": 60.0, "unit": "U/L",
+         "action": "Discuss elevated GGT with clinician; do not infer a diagnosis from genetics alone."},
     ],
 }
 
@@ -142,17 +157,35 @@ def parse_markers_from_frontmatter(text: str) -> list[dict]:
     return markers
 
 
-def check_thresholds(name: str, value: float) -> list[str]:
-    """Check a marker value against clinical decision thresholds."""
+def check_thresholds(name: str, value: float, unit: str = "") -> list[str]:
+    """Check a marker value against screening-prompt thresholds.
+
+    A rule is only applied when the marker's reported ``unit`` matches the
+    rule's expected unit. When a unit is supplied but does not match, the
+    rule is skipped and an informational mismatch note is emitted instead
+    (so unit-dependent comparisons can never silently fire on the wrong
+    scale). A missing/empty unit is permissive — the rule still applies.
+    """
     alerts = []
     key = name.lower().strip()
+    supplied_unit = unit.strip()
     for threshold_key, rules in THRESHOLDS.items():
         if threshold_key in key or key in threshold_key:
-            for op, threshold, action in rules:
+            for rule in rules:
+                op = rule["op"]
+                threshold = rule["threshold"]
+                expected_unit = rule["unit"]
+                action = rule["action"]
+                if supplied_unit and supplied_unit.lower() != expected_unit.lower():
+                    alerts.append(
+                        f"  ?? {name}: unit '{supplied_unit}' does not match "
+                        f"expected '{expected_unit}' — threshold not applied"
+                    )
+                    continue
                 if op == ">" and value > threshold:
-                    alerts.append(f"  !! {name} = {value} > {threshold}: {action}")
+                    alerts.append(f"  !! {name} = {value} > {threshold} {expected_unit}: {action}")
                 elif op == "<" and value < threshold:
-                    alerts.append(f"  !! {name} = {value} < {threshold}: {action}")
+                    alerts.append(f"  !! {name} = {value} < {threshold} {expected_unit}: {action}")
     return alerts
 
 
@@ -204,12 +237,12 @@ def print_trend_report(entries: list):
 def print_threshold_alerts(entries: list):
     """Print any threshold crossings across all entries."""
     alerts_found = False
-    print("\nClinical Threshold Alerts")
+    print("\nScreening Prompts (not clinical decisions)")
     print("=" * 60)
     for filename, date, fm, markers in entries:
         file_alerts = []
         for m in markers:
-            file_alerts.extend(check_thresholds(m["name"], m["value"]))
+            file_alerts.extend(check_thresholds(m["name"], m["value"], m.get("unit", "")))
         if file_alerts:
             alerts_found = True
             print(f"\n  {filename} ({date}):")

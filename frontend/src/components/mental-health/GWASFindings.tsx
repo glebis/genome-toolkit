@@ -7,8 +7,12 @@ interface GWASFindingsProps {
   onDiscuss?: (context: string) => void
 }
 
-/** Build a plain-language interpretation of the user's risk allele tally. */
-function interpretTally(data: GWASTraitData): { headline: string; meaning: string; band: 'lower' | 'middle' | 'higher' } {
+/**
+ * Build a plain-language interpretation of an uncalibrated risk-direction allele tally.
+ * The ratio (risk_allele_total / risk_allele_max) is the share of *possible counted copies*,
+ * NOT a population percentile, population average, or calibrated PRS.
+ */
+export function interpretTally(data: GWASTraitData): { headline: string; meaning: string; band: 'lower' | 'middle' | 'higher' } {
   const pct = data.risk_allele_max > 0
     ? (data.risk_allele_total / data.risk_allele_max) * 100
     : 50
@@ -17,19 +21,19 @@ function interpretTally(data: GWASTraitData): { headline: string; meaning: strin
   let headline: string
   if (pct < 40) {
     band = 'lower'
-    headline = 'You carry fewer risk-associated variants than average'
+    headline = 'Lower uncalibrated risk-direction tally'
   } else if (pct > 60) {
     band = 'higher'
-    headline = 'You carry more risk-associated variants than average'
+    headline = 'Higher uncalibrated risk-direction tally'
   } else {
     band = 'middle'
-    headline = 'You carry an average number of risk-associated variants'
+    headline = 'Mid-range uncalibrated risk-direction tally'
   }
 
   const meaning = (
     `Of the ${data.matched_hits} ${data.display_name?.toLowerCase() ?? 'anxiety'}-associated SNPs found in your genome, ` +
-    `you carry ${data.risk_allele_total} risk-direction allele copies out of ${data.risk_allele_max} possible. ` +
-    `That places you in the ${band} portion of the distribution. ` +
+    `you carry ${data.risk_allele_total} risk-direction allele copies out of ${data.risk_allele_max} possible counted copies. ` +
+    `This is not a percentile, population average, clinical risk estimate, or calibrated PRS — just a raw tally of counted copies. ` +
     `Genetics is ONE factor among many — environment, sleep, exercise, stress, social support, and history matter ` +
     `at least as much for most people. This number does not predict whether you will or won't develop ${data.display_name?.toLowerCase() ?? 'anxiety'}.`
   )
@@ -180,7 +184,7 @@ export function GWASFindings({ trait, onDiscuss }: GWASFindingsProps) {
           <div style={{ marginBottom: 10 }}>
             For each significant SNP, we look at your genotype and count how many copies of the "risk-direction" allele you carry
             (0, 1, or 2). For protective alleles, we invert the count. Add it all up, divide by the maximum possible — that's
-            your tally. The midpoint marker on the bar above represents what an average person would carry by chance.
+            your tally. The midpoint marker on the bar above is only 50% of possible counted allele copies — it is not a population average or expected value.
           </div>
 
           <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 600, marginTop: 14, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-secondary)' }}>
@@ -245,7 +249,7 @@ export function GWASFindings({ trait, onDiscuss }: GWASFindingsProps) {
                   background: 'linear-gradient(90deg, var(--sig-benefit), var(--sig-reduced), var(--sig-risk))',
                   borderRadius: 4,
                 }} />
-                {/* Average marker at 50% */}
+                {/* 50% possible-copy marker, not a population average */}
                 <div style={{
                   position: 'absolute',
                   left: '50%',
@@ -261,7 +265,7 @@ export function GWASFindings({ trait, onDiscuss }: GWASFindingsProps) {
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>
               <span>fewer risk alleles</span>
-              <span>average</span>
+              <span>50% possible</span>
               <span>more risk alleles</span>
             </div>
 

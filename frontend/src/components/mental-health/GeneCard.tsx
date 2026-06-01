@@ -1,13 +1,16 @@
 import type { GeneData } from '../../types/genomics'
 import { STATUS_COLORS } from '../../types/genomics'
 import { EvidenceBadge } from './EvidenceBadge'
+import { GeneCrossRefBadges } from '../common'
+import type { Section } from '../../hooks/useGeneSections'
 
 interface GeneCardProps {
   gene: GeneData
   onClick?: (gene: GeneData) => void
+  currentSection?: Section
 }
 
-export function GeneCard({ gene, onClick }: GeneCardProps) {
+export function GeneCard({ gene, onClick, currentSection = 'mental-health' }: GeneCardProps) {
   const borderColor = STATUS_COLORS[gene.status]
 
   return (
@@ -48,6 +51,10 @@ export function GeneCard({ gene, onClick }: GeneCardProps) {
           {gene.actionCount} actions available
         </div>
       )}
+
+      <div style={{ marginTop: 8 }} onClick={(e) => e.stopPropagation()}>
+        <GeneCrossRefBadges symbol={gene.symbol} currentSection={currentSection} />
+      </div>
     </div>
   )
 }

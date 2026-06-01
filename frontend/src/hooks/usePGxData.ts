@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useVaultGenes } from './useVaultGenes'
 import type { VaultGene } from './useVaultGenes'
-import type { PGxEnzymeSection, MetabolizerStatus, DrugImpact, DrugCardData, EnzymeData, GeneType } from '../types/pgx'
+import type { PGxEnzymeSection, MetabolizerStatus, DrugImpact, DrugCardData, EnzymeData, GeneType, EvidenceScope } from '../types/pgx'
 
 interface ConfigEnzyme {
   symbol: string
@@ -20,6 +20,7 @@ interface ConfigDrug {
   class?: string             // YAML uses 'class'
   drugClass?: string         // fallback
   category: string
+  evidence_scope?: EvidenceScope
   description?: string
   drugs?: string             // YAML uses 'drugs' for drug list
   drugList?: string          // fallback
@@ -34,18 +35,48 @@ interface ConfigDrug {
   }>
 }
 
-function mapMetabolizerStatus(ps: string): MetabolizerStatus {
-  const s = ps.toLowerCase().replace(/[_-]/g, '')
-  if (s === 'risk' || s === 'poor' || s === 'poormetabolizer') return 'poor'
-  if (s === 'intermediate' || s === 'monitor' || s === 'intermediatemetabolizer' || s === 'caution') return 'intermediate'
-  if (s === 'ultrarapid' || s === 'ultrarapidmetabolizer' || s === 'highactivity') return 'ultrarapid'
-  if (s === 'normal' || s === 'reference' || s === 'normalmetabolizer' || s === 'extensivemetabolizer') return 'normal'
-  if (s === 'needsreview' || s === 'indeterminate') return 'intermediate'
-  return 'normal'
+// PGx-specific fields a vault gene may carry. A generic `personal_status`
+// (health-dashboard field) is intentionally NOT consulted for phenotype — it
+// is not a PGx phenotype and must never be inferred as one.
+type PGxVaultGene = VaultGene & {
+  pgx_phenotype?: string
+  metabolizer_status?: string
+  pgx_diplotype?: string
+  pharmacogenomics?: { phenotype?: string; diplotype?: string }
+}
+
+/** Parse a PGx-specific phenotype string. Missing/unrecognized → 'unknown'. */
+function parseMetabolizerStatus(value?: string): MetabolizerStatus {
+  if (!value) return 'unknown'
+  const s = value.toLowerCase().replace(/[_\s-]/g, '')
+  if (s === 'poor' || s === 'poormetabolizer' || s === 'poorfunction') return 'poor'
+  if (s === 'intermediate' || s === 'intermediatemetabolizer' || s === 'decreasedfunction') return 'intermediate'
+  if (s === 'ultrarapid' || s === 'ultrarapidmetabolizer' || s === 'highactivity' || s === 'increasedfunction') return 'ultrarapid'
+  if (s === 'normal' || s === 'reference' || s === 'normalmetabolizer' || s === 'extensivemetabolizer' || s === 'normalfunction') return 'normal'
+  return 'unknown'
+}
+
+/** Resolve phenotype ONLY from PGx-specific fields; never from generic status. */
+function getPGxStatus(g?: VaultGene, fallback?: MetabolizerStatus): MetabolizerStatus {
+  const pgx = g as PGxVaultGene | undefined
+  return parseMetabolizerStatus(
+    pgx?.pgx_phenotype ??
+    pgx?.metabolizer_status ??
+    pgx?.pharmacogenomics?.phenotype ??
+    fallback
+  )
+}
+
+/** Resolve a star-allele diplotype ONLY from PGx-specific fields. A raw rsID
+ *  genotype (e.g. 'AG') is NOT a diplotype and must never be shown as one. */
+function getPGxDiplotype(g?: VaultGene, fallback?: string): string {
+  const pgx = g as PGxVaultGene | undefined
+  return pgx?.pgx_diplotype ?? pgx?.pharmacogenomics?.diplotype ?? fallback ?? 'unknown'
 }
 
 function statusPosition(s: MetabolizerStatus): number {
   switch (s) {
+    case 'unknown': return 50
     case 'poor': return 10
     case 'intermediate': return 30
     case 'normal': return 62
@@ -115,11 +146,9 @@ export function usePGxData(): UsePGxDataReturn {
 
     const built: PGxEnzymeSection[] = config.map((ce) => {
       const vaultGene = geneMap.get(ce.symbol.toUpperCase())
-      const metStatus: MetabolizerStatus = vaultGene
-        ? mapMetabolizerStatus(vaultGene.personal_status)
-        : ce.default_status ?? 'normal'
+      const metStatus: MetabolizerStatus = getPGxStatus(vaultGene, ce.default_status)
 
-      const alleles = vaultGene?.personal_variants?.[0]?.genotype ?? ce.default_alleles ?? '*1/*1'
+      const alleles = getPGxDiplotype(vaultGene, ce.default_alleles)
 
       const enzyme: EnzymeData = {
         symbol: ce.symbol,
@@ -127,7 +156,7 @@ export function usePGxData(): UsePGxDataReturn {
         status: metStatus,
         position: ce.default_position ?? statusPosition(metStatus),
         description:
-          vaultGene?.description ?? ce.description ?? `${ce.symbol} — ${metStatus} metabolizer.`,
+          vaultGene?.description ?? ce.description ?? `${ce.symbol} — PGx phenotype ${metStatus}.`,
         guideline: ce.guideline,
         geneType: ce.gene_type ?? 'enzyme',
         about: ce.about,
@@ -146,6 +175,10 @@ export function usePGxData(): UsePGxDataReturn {
           drugList: cd.drugs ?? cd.drugList ?? '',
           dangerNote: byStatus?.danger_note ?? cd.danger_note ?? cd.dangerNote,
           category: (cd.category === 'drug' ? 'prescription' : cd.category) as 'prescription' | 'substance',
+          // Default sensibly when the config omits it: guideline-backed only when
+          // the enzyme actually names a guideline, otherwise exploratory. Never
+          // let an untagged substance/drug inherit prescriber-grade framing.
+          evidenceScope: cd.evidence_scope ?? (ce.guideline ? 'guideline' : 'exploratory'),
         }
       })
 

@@ -237,21 +237,7 @@ async def list_vault_systems(domain: str | None = None):
     systems_config = config.get("systems", {})
 
     # Build a map of all vault genes by their system tags
-    vault = _get_vault_path()
-    genes_dir = vault / "Genes"
-    system_genes: dict[str, list[str]] = {}
-
-    if genes_dir.exists():
-        for f in sorted(genes_dir.iterdir()):
-            if f.suffix != ".md":
-                continue
-            gene = _parse_gene_file(f)
-            if not gene:
-                continue
-            for sys_tag in gene.get("systems", []):
-                # Normalize pipe-separated tags: "Immune and Inflammatory|Immune System" -> "Immune and Inflammatory"
-                normalized = sys_tag.split("|")[0].strip()
-                system_genes.setdefault(normalized, []).append(gene["symbol"])
+    system_genes = _build_system_genes_map()
 
     # Enrich config systems with actual gene counts
     result = {}
@@ -296,6 +282,103 @@ async def list_vault_systems(domain: str | None = None):
         "unconfigured": unconfigured,
         "goal_pills": config.get("goal_pills", []),
     }
+
+
+# ---------------------------------------------------------------------------
+# GET /api/vault/gene-sections  (cross-section gene index, #35)
+# ---------------------------------------------------------------------------
+
+# Systems-derived membership is limited to these domains. Risk and PGx
+# membership come from their dedicated config sources (risk-landscape
+# relevant_genes, pgx-drugs symbols) so the index matches what each view
+# actually renders.
+_TAG_DERIVED_DOMAINS = {"mental-health", "addiction"}
+
+
+def build_gene_section_index(
+    systems_config: dict,
+    system_genes: dict[str, list[str]],
+    risk_genes: list[str],
+    pgx_symbols: list[str],
+) -> dict[str, list[str]]:
+    """Map each gene symbol (upper-cased) to the sorted sections it appears in.
+
+    Sources:
+      - pathway-systems tag match -> mental-health / addiction
+      - risk-landscape relevant_genes -> risk
+      - pgx-drugs enzyme symbols -> pgx
+    """
+    index: dict[str, set[str]] = {}
+
+    def add(symbol: str, section: str) -> None:
+        index.setdefault(symbol.upper(), set()).add(section)
+
+    for sys in systems_config.values():
+        domains = [d for d in sys.get("domains", []) if d in _TAG_DERIVED_DOMAINS]
+        if not domains:
+            continue
+        for tag in sys.get("tags", []):
+            for symbol in system_genes.get(tag, []):
+                for domain in domains:
+                    add(symbol, domain)
+
+    for symbol in risk_genes:
+        add(symbol, "risk")
+
+    for symbol in pgx_symbols:
+        add(symbol, "pgx")
+
+    return {symbol: sorted(sections) for symbol, sections in index.items()}
+
+
+def _build_system_genes_map() -> dict[str, list[str]]:
+    """Map vault system tags to the gene symbols carrying them."""
+    vault = _get_vault_path()
+    genes_dir = vault / "Genes"
+    system_genes: dict[str, list[str]] = {}
+    if genes_dir.exists():
+        for f in sorted(genes_dir.iterdir()):
+            if f.suffix != ".md":
+                continue
+            gene = _parse_gene_file(f)
+            if not gene:
+                continue
+            for sys_tag in gene.get("systems", []):
+                normalized = sys_tag.split("|")[0].strip()
+                system_genes.setdefault(normalized, []).append(gene["symbol"])
+    return system_genes
+
+
+def _load_config_file(name: str) -> dict:
+    config_file = _CONFIG_DIR / name
+    if not config_file.exists():
+        return {}
+    return yaml.safe_load(config_file.read_text()) or {}
+
+
+@router.get("/vault/gene-sections")
+async def list_gene_sections():
+    """Return the cross-section gene index: {symbol: [sections]}."""
+    systems_config = _load_pathway_systems().get("systems", {})
+    system_genes = _build_system_genes_map()
+
+    risk = _load_config_file("risk-landscape.yaml")
+    causes = risk.get("causes", risk if isinstance(risk, list) else [])
+    risk_genes: list[str] = []
+    for cause in causes:
+        risk_genes.extend(cause.get("relevant_genes", []))
+
+    pgx = _load_config_file("pgx-drugs.yaml")
+    enzymes = pgx.get("enzymes", pgx if isinstance(pgx, list) else [])
+    pgx_symbols = [e["symbol"] for e in enzymes if e.get("symbol")]
+
+    index = build_gene_section_index(
+        systems_config=systems_config,
+        system_genes=system_genes,
+        risk_genes=risk_genes,
+        pgx_symbols=pgx_symbols,
+    )
+    return {"index": index}
 
 
 # ---------------------------------------------------------------------------

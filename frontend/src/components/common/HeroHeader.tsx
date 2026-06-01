@@ -6,9 +6,12 @@ interface HeroHeaderProps {
   genotypes: string[]
   glyphLabel: string
   children?: React.ReactNode
+  /** Optional custom icon, rendered instead of the genotype-seeded GenomeGlyph
+   *  (e.g. the Life Map's demographic LifeMapGlyph). */
+  icon?: React.ReactNode
 }
 
-export function HeroHeader({ title, description, genotypes, glyphLabel, children }: HeroHeaderProps) {
+export function HeroHeader({ title, description, genotypes, glyphLabel, children, icon }: HeroHeaderProps) {
   return (
     <div className="hero-header" style={{
       padding: '40px 24px 32px',
@@ -17,17 +20,17 @@ export function HeroHeader({ title, description, genotypes, glyphLabel, children
       gap: 24,
       alignItems: 'flex-start',
     }}>
-      <GenomeGlyph genotypes={genotypes} size={100} label={glyphLabel} />
+      {icon ?? <GenomeGlyph genotypes={genotypes} size={100} label={glyphLabel} />}
       <div style={{ flex: 1 }}>
-        <div style={{
+        <h1 style={{
           fontSize: 28,
           fontWeight: 600,
           letterSpacing: '0.08em',
           fontFamily: 'var(--font-mono)',
-          marginBottom: 10,
+          margin: '0 0 10px',
         }}>
           {title}
-        </div>
+        </h1>
         <div style={{
           fontSize: 'var(--font-size-md)',
           color: 'var(--text-secondary)',

@@ -60,3 +60,7 @@ relay.db-wal
 .claude/settings.local.json
 .claude/projects/
 .claude/worktrees/
+.claude/*.lock
+
+# Local test fixtures / scratch images (not for version control)
+test-images/

@@ -1,4 +1,7 @@
 demographic:
+  # Configured reference profile, not a validated user demographic (#8).
+  label: "Reference profile"
+  is_default: true
   sex: male
   age_range: "30-44"
   ancestry: european
@@ -18,6 +21,7 @@ causes:
       - name: Coronary calcium score (CAC)
         frequency: once
         type: discuss
+        applies_when: actionable
   - cause: Cancer
     pct: 24
     relevant_genes: [BRCA1, BRCA2, CHEK2, APC, TP53]
@@ -29,6 +33,7 @@ causes:
       - name: Colonoscopy baseline
         frequency: once
         type: discuss
+        applies_when: actionable
   - cause: Accidents & Substance-Related
     pct: 12
     relevant_genes: [DRD2, GABRA2, CYP2D6, COMT]
@@ -37,6 +42,7 @@ causes:
       - name: Review substance use patterns with clinician
         frequency: annually
         type: discuss
+        applies_when: actionable
   - cause: Cerebrovascular Disease (Stroke)
     pct: 6
     relevant_genes: [MTHFR, APOE, F5, F2]
@@ -52,6 +58,7 @@ causes:
       - name: Coagulation panel if family history
         frequency: once
         type: discuss
+        applies_when: actionable
   - cause: Suicide
     pct: 5
     relevant_genes: [SLC6A4, COMT, BDNF, TPH2, HTR2A]
@@ -63,6 +70,7 @@ causes:
       - name: Discuss genetic predisposition context with therapist
         frequency: once
         type: discuss
+        applies_when: actionable
   - cause: Diabetes (Type 2)
     pct: 4
     relevant_genes: [TCF7L2, FTO, PPARG]
@@ -94,6 +102,7 @@ causes:
       - name: Cognitive baseline assessment
         frequency: once
         type: discuss
+        applies_when: actionable
   - cause: Chronic Respiratory Disease
     pct: 2
     relevant_genes: [SERPINA1]
@@ -102,6 +111,7 @@ causes:
       - name: Pulmonary function test (spirometry)
         frequency: once
         type: discuss
+        applies_when: actionable
   - cause: Kidney Disease
     pct: 2
     relevant_genes: [APOL1, UMOD]

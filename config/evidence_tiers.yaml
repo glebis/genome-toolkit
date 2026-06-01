@@ -5,29 +5,29 @@ tiers:
   E1:
     name: "Clinical-grade"
     description: "CPIC/DPWG guideline, multiple studies, used in clinical PGx panels"
-    confidence: "85-95%"
+    confidence: "high"
     use_in: ["Gene notes", "Reports", "Wallet Card", "Prescriber Summary"]
 
   E2:
     name: "Well-replicated"
     description: "Multiple GWAS, meta-analyses, OR > 1.5"
-    confidence: "60-80%"
+    confidence: "moderate-high"
     use_in: ["Gene notes", "System notes", "Protocols"]
 
   E3:
     name: "Supported"
     description: "2-5 studies, plausible mechanism, OR 1.2-1.5"
-    confidence: "30-50%"
+    confidence: "moderate"
     use_in: ["Gene notes", "Phenotype notes"]
 
   E4:
     name: "Suggestive"
     description: "Single well-powered study OR multiple underpowered"
-    confidence: "15-25%"
+    confidence: "low"
     use_in: ["Research notes only"]
 
   E5:
     name: "Speculative/N=1"
     description: "Preliminary, animal models, personal observation"
-    confidence: "5-15%"
+    confidence: "speculative"
     use_in: ["Research notes only, clearly flagged"]

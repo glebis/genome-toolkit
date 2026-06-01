@@ -6,8 +6,33 @@ import type { GeneData, EvidenceTier, ActionData } from '../../types/genomics'
 import { EVIDENCE_LABELS, EVIDENCE_COLORS } from '../../types/genomics'
 import { useAddictionData } from '../../hooks/useAddictionData'
 import type { SubstanceCard } from '../../hooks/useAddictionData'
-import { HeroHeader, StatBox, FilterChip, ExportBar, InfoCallout, SectionLabel, LoadingLabel, EmptyState, DashedDivider, ReportFooter } from '../common'
+import { HeroHeader, StatBox, ExportBar, InfoCallout, SectionLabel, LoadingLabel, EmptyState, DashedDivider, ReportFooter, ActionRoadmap, DimensionFilterBar } from '../common'
+import type { FilterBarDimension } from '../common'
 import { printPage, downloadFile, addictionToMarkdown } from '../../lib/export'
+import { filterItems } from '../../lib/filtering'
+import type { ActiveFilters, FilterDimension } from '../../lib/filtering'
+
+const ADDICTION_FILTER_DIMENSIONS: FilterBarDimension[] = [
+  {
+    key: 'evidence',
+    label: 'Evidence',
+    options: (['E1', 'E2', 'E3', 'E4', 'E5'] as EvidenceTier[]).map((tier) => ({
+      value: tier,
+      label: `${tier} ${EVIDENCE_LABELS[tier]}`,
+      color: EVIDENCE_COLORS[tier],
+    })),
+  },
+  {
+    key: 'action',
+    label: 'Action',
+    options: [
+      { value: 'discuss', label: 'Discuss' },
+      { value: 'monitor', label: 'Monitor' },
+      { value: 'consider', label: 'Consider' },
+      { value: 'try', label: 'Try' },
+    ],
+  },
+]
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
@@ -100,9 +125,15 @@ interface AddictionProfileProps {
 export function AddictionProfile({ onExport: _onExport, onAddToChecklist, onToggleAction, checklistIds = new Set(), onAddActionToChecklist }: AddictionProfileProps) {
   const { pathways: PATHWAYS, substances: SUBSTANCES, loading, totalGenes: TOTAL_GENES, actionableCount: ACTIONABLE_COUNT, actions } = useAddictionData()
   const [addedSubstances, setAddedSubstances] = useState<Set<string>>(new Set())
-  const [evidenceFilter, setEvidenceFilter] = useState<EvidenceTier | null>(null)
+  const [filters, setFilters] = useState<ActiveFilters>({})
   const [expandedGene, setExpandedGene] = useState<GeneData | null>(null)
   const geneDetailRef = useRef<HTMLDivElement>(null)
+
+  const geneFilterDimensions: FilterDimension<GeneData>[] = [
+    { key: 'evidence', getValues: (g) => [g.evidenceTier] },
+    { key: 'action', getValues: (g) => (actions[g.symbol] ?? []).map((a) => a.type) },
+  ]
+  const hasActiveFilter = Object.values(filters).some(Boolean)
 
   useEffect(() => {
     if (expandedGene && geneDetailRef.current) {
@@ -145,26 +176,27 @@ export function AddictionProfile({ onExport: _onExport, onAddToChecklist, onTogg
           history. This information is provided for <strong>self-understanding and harm reduction</strong>, not diagnosis.
         </InfoCallout>
 
-        {/* Evidence filter */}
-        <div className="filter-chips" style={{ display: 'flex', gap: 6, marginBottom: 16, alignItems: 'center' }}>
-          <FilterChip label="All" isActive={evidenceFilter === null} onClick={() => setEvidenceFilter(null)} />
-          {(['E1', 'E2', 'E3', 'E4', 'E5'] as EvidenceTier[]).map(tier => (
-            <FilterChip
-              key={tier}
-              label={`${tier} ${EVIDENCE_LABELS[tier]}`}
-              isActive={evidenceFilter === tier}
-              onClick={() => setEvidenceFilter(evidenceFilter === tier ? null : tier)}
-              activeColor={EVIDENCE_COLORS[tier]}
-            />
-          ))}
+        {/* Action roadmap — shared, ranked actions across pathways */}
+        <ActionRoadmap
+          sections={PATHWAYS}
+          actions={actions}
+          onAddToChecklist={onAddActionToChecklist ?? (() => {})}
+          checklistIds={checklistIds}
+        />
+
+        {/* Universal multi-dimension filter */}
+        <div className="filter-chips" style={{ marginBottom: 16 }}>
+          <DimensionFilterBar
+            dimensions={ADDICTION_FILTER_DIMENSIONS}
+            active={filters}
+            onChange={(key, value) => setFilters(prev => ({ ...prev, [key]: value }))}
+          />
         </div>
 
         {/* Pathway sections */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24, marginBottom: 24 }}>
           {PATHWAYS.map(section => {
-            const visibleGenes = evidenceFilter
-              ? section.genes.filter(g => g.evidenceTier === evidenceFilter)
-              : section.genes
+            const visibleGenes = filterItems(section.genes, geneFilterDimensions, filters)
             if (visibleGenes.length === 0) return null
             return (
               <div key={section.narrative.pathway} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -172,7 +204,7 @@ export function AddictionProfile({ onExport: _onExport, onAddToChecklist, onTogg
                   <NarrativeBlock narrative={section.narrative} />
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {visibleGenes.map(gene => (
-                      <GeneCard key={`${gene.symbol}-${gene.rsid}`} gene={gene} onClick={handleGeneClick} />
+                      <GeneCard key={`${gene.symbol}-${gene.rsid}`} gene={gene} onClick={handleGeneClick} currentSection="addiction" />
                     ))}
                   </div>
                 </div>
@@ -191,8 +223,8 @@ export function AddictionProfile({ onExport: _onExport, onAddToChecklist, onTogg
               </div>
             )
           }).filter(Boolean)}
-          {evidenceFilter && PATHWAYS.every(s => s.genes.every(g => g.evidenceTier !== evidenceFilter)) && (
-            <EmptyState message={`NO_RESULTS — no genes at ${evidenceFilter} (${EVIDENCE_LABELS[evidenceFilter]}) level`} />
+          {hasActiveFilter && PATHWAYS.every(s => filterItems(s.genes, geneFilterDimensions, filters).length === 0) && (
+            <EmptyState message="NO_RESULTS — no genes match the active filters" />
           )}
         </div>
 

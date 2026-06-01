@@ -21,11 +21,16 @@ describe('statusLabel', () => {
     expect(statusLabel('normal', 'transporter')).toBe('Normal Function')
     expect(statusLabel('ultrarapid', 'transporter')).toBe('Increased Function')
   })
+
+  it('returns unknown labels for unknown status', () => {
+    expect(statusLabel('unknown', 'enzyme')).toBe('Unknown phenotype')
+    expect(statusLabel('unknown', 'transporter')).toBe('Unknown function')
+  })
 })
 
 describe('METABOLIZER_COLORS', () => {
   it('maps all statuses to CSS variables', () => {
-    const statuses: MetabolizerStatus[] = ['poor', 'intermediate', 'normal', 'ultrarapid']
+    const statuses: MetabolizerStatus[] = ['unknown', 'poor', 'intermediate', 'normal', 'ultrarapid']
     for (const s of statuses) {
       expect(METABOLIZER_COLORS[s]).toMatch(/^var\(--/)
     }

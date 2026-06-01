@@ -120,4 +120,21 @@ describe('AddictionProfile', () => {
     await renderComponent()
     expect(screen.getByText(/GENOME_TOOLKIT.*ADDICTION/)).toBeInTheDocument()
   })
+
+  it('renders the shared Action Roadmap with ranked actions', async () => {
+    await renderComponent()
+    expect(screen.getByText('ACTION ROADMAP')).toBeInTheDocument()
+    expect(screen.getByText('Structured reward planning')).toBeInTheDocument()
+  })
+
+  it('adds a roadmap action to the checklist', async () => {
+    const onAddActionToChecklist = vi.fn()
+    await renderComponent({ onAddActionToChecklist })
+    const roadmapItem = screen.getByText('Structured reward planning')
+    const addBtn = roadmapItem.closest('[data-testid="roadmap-item"]')!.querySelector('button')!
+    addBtn.click()
+    expect(onAddActionToChecklist).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'd1', title: 'Structured reward planning' }),
+    )
+  })
 })

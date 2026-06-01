@@ -1,0 +1,105 @@
+# Life-Map modifiers (#27, track F).
+#
+# Qualitative, supportive life-context factors layered onto the country anchors.
+# They NEVER mutate the blended life-expectancy number. A wide, caveated *range*
+# may be revealed (opt-in) ONLY for `evidence: strong` factors. Mental-health
+# items are deliberately kept `evidence: weak` so they can never become a number —
+# per the project's mental-health UX spec, the map must not greet someone with a
+# scary subtraction.
+#
+# Fields:
+#   id         kebab-case identifier
+#   category   stress | mental-health | family-history
+#   label      short display label
+#   qualitative supportive, non-alarming description
+#   actions    list of things that move this factor
+#   evidence   strong | moderate | weak   (range allowed only when strong)
+#   range      optional {lowYears, highYears} — honored only when evidence==strong
+
+modifiers:
+  - id: chronic-stress
+    category: stress
+    label: Chronic / unmanaged stress
+    qualitative: >-
+      Sustained high stress without recovery is a factor worth attention. It is
+      also one of the most movable — recovery, sleep, and connection shift it.
+    actions:
+      - Protect sleep and regular recovery
+      - Build in downshift routines (walks, breath, nature)
+      - Reduce avoidable chronic stressors where you can
+    evidence: moderate
+
+  - id: relocation-adjustment
+    category: stress
+    label: Relocation / migration adjustment
+    qualitative: >-
+      Building a life in a new country carries real adjustment load — language,
+      systems, distance from old support. It tends to ease as roots deepen.
+    actions:
+      - Invest in local community and routine
+      - Keep ties to your origin culture and people
+      - Use local healthcare proactively, not only in crisis
+    evidence: weak
+
+  - id: smoking
+    category: stress
+    label: Smoking
+    qualitative: >-
+      Smoking is the single most studied modifiable mortality factor — and
+      quitting at any age measurably changes the trajectory.
+    actions:
+      - Talk to a clinician about cessation support
+      - Nicotine replacement / medication options
+    evidence: strong
+    range:
+      lowYears: 5
+      highYears: 10
+
+  - id: physical-inactivity
+    category: stress
+    label: Low physical activity
+    qualitative: >-
+      Regular movement is strongly tied to healthier later years. Even modest,
+      consistent activity counts.
+    actions:
+      - Aim for regular moderate activity you enjoy
+      - Add strength / mobility work over time
+    evidence: strong
+    range:
+      lowYears: 2
+      highYears: 5
+
+  - id: anxiety-disorder
+    category: mental-health
+    label: Diagnosed anxiety disorder
+    qualitative: >-
+      Living with anxiety is a meaningful part of your health picture and worth
+      ongoing care — but population statistics about it are heavily confounded and
+      say little about any individual. This is context for support, not a verdict.
+    actions:
+      - Continue the care and tools that work for you
+      - Sleep, movement, and connection support nervous-system regulation
+      - Revisit treatment with your clinician as needs change
+    evidence: weak
+
+  - id: family-mental-health
+    category: family-history
+    label: Family history of mental-health conditions
+    qualitative: >-
+      Family patterns can raise awareness of what to watch for and discuss with a
+      clinician. Awareness and early support are the actionable parts.
+    actions:
+      - Note relevant family history for your clinician
+      - Know your early-warning signs and supports
+    evidence: weak
+
+  - id: family-cardiometabolic
+    category: family-history
+    label: Family history of heart / metabolic disease
+    qualitative: >-
+      A family history of cardiovascular or metabolic disease is a useful prompt
+      for earlier, more regular screening — where prevention does the most work.
+    actions:
+      - Discuss earlier screening (lipids, blood pressure, glucose)
+      - Prioritize the modifiable factors above
+    evidence: moderate

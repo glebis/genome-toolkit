@@ -46,7 +46,54 @@ describe('useGWASData', () => {
 
     expect(result.current.data).toEqual(mockTraitData)
     expect(result.current.error).toBeNull()
-    expect(global.fetch).toHaveBeenCalledWith('/api/gwas/anxiety')
+    expect(global.fetch).toHaveBeenCalledWith('/api/gwas/anxiety?clumped=true')
+  })
+
+  it('requests clumped data by default (#16)', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(mockTraitData),
+    }) as any
+
+    const { result } = renderHook(() => useGWASData('anxiety'))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    const url = (global.fetch as any).mock.calls[0][0] as string
+    expect(url).toContain('clumped=true')
+  })
+
+  it('url-encodes the trait name (#16)', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(mockTraitData),
+    }) as any
+
+    const { result } = renderHook(() => useGWASData('major depression'))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    expect(global.fetch).toHaveBeenCalledWith('/api/gwas/major%20depression?clumped=true')
+  })
+
+  it('exposes clumping metadata on GWASTraitData (#16)', async () => {
+    const clumpedData: GWASTraitData = {
+      ...mockTraitData,
+      clumped: true,
+      clumping_window_kb: 250,
+      n_hits_before_clump: 100,
+      n_hits_after_clump: 40,
+    }
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(clumpedData),
+    }) as any
+
+    const { result } = renderHook(() => useGWASData('anxiety'))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    expect(result.current.data?.clumped).toBe(true)
+    expect(result.current.data?.clumping_window_kb).toBe(250)
+    expect(result.current.data?.n_hits_before_clump).toBe(100)
+    expect(result.current.data?.n_hits_after_clump).toBe(40)
   })
 
   it('starts with loading true', () => {
@@ -151,11 +198,11 @@ describe('useGWASData', () => {
       { initialProps: { trait: 'anxiety' } },
     )
     await waitFor(() => expect(result.current.loading).toBe(false))
-    expect(global.fetch).toHaveBeenCalledWith('/api/gwas/anxiety')
+    expect(global.fetch).toHaveBeenCalledWith('/api/gwas/anxiety?clumped=true')
 
     rerender({ trait: 'depression' })
     await waitFor(() => expect(result.current.loading).toBe(false))
-    expect(global.fetch).toHaveBeenCalledWith('/api/gwas/depression')
+    expect(global.fetch).toHaveBeenCalledWith('/api/gwas/depression?clumped=true')
     expect(global.fetch).toHaveBeenCalledTimes(2)
   })
 })

@@ -103,6 +103,80 @@ async def test_get_snp_not_found(genome_db):
 
 
 @pytest.mark.asyncio
+async def test_get_snp_accepts_profile_id_default(genome_db):
+    """Single-profile schema (no profile_id column) must still work and
+    accept the new profile_id param, defaulting to 'default'."""
+    snp = await genome_db.get_snp("rs4680", profile_id="default")
+    assert snp is not None
+    assert snp["genotype"] == "GA"
+
+
+@pytest_asyncio.fixture
+async def multi_profile_db(tmp_path):
+    """Schema matching migration 001: snps keyed by (rsid, profile_id)."""
+    db_path = tmp_path / "test_multi.db"
+    async with aiosqlite.connect(db_path) as conn:
+        await conn.execute("""
+            CREATE TABLE snps (
+                rsid TEXT NOT NULL,
+                profile_id TEXT NOT NULL DEFAULT 'default',
+                chromosome TEXT NOT NULL,
+                position INTEGER NOT NULL,
+                genotype TEXT NOT NULL,
+                is_rsid BOOLEAN NOT NULL DEFAULT 1,
+                source TEXT DEFAULT 'genotyped',
+                r2_quality REAL,
+                imported_at TEXT DEFAULT (datetime('now')),
+                PRIMARY KEY (rsid, profile_id)
+            )
+        """)
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS gene_snp_map (
+                rsid TEXT NOT NULL,
+                gene_symbol TEXT NOT NULL,
+                PRIMARY KEY (rsid, gene_symbol)
+            )
+        """)
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS enrichments (
+                rsid TEXT NOT NULL,
+                source TEXT NOT NULL,
+                data TEXT,
+                PRIMARY KEY (rsid, source)
+            )
+        """)
+        # Same rsid, two different profiles, different genotypes.
+        await conn.executemany(
+            "INSERT INTO snps (rsid, profile_id, chromosome, position, genotype) VALUES (?, ?, ?, ?, ?)",
+            [
+                ("rs4680", "default", "22", 19951271, "GA"),
+                ("rs4680", "alice", "22", 19951271, "AA"),
+            ],
+        )
+        await conn.commit()
+
+    db = GenomeDB(db_path)
+    await db.connect()
+    yield db
+    await db.close()
+
+
+@pytest.mark.asyncio
+async def test_get_snp_scoped_by_profile(multi_profile_db):
+    """get_snp must return the genotype of the requested profile, not
+    another profile's row for the same rsid."""
+    default_snp = await multi_profile_db.get_snp("rs4680")
+    assert default_snp is not None
+    assert default_snp["genotype"] == "GA"
+
+    alice_snp = await multi_profile_db.get_snp("rs4680", profile_id="alice")
+    assert alice_snp is not None
+    assert alice_snp["genotype"] == "AA"
+
+    assert await multi_profile_db.get_snp("rs4680", profile_id="nobody") is None
+
+
+@pytest.mark.asyncio
 async def test_get_stats(genome_db):
     stats = await genome_db.get_stats()
     assert stats["total"] == 7

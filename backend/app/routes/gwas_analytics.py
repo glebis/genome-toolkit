@@ -78,7 +78,7 @@ async def get_gene_map():
         if not rsid:
             continue
 
-        snp = await genome_db.get_snp(rsid)
+        snp = await genome_db.get_snp(rsid, profile_id="default")
         if not snp:
             continue
 
@@ -190,7 +190,7 @@ async def get_trait_prs(trait: str):
         if not rsid:
             continue
 
-        snp = await genome_db.get_snp(rsid)
+        snp = await genome_db.get_snp(rsid, profile_id="default")
         if not snp:
             continue
 

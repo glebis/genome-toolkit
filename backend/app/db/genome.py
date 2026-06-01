@@ -93,10 +93,13 @@ class GenomeDB:
         # Need myvariant join when gene filter is used
         mv_join = "LEFT JOIN enrichments e_mv ON s.rsid = e_mv.rsid AND e_mv.source = 'myvariant'"
 
+        gw_join = "LEFT JOIN enrichments e_gw ON s.rsid = e_gw.rsid AND e_gw.source = 'gwas_catalog'"
+
         count_sql = f"""
             SELECT COUNT(DISTINCT s.rsid) FROM snps s
             LEFT JOIN enrichments e_cv ON s.rsid = e_cv.rsid AND e_cv.source = 'clinvar'
             {mv_join}
+            {gw_join}
             {where}
         """
         async with self._conn.execute(count_sql, params) as cursor:
@@ -108,10 +111,15 @@ class GenomeDB:
                    s.source, s.r2_quality,
                    json_extract(e_cv.data, '$.clinical_significance') as significance,
                    json_extract(e_cv.data, '$.disease_name') as disease,
-                   json_extract(e_mv.data, '$.gene_symbol') as gene_symbol
+                   json_extract(e_mv.data, '$.gene_symbol') as gene_symbol,
+                   json_extract(e_cv.data, '$.review_status') as review_status,
+                   json_extract(e_mv.data, '$.gnomad_genome_af') as gnomad_af,
+                   json_extract(e_gw.data, '$.associations[0].beta') as effect_size,
+                   json_extract(e_gw.data, '$.associations[0].traits[0]') as effect_trait
             FROM snps s
             LEFT JOIN enrichments e_cv ON s.rsid = e_cv.rsid AND e_cv.source = 'clinvar'
             {mv_join}
+            {gw_join}
             {where}
             GROUP BY s.rsid
             ORDER BY CASE
@@ -172,8 +180,32 @@ class GenomeDB:
             key=lambda x: (-x["count"], x["gene"]),
         )
 
-    async def get_snp(self, rsid: str) -> dict | None:
-        sql = """
+    async def _snps_has_profile_column(self) -> bool:
+        """Whether the snps table carries a profile_id column.
+
+        Older single-profile databases (and some test fixtures) predate the
+        multi-profile schema; in that case we must not reference profile_id in
+        SQL or the query errors with "no such column".
+        """
+        async with self._conn.execute("PRAGMA table_info(snps)") as cursor:
+            cols = await cursor.fetchall()
+        return any(col[1] == "profile_id" for col in cols)
+
+    async def get_snp(self, rsid: str, profile_id: str = "default") -> dict | None:
+        # Scope by profile so a multi-profile DB never returns another
+        # person's genotype for the same rsID. Degrade safely on legacy
+        # single-profile schemas that lack the column.
+        #
+        # TODO(audit-17 follow-up): list_snps/query_snps/count/get_stats and
+        # other aggregates remain profile-blind and can mix profiles in a
+        # multi-profile DB. Thread profile_id through them in a follow-up.
+        if await self._snps_has_profile_column():
+            profile_filter = "AND COALESCE(s.profile_id, 'default') = ?"
+            params: list = [rsid, profile_id]
+        else:
+            profile_filter = ""
+            params = [rsid]
+        sql = f"""
             SELECT s.rsid, s.chromosome, s.position, s.genotype, s.is_rsid,
                    s.source, s.r2_quality,
                    json_extract(e_cv.data, '$.clinical_significance') as significance,
@@ -194,15 +226,15 @@ class GenomeDB:
             LEFT JOIN enrichments e_cv ON s.rsid = e_cv.rsid AND e_cv.source = 'clinvar'
             LEFT JOIN enrichments e_mv ON s.rsid = e_mv.rsid AND e_mv.source = 'myvariant'
             LEFT JOIN gene_snp_map gsm ON s.rsid = gsm.rsid
-            WHERE s.rsid = ?
+            WHERE s.rsid = ? {profile_filter}
         """
-        async with self._conn.execute(sql, [rsid]) as cursor:
+        async with self._conn.execute(sql, params) as cursor:
             row = await cursor.fetchone()
             return dict(row) if row else None
 
-    async def get_variant_guidance(self, rsid: str) -> dict:
+    async def get_variant_guidance(self, rsid: str, profile_id: str = "default") -> dict:
         """Generate guidance data for a variant based on its enrichments."""
-        snp = await self.get_snp(rsid)
+        snp = await self.get_snp(rsid, profile_id=profile_id)
         if not snp:
             return {}
 

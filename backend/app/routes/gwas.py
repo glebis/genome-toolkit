@@ -19,10 +19,27 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 GWAS_CONFIG_DIR = REPO_ROOT / "config" / "gwas"
 
 
-def _count_effect_alleles(genotype: str | None, effect_allele: str | None) -> int | None:
+_COMPLEMENT = str.maketrans("ACGT", "TGCA")
+_PALINDROMIC = {frozenset(("A", "T")), frozenset(("C", "G"))}
+
+
+def _count_effect_alleles(
+    genotype: str | None,
+    effect_allele: str | None,
+    other_allele: str | None = None,
+) -> int | None:
     """Count copies of the effect allele in a diploid genotype like 'AG' or 'A/G'.
 
-    Returns None if we can't determine (missing data, indel, etc).
+    When ``other_allele`` is supplied, the genotype is validated against the
+    GWAS {effect, other} allele pair so we can orient it to the reference strand:
+
+    * If the genotype alleles already fall within {effect, other}, count directly.
+    * Otherwise try the complement strand; count only if it then matches.
+    * Palindromic SNPs (A/T, C/G) are their own complement and therefore
+      un-orientable from genotype alone — return None.
+    * Genotypes matching neither orientation are unresolvable — return None.
+
+    Returns None if we can't determine (missing data, indel, strand-ambiguous, etc).
     """
     if not genotype or not effect_allele:
         return None
@@ -34,7 +51,50 @@ def _count_effect_alleles(genotype: str | None, effect_allele: str | None) -> in
         return None
     if len(ea) != 1:
         return None
+
+    oa = other_allele.upper() if other_allele else None
+    if oa and len(oa) != 1:
+        return None
+
+    if oa:
+        expected = {ea, oa}
+        # Palindromic SNPs are un-orientable from genotype alone.
+        if frozenset(expected) in _PALINDROMIC:
+            return None
+
+        if set(g) <= expected:
+            return sum(1 for base in g if base == ea)
+
+        comp = g.translate(_COMPLEMENT)
+        if set(comp) <= expected:
+            return sum(1 for base in comp if base == ea)
+
+        # Matches neither orientation — unresolvable.
+        return None
+
     return sum(1 for base in g if base == ea)
+
+
+def _count_traits_per_entry(
+    user_genotype: str | None, traits_list: list[dict]
+) -> list[dict]:
+    """Attach a per-trait ``effect_allele_count`` to each pleiotropic trait entry.
+
+    Each trait may carry a different effect/other allele for the same SNP, so the
+    dosage is computed independently per entry rather than reusing one trait's
+    effect allele for all (audit finding #12).
+    """
+    return [
+        {
+            **t,
+            "effect_allele_count": _count_effect_alleles(
+                user_genotype,
+                t.get("effect_allele"),
+                t.get("other_allele"),
+            ),
+        }
+        for t in traits_list
+    ]
 
 
 @router.get("/traits")
@@ -108,12 +168,11 @@ async def get_gwas_overlap():
 
     results: list[dict] = []
     for rsid, traits_list in pleiotropic.items():
-        snp = await genome_db.get_snp(rsid)
-        # Use the first trait's effect allele for counting (they may differ across studies)
-        ea = traits_list[0].get("effect_allele")
-        ea_count = _count_effect_alleles(
-            snp.get("genotype") if snp else None, ea
-        )
+        snp = await genome_db.get_snp(rsid, profile_id="default")
+        user_genotype = snp.get("genotype") if snp else None
+        # Count the effect-allele dosage PER trait — a pleiotropic SNP can carry
+        # different effect/other alleles across studies (audit finding #12).
+        traits_with_counts = _count_traits_per_entry(user_genotype, traits_list)
 
         avg_p = sum(t["p_value"] for t in traits_list if t["p_value"]) / max(
             sum(1 for t in traits_list if t["p_value"]), 1
@@ -125,9 +184,8 @@ async def get_gwas_overlap():
             "pos": rsid_info[rsid]["pos"],
             "n_traits": len(traits_list),
             "avg_p_value": avg_p,
-            "user_genotype": snp.get("genotype") if snp else None,
-            "effect_allele_count": ea_count,
-            "traits": traits_list,
+            "user_genotype": user_genotype,
+            "traits": traits_with_counts,
         })
 
     # Sort: most traits first, then lowest average p-value
@@ -175,10 +233,10 @@ async def get_gwas_summary():
             rsid = hit.get("rsid")
             if not rsid:
                 continue
-            snp = await genome_db.get_snp(rsid)
+            snp = await genome_db.get_snp(rsid, profile_id="default")
             if not snp:
                 continue
-            ea_count = _count_effect_alleles(snp.get("genotype"), hit.get("effect_allele"))
+            ea_count = _count_effect_alleles(snp.get("genotype"), hit.get("effect_allele"), hit.get("other_allele"))
             if ea_count is None:
                 continue
 
@@ -250,10 +308,10 @@ async def _compute_trait_summary(trait: str) -> dict | None:
         rsid = hit.get("rsid")
         if not rsid:
             continue
-        snp = await genome_db.get_snp(rsid)
+        snp = await genome_db.get_snp(rsid, profile_id="default")
         if not snp:
             continue
-        ea_count = _count_effect_alleles(snp.get("genotype"), hit.get("effect_allele"))
+        ea_count = _count_effect_alleles(snp.get("genotype"), hit.get("effect_allele"), hit.get("other_allele"))
         if ea_count is None:
             continue
 
@@ -358,11 +416,11 @@ async def get_addiction_gwas_summary():
         if not rsid:
             continue
 
-        snp = await genome_db.get_snp(rsid)
+        snp = await genome_db.get_snp(rsid, profile_id="default")
         if not snp:
             continue
 
-        ea_count = _count_effect_alleles(snp.get("genotype"), hit.get("effect_allele"))
+        ea_count = _count_effect_alleles(snp.get("genotype"), hit.get("effect_allele"), hit.get("other_allele"))
         if ea_count is None:
             continue
 
@@ -456,11 +514,11 @@ async def get_gwas_matches(trait: str, clumped: bool = Query(False)):
         if not rsid:
             continue
 
-        snp = await genome_db.get_snp(rsid)
+        snp = await genome_db.get_snp(rsid, profile_id="default")
         if not snp:
             continue
 
-        ea_count = _count_effect_alleles(snp.get("genotype"), hit.get("effect_allele"))
+        ea_count = _count_effect_alleles(snp.get("genotype"), hit.get("effect_allele"), hit.get("other_allele"))
         if ea_count is None:
             continue
 

@@ -3,7 +3,8 @@ import type { PGxEnzymeSection, DrugImpact } from '../../types/pgx'
 import { MetabolizerBar } from './MetabolizerBar'
 import { DrugCard } from './DrugCard'
 import { MedicationInput } from './MedicationInput'
-import { HeroHeader, FilterChip, ExportButton, InfoCallout, LoadingLabel, Toolbar } from '../common'
+import { HeroHeader, FilterChip, ExportButton, InfoCallout, LoadingLabel, Toolbar, GeneCrossRefBadges } from '../common'
+import { isPrescriberScope } from '../../types/pgx'
 import { usePGxData } from '../../hooks/usePGxData'
 import { useMyMedications, normalizeDrugName } from '../../hooks/useMyMedications'
 import { useSubstancesData } from '../../hooks/useSubstancesData'
@@ -235,6 +236,9 @@ export function PGxPanel({ onExport, onAddToChecklist }: PGxPanelProps) {
                     {section.enzyme.geneType}
                   </span>
                   <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)' }}>{section.enzyme.alleles}</span>
+                  <span onClick={(e) => e.stopPropagation()}>
+                    <GeneCrossRefBadges symbol={section.enzyme.symbol} currentSection="pgx" />
+                  </span>
                   {section.enzyme.about && (
                     <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)' }}>
                       {expandedEnzyme === section.enzyme.symbol ? '▴ hide' : '▾ what does this do?'}
@@ -276,55 +280,80 @@ export function PGxPanel({ onExport, onAddToChecklist }: PGxPanelProps) {
                 </div>
               )}
 
-              {/* Drug cards grouped by category */}
-              {filteredDrugs.some(d => d.category === 'prescription') && (
-                <>
-                  <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 10, marginTop: 8 }}>
-                    Prescription medications
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
-                    {filteredDrugs.filter(d => d.category === 'prescription').map(drug => (
-                      <DrugCard
-                        key={drug.drugClass}
-                        drug={drug}
-                        added={addedDrugs.has(drug.drugClass)}
-                        onAddToChecklist={drug.dangerNote && onAddToChecklist ? (title) => {
-                          setAddedDrugs(prev => new Set(prev).add(drug.drugClass))
-                          onAddToChecklist(title, section.enzyme.symbol)
-                        } : undefined}
-                      />
-                    ))}
-                  </div>
-                </>
-              )}
+              {/* Drug cards, partitioned by evidence scope. Only guideline/label
+                  scopes get prescriber framing; everything else (pk_only,
+                  harm_reduction, exploratory) is grouped + labeled as
+                  "not genotype-backed dosing" but stays VISIBLE by default. */}
+              {(() => {
+                const prescriberDrugs = filteredDrugs.filter(d => isPrescriberScope(d.evidenceScope))
+                const otherDrugs = filteredDrugs.filter(d => !isPrescriberScope(d.evidenceScope))
 
-              {filteredDrugs.some(d => d.category === 'substance') && (
-                <>
-                  <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 10, marginTop: 8 }}>
-                    Substances
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
-                    {filteredDrugs.filter(d => d.category === 'substance').map(drug => (
-                      <DrugCard
-                        key={drug.drugClass}
-                        drug={drug}
-                        added={addedDrugs.has(drug.drugClass)}
-                        onAddToChecklist={drug.dangerNote && onAddToChecklist ? (title) => {
-                          setAddedDrugs(prev => new Set(prev).add(drug.drugClass))
-                          onAddToChecklist(title, section.enzyme.symbol)
-                        } : undefined}
-                      />
-                    ))}
-                  </div>
-                </>
-              )}
+                const renderCardGroup = (drugs: typeof filteredDrugs, category: 'prescription' | 'substance', heading: string) => {
+                  const inGroup = drugs.filter(d => d.category === category)
+                  if (inGroup.length === 0) return null
+                  return (
+                    <>
+                      <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 10, marginTop: 8 }}>
+                        {heading}
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+                        {inGroup.map(drug => (
+                          <DrugCard
+                            key={drug.drugClass}
+                            drug={drug}
+                            added={addedDrugs.has(drug.drugClass)}
+                            onAddToChecklist={drug.dangerNote && onAddToChecklist ? (title) => {
+                              setAddedDrugs(prev => new Set(prev).add(drug.drugClass))
+                              onAddToChecklist(title, section.enzyme.symbol)
+                            } : undefined}
+                          />
+                        ))}
+                      </div>
+                    </>
+                  )
+                }
+
+                return (
+                  <>
+                    {/* Prescriber-grade group (guideline/label only) */}
+                    {prescriberDrugs.length > 0 && (
+                      <div style={{ marginBottom: 8 }}>
+                        <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 700, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>
+                          Prescriber discussion points
+                        </div>
+                        {renderCardGroup(prescriberDrugs, 'prescription', 'Prescription medications')}
+                        {renderCardGroup(prescriberDrugs, 'substance', 'Substances')}
+                      </div>
+                    )}
+
+                    {/* Not-for-prescribing group — kept visible, clearly labeled */}
+                    {otherDrugs.length > 0 && (
+                      <div style={{
+                        marginBottom: 8,
+                        borderLeft: '2px solid var(--border)',
+                        paddingLeft: 12,
+                      }}>
+                        <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>
+                          Not genotype-backed dosing
+                        </div>
+                        {renderCardGroup(otherDrugs, 'prescription', 'Prescription medications')}
+                        {renderCardGroup(otherDrugs, 'substance', 'Substances')}
+                      </div>
+                    )}
+                  </>
+                )
+              })()}
 
               {/* Enzyme footer */}
               <div style={{
                 borderTop: '1px dashed var(--border-dashed)', paddingTop: 10,
                 display: 'flex', justifyContent: 'space-between', fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)',
               }}>
-                <span>Based on {section.enzyme.guideline || 'CPIC'} guidelines (2025)</span>
+                <span>
+                  {section.enzyme.guideline
+                    ? `Guideline-backed: ${section.enzyme.guideline}. Verify current prescribing guidance with a clinician.`
+                    : 'Exploratory metabolism note. Not guideline-backed for dosing.'}
+                </span>
               </div>
 
               {/* Separator between enzymes */}
@@ -348,7 +377,8 @@ export function PGxPanel({ onExport, onAddToChecklist }: PGxPanelProps) {
               Substances & Harm Reduction
             </div>
             <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 16 }}>
-              Substance-specific notes based on your enzyme and gene profile. For harm reduction — not encouragement.
+              Harm-reduction notes — <strong>not genotype-backed dosing</strong> and not encouragement.
+              Your genotype does not specify a dose; these are general safety notes.
             </div>
           </div>
 

@@ -1,11 +1,17 @@
 #!/bin/bash
 # Genome Heartbeat — daily health + triage briefing
+exec > >(while IFS= read -r line; do printf '%s %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$line"; done) 2>&1
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 cd "$PROJECT_DIR"
 export PYTHONPATH="$PROJECT_DIR"
 
-: "${GENOME_VAULT_ROOT:?Set GENOME_VAULT_ROOT to your vault path}"
+# Source .env for launchd runs (no shell profile loaded)
+if [ -f "$PROJECT_DIR/.env" ]; then
+    set -a; source "$PROJECT_DIR/.env"; set +a
+fi
+export GENOME_VAULT_ROOT="${GENOME_VAULT_ROOT:-$GENOME_VAULT_PATH}"
+: "${GENOME_VAULT_ROOT:?Set GENOME_VAULT_ROOT or GENOME_VAULT_PATH in .env}"
 
 RESULT=$(python3 -c "
 import sys

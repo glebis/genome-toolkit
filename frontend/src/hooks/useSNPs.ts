@@ -11,6 +11,10 @@ export interface SNP {
   significance: string | null
   disease: string | null
   gene_symbol: string | null
+  review_status: string | null
+  gnomad_af: number | null
+  effect_size: number | null
+  effect_trait: string | null
 }
 
 export interface SNPFilters {
