@@ -12,9 +12,11 @@ export interface SNP {
   disease: string | null
   gene_symbol: string | null
   review_status: string | null
-  gnomad_af: number | null
+  allele_freq: number | null
+  allele_freq_source: string | null
   effect_size: number | null
   effect_trait: string | null
+  effect_scale: string | null
 }
 
 export interface SNPFilters {

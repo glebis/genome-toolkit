@@ -1,3 +1,4 @@
+import json
 import pytest
 import pytest_asyncio
 import aiosqlite
@@ -182,3 +183,112 @@ async def test_get_stats(genome_db):
     assert stats["total"] == 7
     assert stats["genotyped"] == 6
     assert stats["imputed"] == 1
+
+
+# ---------------------------------------------------------------------------
+# SNP browser columns: REVIEW (ClinVar), FREQ (allele freq), EFFECT (GWAS)
+# ---------------------------------------------------------------------------
+
+@pytest_asyncio.fixture
+async def enriched_db(tmp_path):
+    """A genome DB with one SNP per enrichment scenario, for the new columns."""
+    db_path = tmp_path / "enriched.db"
+    async with aiosqlite.connect(db_path) as conn:
+        await conn.execute("""
+            CREATE TABLE snps (
+                rsid TEXT PRIMARY KEY, chromosome TEXT NOT NULL, position INTEGER NOT NULL,
+                genotype TEXT NOT NULL, is_rsid BOOLEAN NOT NULL DEFAULT 1,
+                source TEXT DEFAULT 'genotyped', r2_quality REAL,
+                imported_at TEXT DEFAULT (datetime('now'))
+            )
+        """)
+        await conn.execute("CREATE TABLE gene_snp_map (rsid TEXT, gene_symbol TEXT, PRIMARY KEY (rsid, gene_symbol))")
+        await conn.execute("""
+            CREATE TABLE enrichments (
+                rsid TEXT NOT NULL, source TEXT NOT NULL, data TEXT,
+                PRIMARY KEY (rsid, source)
+            )
+        """)
+        await conn.executemany(
+            "INSERT INTO snps (rsid, chromosome, position, genotype) VALUES (?, ?, ?, ?)",
+            [
+                ("rs_clin", "1", 100, "AG"),   # ClinVar: review_status + allele_freq fallback
+                ("rs_mv", "2", 200, "CT"),     # myvariant: allele_freq + source
+                ("rs_gwas", "6", 300, "AT"),   # gwas_catalog: effect size
+            ],
+        )
+        await conn.executemany(
+            "INSERT INTO enrichments (rsid, source, data) VALUES (?, ?, ?)",
+            [
+                ("rs_clin", "clinvar", json.dumps({
+                    "clinical_significance": "Pathogenic",
+                    "review_status": "criteria provided, multiple submitters, no conflicts",
+                    "allele_freq": 0.012,
+                })),
+                ("rs_mv", "myvariant", json.dumps({
+                    "gene_symbol": "COMT",
+                    "allele_freq": 0.231,
+                    "allele_freq_source": "gnomAD genome",
+                })),
+                ("rs_gwas", "gwas_catalog", json.dumps({
+                    "associations": [
+                        {"trait": "Post-traumatic stress disorder", "beta": 0.1094,
+                         "effect_scale": "log_or", "effect_allele": "A", "p_value": 3.16e-09},
+                        {"trait": "Depression", "beta": 0.02,
+                         "effect_scale": "beta", "effect_allele": "A", "p_value": 1e-05},
+                    ]
+                })),
+            ],
+        )
+        await conn.commit()
+
+    db = GenomeDB(db_path)
+    await db.connect()
+    yield db
+    await db.close()
+
+
+def _item(result, rsid):
+    return next(i for i in result["items"] if i["rsid"] == rsid)
+
+
+@pytest.mark.asyncio
+async def test_query_snps_exposes_clinvar_review_status(enriched_db):
+    result = await enriched_db.query_snps()
+    item = _item(result, "rs_clin")
+    assert item["review_status"] == "criteria provided, multiple submitters, no conflicts"
+
+
+@pytest.mark.asyncio
+async def test_query_snps_exposes_allele_freq_from_myvariant(enriched_db):
+    result = await enriched_db.query_snps()
+    item = _item(result, "rs_mv")
+    assert item["allele_freq"] == 0.231
+    assert item["allele_freq_source"] == "gnomAD genome"
+
+
+@pytest.mark.asyncio
+async def test_query_snps_allele_freq_falls_back_to_clinvar(enriched_db):
+    # rs_clin has no myvariant row; allele_freq must come from the ClinVar payload.
+    result = await enriched_db.query_snps()
+    item = _item(result, "rs_clin")
+    assert item["allele_freq"] == 0.012
+
+
+@pytest.mark.asyncio
+async def test_query_snps_exposes_gwas_effect_size(enriched_db):
+    result = await enriched_db.query_snps()
+    item = _item(result, "rs_gwas")
+    # Most significant association (smallest p) is surfaced.
+    assert item["effect_size"] == 0.1094
+    assert item["effect_trait"] == "Post-traumatic stress disorder"
+    assert item["effect_scale"] == "log_or"
+
+
+@pytest.mark.asyncio
+async def test_query_snps_null_enrichment_fields_are_none(enriched_db):
+    # A purely GWAS variant has no ClinVar/myvariant data: those fields stay None.
+    result = await enriched_db.query_snps()
+    item = _item(result, "rs_gwas")
+    assert item["review_status"] is None
+    assert item["allele_freq"] is None

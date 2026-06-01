@@ -14,6 +14,12 @@ const makeSNP = (overrides: Partial<SNP> = {}): SNP => ({
   significance: 'Pathogenic',
   disease: 'MTHFR deficiency',
   gene_symbol: 'MTHFR',
+  review_status: null,
+  allele_freq: null,
+  allele_freq_source: null,
+  effect_size: null,
+  effect_trait: null,
+  effect_scale: null,
   ...overrides,
 })
 
@@ -107,5 +113,54 @@ describe('SNPTable', () => {
   it('renders significance badge for pathogenic', () => {
     render(<SNPTable data={mockData} loading={false} />)
     expect(screen.getByText('Pathogenic')).toBeInTheDocument()
+  })
+
+  it('renders FREQ, EFFECT and REVIEW column headers', () => {
+    render(<SNPTable data={mockData} loading={false} />)
+    expect(screen.getByText('FREQ')).toBeInTheDocument()
+    expect(screen.getByText('EFFECT')).toBeInTheDocument()
+    expect(screen.getByText('REVIEW')).toBeInTheDocument()
+  })
+
+  it('renders allele frequency as a percentage', () => {
+    const data: SNPResult = { items: [makeSNP({ allele_freq: 0.231 })], total: 1, page: 1, limit: 100 }
+    render(<SNPTable data={data} loading={false} />)
+    expect(screen.getByText('23.1%')).toBeInTheDocument()
+  })
+
+  it('renders ClinVar review stars from review_status', () => {
+    const data: SNPResult = {
+      items: [makeSNP({ review_status: 'criteria provided, multiple submitters, no conflicts' })],
+      total: 1, page: 1, limit: 100,
+    }
+    render(<SNPTable data={data} loading={false} />)
+    expect(screen.getByText('★★★')).toBeInTheDocument()
+  })
+
+  it('labels a log(OR) effect honestly, not as beta', () => {
+    const data: SNPResult = {
+      items: [makeSNP({ effect_size: 0.109, effect_scale: 'log_or', effect_trait: 'PTSD' })],
+      total: 1, page: 1, limit: 100,
+    }
+    render(<SNPTable data={data} loading={false} />)
+    // The scale must be shown as lnOR (or OR), never the misleading "β".
+    expect(screen.getByText(/lnOR/i)).toBeInTheDocument()
+    expect(screen.queryByText(/β/)).not.toBeInTheDocument()
+  })
+
+  it('labels a linear beta effect as β', () => {
+    const data: SNPResult = {
+      items: [makeSNP({ effect_size: 0.05, effect_scale: 'beta', effect_trait: 'Depression' })],
+      total: 1, page: 1, limit: 100,
+    }
+    render(<SNPTable data={data} loading={false} />)
+    expect(screen.getByText(/β/)).toBeInTheDocument()
+  })
+
+  it('shows a dash when effect data is absent', () => {
+    const data: SNPResult = { items: [makeSNP({ effect_size: null })], total: 1, page: 1, limit: 100 }
+    const { container } = render(<SNPTable data={data} loading={false} />)
+    // No effect scale label should be rendered for a variant without GWAS data.
+    expect(container.textContent).not.toMatch(/lnOR|β/)
   })
 })

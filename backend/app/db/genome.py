@@ -113,9 +113,14 @@ class GenomeDB:
                    json_extract(e_cv.data, '$.disease_name') as disease,
                    json_extract(e_mv.data, '$.gene_symbol') as gene_symbol,
                    json_extract(e_cv.data, '$.review_status') as review_status,
-                   json_extract(e_mv.data, '$.gnomad_genome_af') as gnomad_af,
+                   COALESCE(
+                       json_extract(e_mv.data, '$.allele_freq'),
+                       json_extract(e_cv.data, '$.allele_freq')
+                   ) as allele_freq,
+                   json_extract(e_mv.data, '$.allele_freq_source') as allele_freq_source,
                    json_extract(e_gw.data, '$.associations[0].beta') as effect_size,
-                   json_extract(e_gw.data, '$.associations[0].traits[0]') as effect_trait
+                   json_extract(e_gw.data, '$.associations[0].trait') as effect_trait,
+                   json_extract(e_gw.data, '$.associations[0].effect_scale') as effect_scale
             FROM snps s
             LEFT JOIN enrichments e_cv ON s.rsid = e_cv.rsid AND e_cv.source = 'clinvar'
             {mv_join}

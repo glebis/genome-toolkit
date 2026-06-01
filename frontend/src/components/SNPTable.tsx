@@ -140,16 +140,17 @@ const columns: ColumnDef<SNP, any>[] = [
       )
     },
   }),
-  col.accessor('gnomad_af', {
+  col.accessor('allele_freq', {
     header: 'FREQ',
     size: 65,
     cell: info => {
       const af = info.getValue() as number | null
       if (af == null) return <span style={{ color: 'var(--text-tertiary)' }}>--</span>
       const pct = (af * 100).toFixed(af < 0.01 ? 2 : 1)
+      const src = info.row.original.allele_freq_source
       return (
         <span style={{ fontSize: 'var(--font-size-xs)', fontFamily: 'var(--font-mono)' }}
-              title={`gnomAD genome AF: ${af.toPrecision(4)}`}>
+              title={`Allele frequency: ${af.toPrecision(4)}${src ? ` (${src})` : ''}`}>
           {pct}%
         </span>
       )
@@ -157,16 +158,20 @@ const columns: ColumnDef<SNP, any>[] = [
   }),
   col.accessor('effect_size', {
     header: 'EFFECT',
-    size: 70,
+    size: 78,
     cell: info => {
-      const beta = info.getValue() as number | null
+      const eff = info.getValue() as number | null
+      if (eff == null) return <span style={{ color: 'var(--text-tertiary)' }}>--</span>
       const trait = info.row.original.effect_trait
-      if (beta == null) return <span style={{ color: 'var(--text-tertiary)' }}>--</span>
-      const display = Math.abs(beta) < 0.01 ? beta.toExponential(1) : beta.toFixed(3)
+      const scale = info.row.original.effect_scale
+      // Be honest about the scale: a log(OR) must never be labelled as a linear β.
+      const scaleLabel = scale === 'log_or' ? 'lnOR' : 'β'
+      const display = Math.abs(eff) < 0.01 ? eff.toExponential(1) : eff.toFixed(3)
+      const title = `${scaleLabel}=${eff}${trait ? ` for ${trait}` : ''}`
       return (
-        <span style={{ fontSize: 'var(--font-size-xs)', fontFamily: 'var(--font-mono)' }}
-              title={trait ? `β=${beta} for ${trait}` : `β=${beta}`}>
+        <span style={{ fontSize: 'var(--font-size-xs)', fontFamily: 'var(--font-mono)' }} title={title}>
           {display}
+          <span style={{ color: 'var(--text-tertiary)', marginLeft: '0.25em' }}>{scaleLabel}</span>
         </span>
       )
     },
