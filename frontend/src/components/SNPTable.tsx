@@ -73,6 +73,17 @@ function SignificanceBadge({ value }: { value: string | null }) {
   return <span className={cls}>{value.length > 20 ? value.slice(0, 18) + '..' : value}</span>
 }
 
+function reviewStars(status: string): string {
+  const s = status.toLowerCase()
+  if (s.includes('practice guideline')) return '★★★★'
+  if (s.includes('expert panel')) return '★★★★'
+  if (s.includes('multiple submitters') && s.includes('no conflicts')) return '★★★'
+  if (s.includes('multiple submitters')) return '★★'
+  if (s.includes('single submitter')) return '★'
+  if (s.includes('no assertion')) return '☆'
+  return '★'
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const columns: ColumnDef<SNP, any>[] = [
   col.accessor('rsid', {
@@ -125,6 +136,52 @@ const columns: ColumnDef<SNP, any>[] = [
         <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)' }}
               title={val}>
           {short.length > 30 ? short.slice(0, 28) + '..' : short}
+        </span>
+      )
+    },
+  }),
+  col.accessor('gnomad_af', {
+    header: 'FREQ',
+    size: 65,
+    cell: info => {
+      const af = info.getValue() as number | null
+      if (af == null) return <span style={{ color: 'var(--text-tertiary)' }}>--</span>
+      const pct = (af * 100).toFixed(af < 0.01 ? 2 : 1)
+      return (
+        <span style={{ fontSize: 'var(--font-size-xs)', fontFamily: 'var(--font-mono)' }}
+              title={`gnomAD genome AF: ${af.toPrecision(4)}`}>
+          {pct}%
+        </span>
+      )
+    },
+  }),
+  col.accessor('effect_size', {
+    header: 'EFFECT',
+    size: 70,
+    cell: info => {
+      const beta = info.getValue() as number | null
+      const trait = info.row.original.effect_trait
+      if (beta == null) return <span style={{ color: 'var(--text-tertiary)' }}>--</span>
+      const display = Math.abs(beta) < 0.01 ? beta.toExponential(1) : beta.toFixed(3)
+      return (
+        <span style={{ fontSize: 'var(--font-size-xs)', fontFamily: 'var(--font-mono)' }}
+              title={trait ? `β=${beta} for ${trait}` : `β=${beta}`}>
+          {display}
+        </span>
+      )
+    },
+  }),
+  col.accessor('review_status', {
+    header: 'REVIEW',
+    size: 80,
+    cell: info => {
+      const val = info.getValue() as string | null
+      if (!val) return <span style={{ color: 'var(--text-tertiary)' }}>--</span>
+      const stars = reviewStars(val)
+      return (
+        <span style={{ fontSize: 'var(--font-size-xs)', letterSpacing: '0.05em' }}
+              title={val}>
+          {stars}
         </span>
       )
     },

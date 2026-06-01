@@ -93,10 +93,13 @@ class GenomeDB:
         # Need myvariant join when gene filter is used
         mv_join = "LEFT JOIN enrichments e_mv ON s.rsid = e_mv.rsid AND e_mv.source = 'myvariant'"
 
+        gw_join = "LEFT JOIN enrichments e_gw ON s.rsid = e_gw.rsid AND e_gw.source = 'gwas_catalog'"
+
         count_sql = f"""
             SELECT COUNT(DISTINCT s.rsid) FROM snps s
             LEFT JOIN enrichments e_cv ON s.rsid = e_cv.rsid AND e_cv.source = 'clinvar'
             {mv_join}
+            {gw_join}
             {where}
         """
         async with self._conn.execute(count_sql, params) as cursor:
@@ -108,10 +111,15 @@ class GenomeDB:
                    s.source, s.r2_quality,
                    json_extract(e_cv.data, '$.clinical_significance') as significance,
                    json_extract(e_cv.data, '$.disease_name') as disease,
-                   json_extract(e_mv.data, '$.gene_symbol') as gene_symbol
+                   json_extract(e_mv.data, '$.gene_symbol') as gene_symbol,
+                   json_extract(e_cv.data, '$.review_status') as review_status,
+                   json_extract(e_mv.data, '$.gnomad_genome_af') as gnomad_af,
+                   json_extract(e_gw.data, '$.associations[0].beta') as effect_size,
+                   json_extract(e_gw.data, '$.associations[0].traits[0]') as effect_trait
             FROM snps s
             LEFT JOIN enrichments e_cv ON s.rsid = e_cv.rsid AND e_cv.source = 'clinvar'
             {mv_join}
+            {gw_join}
             {where}
             GROUP BY s.rsid
             ORDER BY CASE
