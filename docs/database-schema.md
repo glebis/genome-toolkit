@@ -88,6 +88,11 @@ Cached external API responses (ClinVar, SNPedia, PharmGKB).
 - `idx_enrichments_source` on (source)
 - `idx_enrichments_expires` on (expires_at)
 
+**Source-specific payloads** (consumed by `GenomeDB.query_snps` for the SNP Browser columns):
+- `clinvar`: `clinical_significance`, `disease_name`, `review_status`, optional `allele_freq`
+- `myvariant`: `gene_symbol`, `allele_freq`, `allele_freq_source` (frequency falls back to ClinVar's `allele_freq`)
+- `gwas_catalog`: `{ "associations": [ { trait, beta, effect_scale, effect_allele, p_value }, ... ] }`, ordered most-significant-first. Populated from `config/gwas/*-hits.json` by `scripts/import_gwas_enrichments.py`.
+
 ### genes (migration 001)
 
 Gene reference data. Populated by `scripts/seed_genes.py`.

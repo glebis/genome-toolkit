@@ -6,18 +6,77 @@ All notable changes to Genome Toolkit are documented here.
 
 ### Bug Fixes
 
-- **PGx drug cards invisible since launch**: YAML uses `category: drug` but PGxPanel filtered on `=== 'prescription'` — all prescription drug cards never rendered (#33)
-- **Wrong metabolizer status for 3+ enzymes**: `mapMetabolizerStatus` only matched 4 exact strings; vault values like `caution`, `reference`, `intermediate-metabolizer`, `needs_review`, `high-activity` all fell through to `normal`. CYP2C9 (*1/*2, intermediate) was incorrectly showing as normal metabolizer (#33)
-
-### Features
-
-- **Image generation CLI** (`scripts/generate_image.py`): zero-dependency Python CLI for OpenAI GPT Image 2 API with `--style` flag, draft mode (97% cheaper iteration), style combining (`--style "fritz-kahn+retro-terminal"`), dry-run preview, and contact sheets
-- **10 curated style templates** (`styles.yaml`): arntz (ISOTYPE pictograms), dark-infographic, nordic-craft, nordic-refined, scientific (editorial), vintage-biological (Haeckel/Cajal), vintage-modern, fritz-kahn (Industriepalast), retro-terminal (vintage computers), flat-kahn (flat vector)
+- use gene symbol as React key to avoid rsID collisions *(mental-health)*
+- back FREQ/EFFECT columns with real data, honest GWAS scale (#21) *(snp-table)*
+- source .env under launchd and timestamp log lines *(heartbeat)*
+- track scripts/__init__.py so `scripts.lib` imports resolve on fresh checkouts *(scripts)*
+- derive REF/ALT from reference FASTA, not sample genotype *(imputation)*
+- tag drug/substance evidence_scope; keep harm-reduction, drop dose implication *(pgx)*
+- never infer phenotype from generic status; honest guideline footer *(pgx)*
+- stop presenting configured annotations as calibrated personal risk *(risk)*
+- sanitize residence history from localStorage and inputs *(lifemap)*
+- interpolate life-table ages, don't misuse far brackets; honest copy *(lifemap)*
+- label tally as uncalibrated, fetch clumped data by default *(gwas-ui)*
+- replace fake numeric evidence-tier confidence with qualitative labels *(config)*
+- require unit match before applying thresholds; soften actions *(biomarker)*
+- orient effect-allele counts to strand and count per trait *(gwas)*
+- scope get_snp() by profile_id to prevent cross-profile leakage *(db)*
+- fail loudly when migrations are missing instead of empty schema *(db)*
+- use matched bracket age for target age (honest WHO sparse data) (#27) *(life-map)*
+- show pinned cards when My Medications filter active *(pgx)*
+- drug cards invisible + wrong metabolizer status for vault values *(pgx)*
+- derive gene categories from vault system tags *(#23)*
 
 ### Documentation
 
-- Add image generation section and style templates preview to README
-- Design spec for PGx My Medications feature (#25, proposal 1)
+- migrant life-map TDD implementation plan (#27 A2+F)
+- migrant life-map MVP design (#27 A2+F)
+- risk demographic selector design (#27)
+- cross-section gene links design (#35)
+- add unreleased changelog — image generation CLI, PGx bug fixes
+- add style templates preview image to README
+- design spec for PGx My Medications feature (#25 proposal 1)
+
+### Features
+
+- surface gnomAD frequency, ClinVar review status, GWAS effect *(snp-table)*
+- make LIFE CONTEXT user-selectable, not a hardcoded catalogue (#27) *(life-map)*
+- life-expectancy axis + bespoke LifeMapGlyph icon + export bar (#27) *(life-map)*
+- markdown export (lifeMapToMarkdown) — anchors, heuristic blend, qualitative modifiers only (#27) *(life-map)*
+- evidence-gated qualitative life modifiers (#27) *(life-map)*
+- Life-Map view with country anchors + migration marker, wired into nav (#27) *(life-map)*
+- residence-history + life-map data hooks (#27) *(life-map)*
+- backend life-tables endpoint + view registration + modifiers config (#27) *(life-map)*
+- reproducible Eurostat+WHO life-table fetch script + data (#27) *(life-map)*
+- pure country-blend life-expectancy module (#27) *(life-map)*
+- universal multi-dimension filter, adopt in Addiction (#28) *(ui)*
+- share ActionRoadmap across sections, add to Addiction (#28) *(ui)*
+- cross-section gene cross-reference badges (#35) *(ui)*
+- cross-section gene index endpoint (#35) *(api)*
+- browser-based genome import workflow UI (#15) (#40) *(import)*
+- multi-enzyme drug grouping in pinned medications (#25 phase 2) *(pgx)*
+- My Medications input with pinning and localStorage (#25 phase 1) *(pgx)*
+- add image generation CLI with 10 curated style templates
+
+### Housekeeping
+
+- ignore test-images/ scratch dir and .claude lock files *(gitignore)*
+
+### Other
+
+- Merge branch 'feat/risk-demographic-selector'
+- interaction states for factor chips (#27) *(life-map)*
+- touch targets, mobile wrap, network-error recovery, a11y semantics (#27) *(life-map)*
+- Merge pull request #34 from glebis/feat/pgx-my-medications
+- Merge pull request #33 from glebis/fix/pgx-category-and-status-mapping
+
+### Refactoring
+
+- normalize to design tokens (#27) *(life-map)*
+
+### Testing
+
+- update useLifeMap anchor expectation for audit #13 sparse-data fix *(lifemap)*
 
 ## [0.3.0] — 2026-04-16
 
@@ -80,6 +139,7 @@ All notable changes to Genome Toolkit are documented here.
 
 ### Housekeeping
 
+- changelog for v0.3.0 *(release)*
 - add coverage/ to .gitignore
 - add weasyprint and markdown dependencies *(#12)*
 - add OSS community files — SECURITY, CI, CONTRIBUTING, CoC

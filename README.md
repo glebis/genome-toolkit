@@ -88,7 +88,7 @@ A full-stack web interface for exploring your genome data interactively.
 
 | View | Description |
 |------|-------------|
-| **SNP Browser** | Paginated, filterable table of 3.4M+ variants with ClinVar annotations |
+| **SNP Browser** | Paginated, filterable table of 3.4M+ variants with ClinVar significance, review stars, population frequency, and GWAS effect sizes |
 | **Mental Health** | GWAS-powered psychiatric genetics dashboard with gene cards and evidence panels |
 | **PGx / Drugs** | Pharmacogenomic profile — metabolizer status, drug cards, interaction warnings |
 | **Addiction** | Harm-reduction-oriented substance sensitivity analysis |
