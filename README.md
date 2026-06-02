@@ -12,8 +12,9 @@ Genome Toolkit is a set of [Claude Code](https://claude.ai/claude-code) skills a
 4. **Validate** claims using multi-agent AI pipeline (Codex, NotebookLM, PubMed)
 5. **Track** biomarkers and compare lab results against genetic predictions
 6. **Expand** your data via guided imputation (600K -> 3-40M variants)
+7. **Map** your life-expectancy context across the countries you've lived in (migrant Life-Map)
 
-> **v0.2.0** — Full-stack web app with 5 views, AI chat with collapsible sidebar, multi-provider TTS (Groq Orpheus/ElevenLabs/Deepgram), chat history, configurable nav, agent-friendly setup, and 6 supported genome providers.
+> **v0.4.0** — Full-stack web app with 7 views (SNP Browser, Mental Health, PGx, Addiction, Risk Landscape, in-browser Import, and Life-Map), AI chat with collapsible sidebar, multi-provider TTS (Groq Orpheus/ElevenLabs/Deepgram), chat history, configurable nav, agent-friendly setup, and 6 supported genome providers. Hardened by a scientific-honesty audit — outputs are framed as evidence-tiered context, not clinical prediction (no fabricated risk scores; uncalibrated GWAS tallies labelled as such; harm-reduction content kept but never presented as genotype-backed dosing).
 
 ## Quick Start
 

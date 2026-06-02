@@ -4,6 +4,19 @@ All notable changes to Genome Toolkit are documented here.
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-06-02
+
+**Major release.** Two new views, a SNP-table data upgrade, and a top-to-bottom scientific-honesty pass.
+
+### Highlights
+
+- **Migrant Life-Map (#27)** — a new view that anchors life expectancy to the countries you've lived in (Eurostat + WHO period tables), shows a years-lived migration blend, and layers evidence-gated qualitative life modifiers. Explicitly framed as population statistics, not a personal prediction.
+- **Browser genome import (#15, #40)** — import raw DTC data directly in the web app: drag-and-drop, format/assembly auto-detection with confidence, and live progress — no CLI required.
+- **Scientific-honesty audit (ChatGPT Pro, 20 findings)** — removed UI that implied more certainty than the method supports. The fabricated quantitative risk bar is now a categorical genetic-flag marker; GWAS tallies are labelled *uncalibrated* (no "average"/percentile framing); the mortality demographic is a clearly-labelled reference profile; PGx phenotypes default to "unknown" instead of "normal" and only claim guideline backing when one actually exists. Correctness fixes too: strand/palindrome-aware GWAS allele counting, profile-scoped `get_snp`, reference-anchored imputation VCF (REF/ALT from a GRCh37 FASTA via bcftools), unit-validated biomarker thresholds, and fail-closed migrations.
+- **Harm-reduction, preserved and honest** — drug/substance cards gained an `evidence_scope` tag (`guideline` / `label` / `pk_only` / `harm_reduction` / `exploratory`); harm-reduction content stays and is shown by default, relabelled "not genotype-backed dosing".
+- **SNP table enrichment (#21)** — gnomAD allele frequency, ClinVar review-status stars, and GWAS effect size/trait, backed by real enrichment data.
+- **Also:** cross-section gene cross-reference links (#35), a universal multi-dimension filter and shared Action Roadmap across sections (#28), and PGx My Medications (#25).
+
 ### Bug Fixes
 
 - use gene symbol as React key to avoid rsID collisions *(mental-health)*
