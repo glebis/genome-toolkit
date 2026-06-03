@@ -100,11 +100,21 @@ def dosage_to_genotype(ref, alt, gt_parts):
     return "".join(gt_alleles)
 
 
-def process_vcf(filepath, min_r2, existing_rsids, dry_run=False):
+def process_vcf(filepath, min_r2, existing_rsids, dry_run=False, allow_missing_r2=False):
     """Process a single imputed VCF file.
 
+    Fail-closed safety: variants whose imputation R² cannot be read from INFO are
+    SKIPPED by default (they cannot be quality-gated, so admitting them defeats
+    --min-r2). Pass allow_missing_r2=True to import them anyway, recorded with a
+    NULL r2 value so downstream consumers can flag them as unqualified.
+
+    A real GT FORMAT field is required. Dosage/probability-only records (DS/GP)
+    are skipped rather than misparsed as hard genotypes off the first FORMAT
+    field. (DS/GP hard-calling with an explicit posterior threshold is a possible
+    follow-up.)
+
     Returns:
-        list of (rsid, chrom, pos, genotype) tuples to import
+        list of (rsid, chrom, pos, genotype, r2) tuples to import
         dict of statistics
     """
     to_import = []
@@ -164,13 +174,22 @@ def process_vcf(filepath, min_r2, existing_rsids, dry_run=False):
                 else:
                     stats["r2_0.3_to_0.5"] += 1
             else:
+                # Fail closed: a variant whose quality we cannot read cannot be
+                # gated by --min-r2, so skip it unless explicitly allowed.
+                if not allow_missing_r2:
+                    stats["skipped_missing_r2"] += 1
+                    continue
                 stats["r2_not_available"] += 1
 
-            # Parse genotype
+            # Parse genotype — require a real GT field. Never fall back to the
+            # first FORMAT field (that misparses DS/GP dosage as a hard call).
             format_keys = format_field.split(":")
             sample_values = sample.split(":")
 
-            gt_idx = format_keys.index("GT") if "GT" in format_keys else 0
+            if "GT" not in format_keys:
+                stats["skipped_no_gt"] += 1
+                continue
+            gt_idx = format_keys.index("GT")
             gt_raw = sample_values[gt_idx] if gt_idx < len(sample_values) else None
 
             if not gt_raw or gt_raw == "./.":
@@ -231,11 +250,14 @@ def import_to_db(variants, db_path, dry_run=False):
     import_date = datetime.now().strftime("%Y-%m-%d")
 
     for rsid, chrom, pos, genotype, r2 in variants:
+        # is_rsid must reflect the actual ID: positional IDs (e.g. "22:16050435")
+        # are not rsIDs and must not be marked as such.
+        is_rsid = 1 if str(rsid).startswith("rs") else 0
         try:
             cursor.execute(
                 """INSERT INTO snps (rsid, chromosome, position, genotype, is_rsid, source, import_date, r2_quality)
-                   VALUES (?, ?, ?, ?, 1, 'imputed', ?, ?)""",
-                (rsid, chrom, pos, genotype, import_date, r2),
+                   VALUES (?, ?, ?, ?, ?, 'imputed', ?, ?)""",
+                (rsid, chrom, pos, genotype, is_rsid, import_date, r2),
             )
             imported += 1
         except sqlite3.IntegrityError:
@@ -293,6 +315,15 @@ def main():
         help="Parse and filter but do not import into database",
     )
     parser.add_argument(
+        "--allow-missing-r2",
+        action="store_true",
+        help=(
+            "Import variants whose imputation R² is absent from the VCF INFO "
+            "(recorded with NULL r2_quality). Off by default: such variants are "
+            "skipped because they cannot be quality-gated by --min-r2."
+        ),
+    )
+    parser.add_argument(
         "--db",
         default=DB_PATH,
         help=f"Path to genome.db (default: {DB_PATH})",
@@ -347,7 +378,13 @@ def main():
 
     for vcf_path in vcf_files:
         print(f"Processing: {os.path.basename(vcf_path)}...")
-        variants, stats = process_vcf(vcf_path, args.min_r2, existing, args.dry_run)
+        variants, stats = process_vcf(
+            vcf_path,
+            args.min_r2,
+            existing,
+            args.dry_run,
+            allow_missing_r2=args.allow_missing_r2,
+        )
         all_variants.extend(variants)
 
         for k, v in stats.items():
@@ -368,9 +405,10 @@ def main():
     print(f"  Imported to database:       {imported:>12,}")
     print()
     print("  Filtered out:")
-    print(f"    No rsid:                  {total_stats['skipped_no_rsid']:>12,}")
     print(f"    Already genotyped:        {total_stats['skipped_existing']:>12,}")
     print(f"    Low r² (< {args.min_r2}):          {total_stats['skipped_low_r2']:>12,}")
+    print(f"    Missing r² (skipped):     {total_stats['skipped_missing_r2']:>12,}")
+    print(f"    No GT field:              {total_stats['skipped_no_gt']:>12,}")
     print(f"    Multiallelic:             {total_stats['skipped_multiallelic']:>12,}")
     print(f"    No-call:                  {total_stats['skipped_nocall']:>12,}")
     print(f"    Parse error:              {total_stats['skipped_parse_error']:>12,}")
@@ -381,7 +419,7 @@ def main():
     print(f"    r² 0.5-0.8:              {total_stats['r2_0.5_to_0.8']:>12,}")
     print(f"    r² 0.3-0.5:              {total_stats['r2_0.3_to_0.5']:>12,}")
     if total_stats["r2_not_available"]:
-        print(f"    r² not in INFO:           {total_stats['r2_not_available']:>12,}")
+        print(f"    r² not in INFO (allowed): {total_stats['r2_not_available']:>12,}")
     print()
 
     if not args.dry_run:
