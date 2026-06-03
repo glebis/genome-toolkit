@@ -24,7 +24,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libpango1.0-dev
 
       - name: Install dependencies
-        run: pip install -e ".[dev,web,triage,import]"
+        run: pip install -e ".[dev,web,triage,import,analytics]"
 
       - name: Lint with ruff
         run: |

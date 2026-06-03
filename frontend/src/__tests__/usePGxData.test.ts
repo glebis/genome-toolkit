@@ -216,27 +216,9 @@ describe('usePGxData', () => {
     expect(cyp2d6?.enzyme.alleles).toBe('unknown')
   })
 
-  it('defaults to unknown when no vault gene matches', async () => {
-    vi.resetModules()
-    vi.doMock('../hooks/useVaultGenes', () => ({
-      useVaultGenes: () => ({ genes: [], loading: false, error: null }),
-    }))
-    const config = {
-      enzymes: [
-        { symbol: 'CYP2D6', guideline: 'CPIC', description: 'd', gene_type: 'enzyme', drug_cards: [] },
-      ],
-    }
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true, json: () => Promise.resolve(config),
-    }) as any
-
-    const mod = await import('../hooks/usePGxData')
-    const { result } = renderHook(() => mod.usePGxData())
-    await waitFor(() => expect(result.current.loading).toBe(false))
-    const cyp2d6 = result.current.sections.find(s => s.enzyme.symbol === 'CYP2D6')
-    expect(cyp2d6?.enzyme.status).toBe('unknown')
-    expect(cyp2d6?.enzyme.alleles).toBe('unknown')
-  })
+  // 'defaults to unknown when no vault gene matches' moved to
+  // usePGxData.unknownGene.test.ts — it needs an empty gene list and was flaky
+  // sharing this file's populated-genes beforeEach (mock-override race in CI).
 
   it('flows an explicit evidence_scope to evidenceScope on the mapped drug', async () => {
     const { result } = await getHook()
