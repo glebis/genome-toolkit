@@ -186,3 +186,68 @@ class TestPrepareVcfIntegration:
         pfi.prepare_vcf(str(tsv), str(fa), str(out), drop_palindromic=False)
 
         assert "rs_palin" in self._read_records(out)
+
+
+import sqlite3
+
+
+def _make_profile_db(path, with_profile_column):
+    conn = sqlite3.connect(str(path))
+    if with_profile_column:
+        conn.execute(
+            "CREATE TABLE snps (rsid TEXT, profile_id TEXT DEFAULT 'default', "
+            "chromosome TEXT, position INTEGER, genotype TEXT, source TEXT, "
+            "PRIMARY KEY (rsid, profile_id))"
+        )
+        rows = [
+            ("rs100", "default", "1", 100, "AG", "genotyped"),
+            ("rs200", "default", "1", 200, "CT", "genotyped"),
+            ("rs300", "alice", "1", 300, "GG", "genotyped"),
+            # shared rsid, different profile + genotype
+            ("rs100", "alice", "1", 100, "AA", "genotyped"),
+        ]
+        conn.executemany(
+            "INSERT INTO snps (rsid, profile_id, chromosome, position, genotype, source) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            rows,
+        )
+    else:
+        conn.execute(
+            "CREATE TABLE snps (rsid TEXT PRIMARY KEY, chromosome TEXT, "
+            "position INTEGER, genotype TEXT, source TEXT)"
+        )
+        conn.executemany(
+            "INSERT INTO snps (rsid, chromosome, position, genotype, source) "
+            "VALUES (?, ?, ?, ?, ?)",
+            [
+                ("rs100", "1", 100, "AG", "genotyped"),
+                ("rs200", "1", 200, "CT", "genotyped"),
+            ],
+        )
+    conn.commit()
+    conn.close()
+
+
+class TestProfileScopedQuery:
+    """query_genotyped_snps must filter by profile_id when the column exists."""
+
+    def test_filters_to_requested_profile(self, tmp_path):
+        db = tmp_path / "multi.db"
+        _make_profile_db(db, with_profile_column=True)
+
+        variants, _stats = pfi.query_genotyped_snps(db, profile_id="default")
+        by_rsid = {rsid: gt for (_c, _p, rsid, gt) in variants}
+        assert set(by_rsid) == {"rs100", "rs200"}
+        assert by_rsid["rs100"] == "AG"  # default genotype, not alice's AA
+
+        alice_variants, _ = pfi.query_genotyped_snps(db, profile_id="alice")
+        alice_by_rsid = {rsid: gt for (_c, _p, rsid, gt) in alice_variants}
+        assert set(alice_by_rsid) == {"rs100", "rs300"}
+        assert alice_by_rsid["rs100"] == "AA"
+
+    def test_columnless_db_still_works_with_default(self, tmp_path):
+        db = tmp_path / "single.db"
+        _make_profile_db(db, with_profile_column=False)
+
+        variants, _stats = pfi.query_genotyped_snps(db, profile_id="default")
+        assert {rsid for (_c, _p, rsid, _gt) in variants} == {"rs100", "rs200"}

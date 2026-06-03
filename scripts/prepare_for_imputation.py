@@ -47,19 +47,37 @@ CHROM_ORDER = {str(i): i for i in range(1, 23)}
 CHROM_ORDER["X"] = 23
 
 
+def _snps_has_profile_column(conn):
+    """Whether the snps table carries a profile_id column.
+
+    Legacy single-profile databases predate the multi-profile schema; in that
+    case we must not reference profile_id in SQL or the query errors.
+    """
+    cols = conn.execute("PRAGMA table_info(snps)").fetchall()
+    return any(col[1] == "profile_id" for col in cols)
+
+
 def query_genotyped_snps(db_path, profile_id="default"):
     """Query genotyped SNPs from SQLite database.
 
-    Returns list of (chrom, pos, rsid, genotype) tuples and QC stats.
-    The profile_id parameter is reserved for future multi-profile support.
+    Returns list of (chrom, pos, rsid, genotype) tuples and QC stats. Scopes to
+    ``profile_id`` when the snps table has the column, so a multi-profile DB
+    never mixes another sample's genotypes into the imputation export.
     """
     variants = []
     stats = defaultdict(int)
 
     conn = get_connection(db_path)
-    cursor = conn.execute(
-        "SELECT rsid, chromosome, position, genotype FROM snps WHERE source = 'genotyped'"
-    )
+    if _snps_has_profile_column(conn):
+        cursor = conn.execute(
+            "SELECT rsid, chromosome, position, genotype FROM snps "
+            "WHERE source = 'genotyped' AND COALESCE(profile_id, 'default') = ?",
+            (profile_id,),
+        )
+    else:
+        cursor = conn.execute(
+            "SELECT rsid, chromosome, position, genotype FROM snps WHERE source = 'genotyped'"
+        )
 
     for row in cursor:
         rsid, chrom, pos, genotype = row["rsid"], row["chromosome"], row["position"], row["genotype"]
@@ -271,7 +289,7 @@ def parse_args():
     parser.add_argument(
         "--profile",
         default="default",
-        help="Profile ID to export (default: 'default'). Reserved for future multi-profile support.",
+        help="Profile ID to export (default: 'default'). Scopes the query in a multi-profile DB.",
     )
     parser.add_argument(
         "--output",

@@ -215,10 +215,18 @@ def process_vcf(filepath, min_r2, existing_rsids, dry_run=False, allow_missing_r
     return to_import, stats
 
 
-def import_to_db(variants, db_path, dry_run=False):
+def _snps_has_profile_column(cursor):
+    """Whether the snps table carries a profile_id column (multi-profile schema)."""
+    cursor.execute("PRAGMA table_info(snps)")
+    return any(row[1] == "profile_id" for row in cursor.fetchall())
+
+
+def import_to_db(variants, db_path, dry_run=False, profile_id="default"):
     """Import imputed variants into genome.db.
 
-    Adds variants to the snps table with is_rsid=1.
+    Adds variants to the snps table with is_rsid=1. Imported rows carry the
+    given ``profile_id`` when the schema has the column, and deduplication is
+    per-(profile_id, rsid) — so the same rsID can exist under another profile.
     The imported_at timestamp distinguishes imputed from original.
     """
     if dry_run:
@@ -227,6 +235,8 @@ def import_to_db(variants, db_path, dry_run=False):
 
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
+
+    has_profile = _snps_has_profile_column(cursor)
 
     # Check if 'source' column exists; add it if not
     cursor.execute("PRAGMA table_info(snps)")
@@ -254,14 +264,21 @@ def import_to_db(variants, db_path, dry_run=False):
         # are not rsIDs and must not be marked as such.
         is_rsid = 1 if str(rsid).startswith("rs") else 0
         try:
-            cursor.execute(
-                """INSERT INTO snps (rsid, chromosome, position, genotype, is_rsid, source, import_date, r2_quality)
-                   VALUES (?, ?, ?, ?, ?, 'imputed', ?, ?)""",
-                (rsid, chrom, pos, genotype, is_rsid, import_date, r2),
-            )
+            if has_profile:
+                cursor.execute(
+                    """INSERT INTO snps (rsid, profile_id, chromosome, position, genotype, is_rsid, source, import_date, r2_quality)
+                       VALUES (?, ?, ?, ?, ?, ?, 'imputed', ?, ?)""",
+                    (rsid, profile_id, chrom, pos, genotype, is_rsid, import_date, r2),
+                )
+            else:
+                cursor.execute(
+                    """INSERT INTO snps (rsid, chromosome, position, genotype, is_rsid, source, import_date, r2_quality)
+                       VALUES (?, ?, ?, ?, ?, 'imputed', ?, ?)""",
+                    (rsid, chrom, pos, genotype, is_rsid, import_date, r2),
+                )
             imported += 1
         except sqlite3.IntegrityError:
-            # Duplicate rsid — directly genotyped takes precedence
+            # Duplicate (profile_id, rsid) — directly genotyped takes precedence
             skipped_dup += 1
 
     # Log the pipeline run
@@ -286,11 +303,21 @@ def import_to_db(variants, db_path, dry_run=False):
     return imported
 
 
-def get_existing_rsids(db_path):
-    """Load all existing rsids from the database for deduplication."""
+def get_existing_rsids(db_path, profile_id="default"):
+    """Load existing rsids for deduplication, scoped to ``profile_id``.
+
+    On a multi-profile schema only the requested profile's rsids are returned,
+    so an rsID present under another profile does not block import here.
+    """
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
-    cursor.execute("SELECT rsid FROM snps")
+    if _snps_has_profile_column(cursor):
+        cursor.execute(
+            "SELECT rsid FROM snps WHERE COALESCE(profile_id, 'default') = ?",
+            (profile_id,),
+        )
+    else:
+        cursor.execute("SELECT rsid FROM snps")
     rsids = set(row[0] for row in cursor.fetchall())
     conn.close()
     return rsids
@@ -327,6 +354,11 @@ def main():
         "--db",
         default=DB_PATH,
         help=f"Path to genome.db (default: {DB_PATH})",
+    )
+    parser.add_argument(
+        "--profile",
+        default="default",
+        help="Profile ID to import into (default: 'default'). Scopes dedup + writes.",
     )
 
     args = parser.parse_args()
@@ -368,7 +400,7 @@ def main():
 
     # Load existing rsids
     print("Loading existing variants from database...")
-    existing = get_existing_rsids(args.db)
+    existing = get_existing_rsids(args.db, profile_id=args.profile)
     print(f"  {len(existing):,} variants already in database")
     print()
 
@@ -393,7 +425,7 @@ def main():
     # Import
     print()
     print("Importing variants...")
-    imported = import_to_db(all_variants, args.db, args.dry_run)
+    imported = import_to_db(all_variants, args.db, args.dry_run, profile_id=args.profile)
 
     # Final report
     print()

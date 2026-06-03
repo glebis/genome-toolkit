@@ -177,6 +177,98 @@ async def test_get_snp_scoped_by_profile(multi_profile_db):
     assert await multi_profile_db.get_snp("rs4680", profile_id="nobody") is None
 
 
+# ---------------------------------------------------------------------------
+# Aggregate / list queries must also be profile-scoped (audit finding #18)
+# ---------------------------------------------------------------------------
+
+@pytest_asyncio.fixture
+async def multi_profile_db_rich(tmp_path):
+    """Two profiles, distinct row sets, plus one shared rsid with differing
+    genotypes — for asserting list/count/stats scope to one profile only."""
+    db_path = tmp_path / "test_multi_rich.db"
+    async with aiosqlite.connect(db_path) as conn:
+        await conn.execute("""
+            CREATE TABLE snps (
+                rsid TEXT NOT NULL,
+                profile_id TEXT NOT NULL DEFAULT 'default',
+                chromosome TEXT NOT NULL,
+                position INTEGER NOT NULL,
+                genotype TEXT NOT NULL,
+                is_rsid BOOLEAN NOT NULL DEFAULT 1,
+                source TEXT DEFAULT 'genotyped',
+                r2_quality REAL,
+                imported_at TEXT DEFAULT (datetime('now')),
+                PRIMARY KEY (rsid, profile_id)
+            )
+        """)
+        await conn.execute("CREATE TABLE gene_snp_map (rsid TEXT, gene_symbol TEXT, PRIMARY KEY (rsid, gene_symbol))")
+        await conn.execute("CREATE TABLE enrichments (rsid TEXT NOT NULL, source TEXT NOT NULL, data TEXT, PRIMARY KEY (rsid, source))")
+        await conn.executemany(
+            "INSERT INTO snps (rsid, profile_id, chromosome, position, genotype, source) VALUES (?, ?, ?, ?, ?, ?)",
+            [
+                # default profile: 3 rows (2 genotyped, 1 imputed)
+                ("rs4680", "default", "22", 19951271, "GA", "genotyped"),
+                ("rs1801133", "default", "1", 11856378, "CT", "genotyped"),
+                ("rsDefImp", "default", "1", 555, "AA", "imputed"),
+                # alice profile: 2 rows (both genotyped); shares rs4680 w/ diff genotype
+                ("rs4680", "alice", "22", 19951271, "AA", "genotyped"),
+                ("rsAlice", "alice", "3", 999, "TT", "genotyped"),
+            ],
+        )
+        await conn.commit()
+
+    db = GenomeDB(db_path)
+    await db.connect()
+    yield db
+    await db.close()
+
+
+@pytest.mark.asyncio
+async def test_count_scoped_by_profile(multi_profile_db_rich):
+    assert await multi_profile_db_rich.count() == 3  # default
+    assert await multi_profile_db_rich.count(profile_id="alice") == 2
+
+
+@pytest.mark.asyncio
+async def test_list_snps_scoped_by_profile(multi_profile_db_rich):
+    default_res = await multi_profile_db_rich.query_snps()
+    assert default_res["total"] == 3
+    rsids = {i["rsid"] for i in default_res["items"]}
+    assert rsids == {"rs4680", "rs1801133", "rsDefImp"}
+    # rs4680 must be the default genotype, not alice's
+    rs4680 = _item(default_res, "rs4680")
+    assert rs4680["genotype"] == "GA"
+
+    alice_res = await multi_profile_db_rich.query_snps(profile_id="alice")
+    assert alice_res["total"] == 2
+    assert {i["rsid"] for i in alice_res["items"]} == {"rs4680", "rsAlice"}
+    assert _item(alice_res, "rs4680")["genotype"] == "AA"
+
+
+@pytest.mark.asyncio
+async def test_get_stats_scoped_by_profile(multi_profile_db_rich):
+    default_stats = await multi_profile_db_rich.get_stats()
+    assert default_stats["total"] == 3
+    assert default_stats["genotyped"] == 2
+    assert default_stats["imputed"] == 1
+
+    alice_stats = await multi_profile_db_rich.get_stats(profile_id="alice")
+    assert alice_stats["total"] == 2
+    assert alice_stats["genotyped"] == 2
+    assert alice_stats["imputed"] == 0
+
+
+@pytest.mark.asyncio
+async def test_count_and_stats_default_on_columnless_db(genome_db):
+    """Column-less single-profile DB still works with the default profile."""
+    assert await genome_db.count() == 7
+    assert await genome_db.count(profile_id="default") == 7
+    stats = await genome_db.get_stats(profile_id="default")
+    assert stats["total"] == 7
+    res = await genome_db.query_snps(profile_id="default")
+    assert res["total"] == 7
+
+
 @pytest.mark.asyncio
 async def test_get_stats(genome_db):
     stats = await genome_db.get_stats()

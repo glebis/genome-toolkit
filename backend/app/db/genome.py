@@ -17,8 +17,11 @@ class GenomeDB:
         if self._conn:
             await self._conn.close()
 
-    async def count(self) -> int:
-        async with self._conn.execute("SELECT COUNT(*) FROM snps") as cursor:
+    async def count(self, profile_id: str = "default") -> int:
+        clause, params = await self._profile_clause(profile_id)
+        async with self._conn.execute(
+            f"SELECT COUNT(*) FROM snps s{clause}", params
+        ) as cursor:
             row = await cursor.fetchone()
             return row[0]
 
@@ -34,9 +37,15 @@ class GenomeDB:
         gene: str | None = None,
         zygosity: str | None = None,
         condition: str | None = None,
+        profile_id: str = "default",
     ) -> dict:
         conditions = []
         params: list = []
+
+        # Scope to the requested profile when the schema carries the column.
+        if await self._snps_has_profile_column():
+            conditions.append("COALESCE(s.profile_id, 'default') = ?")
+            params.append(profile_id)
 
         if search:
             conditions.append("""(
@@ -196,14 +205,20 @@ class GenomeDB:
             cols = await cursor.fetchall()
         return any(col[1] == "profile_id" for col in cols)
 
+    async def _profile_clause(self, profile_id: str) -> tuple[str, list]:
+        """Return a (SQL clause, params) pair scoping ``s`` to one profile.
+
+        Yields an empty clause on legacy single-profile schemas that lack the
+        column, so column-less DBs keep working with the default profile.
+        """
+        if await self._snps_has_profile_column():
+            return " WHERE COALESCE(s.profile_id, 'default') = ?", [profile_id]
+        return "", []
+
     async def get_snp(self, rsid: str, profile_id: str = "default") -> dict | None:
         # Scope by profile so a multi-profile DB never returns another
         # person's genotype for the same rsID. Degrade safely on legacy
         # single-profile schemas that lack the column.
-        #
-        # TODO(audit-17 follow-up): list_snps/query_snps/count/get_stats and
-        # other aggregates remain profile-blind and can mix profiles in a
-        # multi-profile DB. Thread profile_id through them in a follow-up.
         if await self._snps_has_profile_column():
             profile_filter = "AND COALESCE(s.profile_id, 'default') = ?"
             params: list = [rsid, profile_id]
@@ -322,15 +337,27 @@ class GenomeDB:
 
         return guidance
 
-    async def get_stats(self) -> dict:
+    async def get_stats(self, profile_id: str = "default") -> dict:
+        clause, params = await self._profile_clause(profile_id)
+        # Combine the profile clause with the per-source predicate.
+        if clause:
+            src = f"{clause} AND s.source = ?"
+        else:
+            src = " WHERE s.source = ?"
         stats = {}
-        async with self._conn.execute("SELECT COUNT(*) FROM snps") as c:
+        async with self._conn.execute(f"SELECT COUNT(*) FROM snps s{clause}", params) as c:
             stats["total"] = (await c.fetchone())[0]
-        async with self._conn.execute("SELECT COUNT(*) FROM snps WHERE source = 'genotyped'") as c:
+        async with self._conn.execute(
+            f"SELECT COUNT(*) FROM snps s{src}", params + ["genotyped"]
+        ) as c:
             stats["genotyped"] = (await c.fetchone())[0]
-        async with self._conn.execute("SELECT COUNT(*) FROM snps WHERE source = 'imputed'") as c:
+        async with self._conn.execute(
+            f"SELECT COUNT(*) FROM snps s{src}", params + ["imputed"]
+        ) as c:
             stats["imputed"] = (await c.fetchone())[0]
-        async with self._conn.execute("SELECT COUNT(DISTINCT chromosome) FROM snps") as c:
+        async with self._conn.execute(
+            f"SELECT COUNT(DISTINCT s.chromosome) FROM snps s{clause}", params
+        ) as c:
             stats["chromosomes"] = (await c.fetchone())[0]
         return stats
 

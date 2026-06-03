@@ -90,15 +90,24 @@ def filter_snps_by_source(snps: List[Dict], gwas_only: bool) -> List[Dict]:
     return [s for s in snps if s.get("source_type", "gwas") != "candidate_gene"]
 
 
+def _snps_has_profile_column(conn: sqlite3.Connection) -> bool:
+    """Whether the snps table carries a profile_id column (multi-profile schema)."""
+    cols = conn.execute("PRAGMA table_info(snps)").fetchall()
+    return any(row[1] == "profile_id" for row in cols)
+
+
 def compute_prs_for_trait(
     conn: sqlite3.Connection,
     trait_key: str,
     trait_data: Dict[str, Any],
     gwas_only: bool = False,
+    profile_id: str = "default",
 ) -> Dict[str, Any]:
     """Compute PRS for a single trait.
 
     Returns a dict with score details, matched/missing SNPs, and percentile.
+    Genotype lookup is scoped to ``profile_id`` on a multi-profile schema, so a
+    score never mixes another sample's genotypes.
     """
     all_snps = trait_data["snps"]
     snps = filter_snps_by_source(all_snps, gwas_only)
@@ -114,10 +123,17 @@ def compute_prs_for_trait(
 
     # Query all relevant genotypes in one go
     placeholders = ",".join("?" for _ in snps)
-    cursor = conn.execute(
-        f"SELECT rsid, genotype FROM snps WHERE rsid IN ({placeholders})",
-        [s["rsid"] for s in snps],
-    )
+    if _snps_has_profile_column(conn):
+        cursor = conn.execute(
+            f"SELECT rsid, genotype FROM snps "
+            f"WHERE COALESCE(profile_id, 'default') = ? AND rsid IN ({placeholders})",
+            [profile_id] + [s["rsid"] for s in snps],
+        )
+    else:
+        cursor = conn.execute(
+            f"SELECT rsid, genotype FROM snps WHERE rsid IN ({placeholders})",
+            [s["rsid"] for s in snps],
+        )
     genotype_map = {row[0]: row[1] for row in cursor.fetchall()}
 
     total_score = 0.0
@@ -481,6 +497,10 @@ def main():
         help="Calculate PRS for a specific trait only (e.g., 'bmi', 't2d')"
     )
     parser.add_argument(
+        "--profile", type=str, default="default",
+        help="Profile ID whose genotypes to score (default: 'default')"
+    )
+    parser.add_argument(
         "--details", action="store_true",
         help="Show per-SNP details in the console report"
     )
@@ -525,12 +545,12 @@ def main():
             continue
 
         # Always compute GWAS-only as the primary result
-        result = compute_prs_for_trait(conn, key, traits[key], gwas_only=True)
+        result = compute_prs_for_trait(conn, key, traits[key], gwas_only=True, profile_id=args.profile)
         results.append(result)
 
         # If trait has candidate SNPs, also compute full PRS for comparison
         if trait_has_candidate_snps(traits[key]):
-            full_result = compute_prs_for_trait(conn, key, traits[key], gwas_only=False)
+            full_result = compute_prs_for_trait(conn, key, traits[key], gwas_only=False, profile_id=args.profile)
             candidate_results.append(full_result)
 
     conn.close()
