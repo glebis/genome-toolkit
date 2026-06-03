@@ -28,6 +28,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from lib.config import DB_PATH, DATA_DIR
+from lib.allele import count_effect_alleles
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 DEFAULT_DB = DB_PATH
@@ -63,19 +64,16 @@ def load_weights(path: Path) -> Dict[str, Any]:
     return data["traits"]
 
 
-def count_effect_alleles(genotype: str, effect_allele: str) -> int:
-    """Count how many copies of the effect allele are in the genotype string.
-
-    23andMe genotypes are two characters (e.g. 'AG', 'CC', 'AT').
-    Returns 0, 1, or 2.
-    """
-    if not genotype or len(genotype) < 2:
-        return 0
-    count = 0
-    for allele in genotype:
-        if allele == effect_allele:
-            count += 1
-    return count
+# Effect-allele counting uses the shared strand/palindrome-safe helper in
+# scripts/lib/allele.py (imported as ``count_effect_alleles``), the same logic
+# used by the backend GWAS routes (GPT-5.5 Pro validation finding #16).
+#
+# IMPORTANT: the PRS weight table (scripts/data/prs_snp_weights.json) only
+# carries ``effect_allele`` — there is no ``other_allele`` for most variants.
+# Without an other_allele the helper cannot orient strand or detect palindromes,
+# so it falls back to a plain count. When a weight DOES provide ``other_allele``,
+# the helper excludes palindromic / unorientable SNPs (returns None) and those
+# SNPs are dropped from the score rather than guessed.
 
 
 def trait_has_candidate_snps(trait_data: Dict[str, Any]) -> bool:
@@ -143,9 +141,12 @@ def compute_prs_for_trait(
     missing_snps = []
     snp_details = []
 
+    excluded_snps = []  # SNPs dropped as strand-ambiguous / unorientable
+
     for snp in snps:
         rsid = snp["rsid"]
         effect_allele = snp["effect_allele"]
+        other_allele = snp.get("other_allele")
         beta = snp["beta"]
 
         # Max/min possible regardless of availability
@@ -157,7 +158,13 @@ def compute_prs_for_trait(
 
         if rsid in genotype_map:
             genotype = genotype_map[rsid]
-            allele_count = count_effect_alleles(genotype, effect_allele)
+            allele_count = count_effect_alleles(genotype, effect_allele, other_allele)
+            if allele_count is None:
+                # Strand-ambiguous (palindromic) or unorientable when an
+                # other_allele is available — exclude rather than guess
+                # (finding #16). Also covers malformed/indel genotypes.
+                excluded_snps.append(rsid)
+                continue
             contribution = allele_count * beta
             total_score += contribution
             matched_snps.append(rsid)
@@ -204,6 +211,8 @@ def compute_prs_for_trait(
         "percentile": round(percentile, 1),
         "snps_matched": len(matched_snps),
         "snps_missing": len(missing_snps),
+        "snps_excluded": len(excluded_snps),
+        "excluded_rsids": excluded_snps,
         "snps_total": len(snps),
         "snps_gwas": gwas_count,
         "snps_candidate": candidate_count,
@@ -217,18 +226,31 @@ def compute_prs_for_trait(
     }
 
 
+# Percentiles here are derived from a p=0.5 allele-frequency assumption and a
+# handful of top SNPs, NOT from an external reference panel. The qualitative
+# labels are therefore explicitly marked uncalibrated so a "HIGH"/"LOW" is never
+# emitted as if it were a calibrated population percentile (finding #16).
+UNCALIBRATED_SUFFIX = " (uncalibrated)"
+
+
 def risk_category(percentile: float) -> str:
-    """Assign a qualitative risk category based on percentile."""
+    """Assign a qualitative, UNCALIBRATED risk category based on percentile.
+
+    The label always carries an explicit ``(uncalibrated)`` caveat because the
+    underlying percentile is not tied to a reference panel — it assumes p=0.5
+    allele frequencies over a small SNP set. Do not surface a bare HIGH/LOW.
+    """
     if percentile >= 90:
-        return "HIGH"
+        label = "HIGH"
     elif percentile >= 75:
-        return "ABOVE AVERAGE"
+        label = "ABOVE AVERAGE"
     elif percentile >= 25:
-        return "AVERAGE"
+        label = "AVERAGE"
     elif percentile >= 10:
-        return "BELOW AVERAGE"
+        label = "BELOW AVERAGE"
     else:
-        return "LOW"
+        label = "LOW"
+    return label + UNCALIBRATED_SUFFIX
 
 
 def format_coverage_warning(result: Dict[str, Any]) -> Optional[str]:

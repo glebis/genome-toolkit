@@ -12,67 +12,18 @@ from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Query
 
+from scripts.lib.allele import count_effect_alleles as _count_effect_alleles
+
 router = APIRouter(prefix="/api/gwas")
 
 # Resolve config dir relative to repo root
 REPO_ROOT = Path(__file__).resolve().parents[3]
 GWAS_CONFIG_DIR = REPO_ROOT / "config" / "gwas"
 
-
-_COMPLEMENT = str.maketrans("ACGT", "TGCA")
-_PALINDROMIC = {frozenset(("A", "T")), frozenset(("C", "G"))}
-
-
-def _count_effect_alleles(
-    genotype: str | None,
-    effect_allele: str | None,
-    other_allele: str | None = None,
-) -> int | None:
-    """Count copies of the effect allele in a diploid genotype like 'AG' or 'A/G'.
-
-    When ``other_allele`` is supplied, the genotype is validated against the
-    GWAS {effect, other} allele pair so we can orient it to the reference strand:
-
-    * If the genotype alleles already fall within {effect, other}, count directly.
-    * Otherwise try the complement strand; count only if it then matches.
-    * Palindromic SNPs (A/T, C/G) are their own complement and therefore
-      un-orientable from genotype alone — return None.
-    * Genotypes matching neither orientation are unresolvable — return None.
-
-    Returns None if we can't determine (missing data, indel, strand-ambiguous, etc).
-    """
-    if not genotype or not effect_allele:
-        return None
-    # Normalize: strip separators, uppercase
-    g = genotype.replace("/", "").replace("|", "").upper()
-    ea = effect_allele.upper()
-    # Only handle SNP-level calls (length 2)
-    if len(g) != 2:
-        return None
-    if len(ea) != 1:
-        return None
-
-    oa = other_allele.upper() if other_allele else None
-    if oa and len(oa) != 1:
-        return None
-
-    if oa:
-        expected = {ea, oa}
-        # Palindromic SNPs are un-orientable from genotype alone.
-        if frozenset(expected) in _PALINDROMIC:
-            return None
-
-        if set(g) <= expected:
-            return sum(1 for base in g if base == ea)
-
-        comp = g.translate(_COMPLEMENT)
-        if set(comp) <= expected:
-            return sum(1 for base in comp if base == ea)
-
-        # Matches neither orientation — unresolvable.
-        return None
-
-    return sum(1 for base in g if base == ea)
+# Strand/palindrome-safe effect-allele counting lives in scripts/lib/allele.py
+# so backend routes and the PRS calculator share one implementation
+# (GPT-5.5 Pro validation finding #16). Re-exported above as
+# ``_count_effect_alleles`` for backwards compatibility with existing imports.
 
 
 def _count_traits_per_entry(

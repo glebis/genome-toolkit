@@ -12,21 +12,18 @@ from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
 
+from scripts.lib.allele import count_effect_alleles as _count_effect_alleles
+
 router = APIRouter(prefix="/api/gwas")
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 GWAS_CONFIG_DIR = REPO_ROOT / "config" / "gwas"
 
-
-def _count_effect_alleles(genotype: str | None, effect_allele: str | None) -> int | None:
-    """Count copies of the effect allele in a diploid genotype like 'AG' or 'A/G'."""
-    if not genotype or not effect_allele:
-        return None
-    g = genotype.replace("/", "").replace("|", "").upper()
-    ea = effect_allele.upper()
-    if len(g) != 2 or len(ea) != 1:
-        return None
-    return sum(1 for base in g if base == ea)
+# Strand/palindrome-safe effect-allele counting is shared with routes/gwas.py
+# and scripts/analytics/prs_calculator.py via scripts/lib/allele.py
+# (GPT-5.5 Pro validation finding #16). GWAS hit dicts carry ``other_allele``,
+# so it is always passed below to enable strand orientation and palindrome
+# exclusion.
 
 
 def _load_all_hits() -> list[tuple[dict, dict]]:
@@ -91,7 +88,9 @@ async def get_gene_map():
         p_value = hit.get("p_value")
         effect_allele = hit.get("effect_allele")
 
-        ea_count = _count_effect_alleles(snp.get("genotype"), effect_allele)
+        ea_count = _count_effect_alleles(
+            snp.get("genotype"), effect_allele, hit.get("other_allele")
+        )
 
         # Initialize gene entry if needed
         if gene_symbol not in gene_data:
@@ -195,7 +194,9 @@ async def get_trait_prs(trait: str):
             continue
 
         effect_allele = hit.get("effect_allele")
-        ea_count = _count_effect_alleles(snp.get("genotype"), effect_allele)
+        ea_count = _count_effect_alleles(
+            snp.get("genotype"), effect_allele, hit.get("other_allele")
+        )
         if ea_count is None:
             continue
 
