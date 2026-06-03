@@ -18,6 +18,7 @@ Date: 2026-03-23
 """
 
 import sys
+from dataclasses import dataclass, field
 import numpy as np
 import matplotlib
 matplotlib.use('Agg')
@@ -27,6 +28,61 @@ import json
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from lib.config import OUTPUT_DIR
+
+# ============================================================================
+# CONTAINMENT: self-labelling results (audit finding #17)
+# ============================================================================
+# This module is a TOY one-compartment sensitivity model. Its numbers must never
+# be surfaced as clinical magnitude claims (e.g. "tripling sertraline levels",
+# "equivalent to 100-200 mg"). To enforce that at the source, any fold-change /
+# multiplier this module exposes is wrapped in an IllustrativeResult that carries
+# an explicit not-clinical-grade flag and a disclaimer, and any human-readable
+# rendering of a magnitude always prepends that caveat.
+
+ILLUSTRATIVE_DISCLAIMER = (
+    "Illustrative sensitivity estimate only — NOT clinical-grade, not for dosing "
+    "decisions. Toy one-compartment model with population-average parameters; "
+    "real magnitude depends on CBD dose/formulation, route, timing, adherence, "
+    "active metabolites and serum levels (confirm with TDM)."
+)
+
+
+@dataclass(frozen=True)
+class IllustrativeResult:
+    """A model-derived fold-change wrapped with its not-clinical-grade caveat.
+
+    Carries the numeric value (for plotting/sensitivity use) while ensuring it
+    cannot be silently rendered as a bare clinical magnitude claim.
+    """
+
+    fold_change: float
+    label: str = ""
+    is_illustrative: bool = True
+    not_clinical_grade: bool = True
+    disclaimer: str = field(default=ILLUSTRATIVE_DISCLAIMER)
+
+    def describe(self) -> str:
+        """Human-readable rendering that ALWAYS includes the caveat next to the number."""
+        subject = f"{self.label}: " if self.label else ""
+        return (
+            f"[ILLUSTRATIVE — NOT CLINICAL-GRADE] {subject}"
+            f"modelled ~{self.fold_change:.2g}x fold-change. {self.disclaimer}"
+        )
+
+    def __str__(self) -> str:  # pragma: no cover - convenience only
+        return self.describe()
+
+
+def illustrative_fold_change(fold_change, label: str = "") -> IllustrativeResult:
+    """Wrap a bare fold-change/multiplier with not-clinical-grade caveat metadata."""
+    return IllustrativeResult(fold_change=float(fold_change), label=label)
+
+
+def format_result(fold_change, label: str = "") -> str:
+    """Render a fold-change as caveated text. Accepts a bare number or an IllustrativeResult."""
+    if isinstance(fold_change, IllustrativeResult):
+        return fold_change.describe()
+    return illustrative_fold_change(fold_change, label=label).describe()
 
 # ============================================================================
 # OUTPUT DIRECTORY
@@ -462,6 +518,9 @@ def main():
     print("\n" + "=" * 60)
     print("CLINICAL SUMMARY (illustrative, not for dosing decisions)")
     print("=" * 60)
+    print("\n*** " + ILLUSTRATIVE_DISCLAIMER + " ***")
+    print("Figures below are SENSITIVITY OUTPUTS, not clinical magnitudes. Do NOT")
+    print("transcribe them into reports as 'tripling levels' or dose-equivalence claims.\n")
 
     # Caffeine
     caff_d = drugs_data['Caffeine']['daily_metrics']
@@ -483,7 +542,10 @@ def main():
     print(f"  Day 0 peak:  {sert_peak_d0:.1f} ug/L (CYP2C19 inhibited by CBD)")
     print(f"  Day 3 peak:  {sert_peak_d3:.1f} ug/L ({(sert_peak_d3/sert_peak_d0-1)*100:+.0f}%)")
     print(f"  Day 7 peak:  {sert_peak_d7:.1f} ug/L ({(sert_peak_d7/sert_peak_d0-1)*100:+.0f}%)")
-    print(f"  RECOMMENDATION: Inform prescriber. Levels may drop ~40-60%. Monitor mood.")
+    if sert_peak_d7 > 0:
+        sert_fold = sert_peak_d0 / sert_peak_d7
+        print("  " + format_result(sert_fold, label="sertraline exposure (day 0 vs day 7)"))
+    print(f"  RECOMMENDATION: Inform prescriber; confirm with serum level/TDM before any change.")
 
     # Melatonin
     mel_d = drugs_data['Melatonin']['daily_metrics']
